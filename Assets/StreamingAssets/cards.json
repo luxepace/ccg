@@ -1,0 +1,262 @@
+{
+    "fieldCards": [
+        {
+            "name": "Охотник с копьём",
+            "logoPath": "Sprites/Cards/osk",
+            "attack": 3,
+            "defense": 2,
+            "manacost": 2,
+            "abilityValue": 0,
+            "abilities": [],
+            "shortDescription": "Базовый воин с копьём",
+            "fullDescription": "Надёжная базовая карта, хорошо сбалансирована между атакой и защитой"
+        },
+        {
+            "name": "Волк-одиночка",
+            "logoPath": "Sprites/Cards/volk",
+            "attack": 2,
+            "defense": 2,
+            "manacost": 3,
+            "abilityValue": 0,
+            "abilities": [],
+            "shortDescription": "Мобильный наёмник из лесов",
+            "fullDescription": "Хорошо подходит для ранней стадии игры"
+        },
+        {
+            "name": "Вожак волков",
+            "logoPath": "Sprites/Cards/vojak",
+            "attack": 3,
+            "defense": 3,
+            "manacost": 3,
+            "abilityValue": 0,
+            "abilities": [],
+            "shortDescription": "Лидер стаи",
+            "fullDescription": "Призывает других волков на помощь"
+        },
+        {
+            "name": "Паксява",
+            "logoPath": "Sprites/Cards/paksyava",
+            "attack": 2,
+            "defense": 4,
+            "manacost": 3,
+            "abilityValue": 0,
+            "abilities": [
+                "REGENERATION_EACH_TURN"
+            ],
+            "shortDescription": "Божество, покровительница поля. Восстанавливает себе здоровье.",
+            "fullDescription": "Высокая выносливость и средняя атака делают его надёжным союзником"
+        },
+        {
+            "name": "Шайтан",
+            "logoPath": "Sprites/Cards/shaitan",
+            "attack": 4,
+            "defense": 3,
+            "manacost": 3,
+            "abilityValue": 0,
+            "abilities": [],
+            "shortDescription": "Агрессивный боец",
+            "fullDescription": "Урон выше среднего, но защита не самая высокая"
+        },
+        {
+            "name": "Шкай",
+            "logoPath": "Sprites/Cards/shkay",
+            "attack": 7,
+            "defense": 6,
+            "manacost": 3,
+            "abilityValue": 0,
+            "abilities": [],
+            "shortDescription": "Сильный монстр",
+            "fullDescription": "Один из самых мощных монстров в игре"
+        },
+        {
+            "name": "Монстр с провокацией",
+            "logoPath": "Sprites/Cards/provocation",
+            "attack": 1,
+            "defense": 2,
+            "manacost": 3,
+            "abilityValue": 1,
+            "abilities": [
+                "PROVOCATION"
+            ],
+            "shortDescription": "Обязывает атаковать себя",
+            "fullDescription": "Пока эта карта жива, противник обязан атаковать её"
+        },
+        {
+            "name": "Монстр с регенерацией",
+            "logoPath": "Sprites/Cards/regen",
+            "attack": 4,
+            "defense": 2,
+            "manacost": 5,
+            "abilityValue": 2,
+            "abilities": [
+                "REGENERATION_EACH_TURN"
+            ],
+            "shortDescription": "Восстанавливает здоровье каждый ход",
+            "fullDescription": "Эта карта восстанавливает несколько единиц здоровья каждый раунд"
+        },
+        {
+            "name": "Монстр с двойной атакой",
+            "logoPath": "Sprites/Cards/doubleAttack",
+            "attack": 3,
+            "defense": 2,
+            "manacost": 4,
+            "abilityValue": 1,
+            "abilities": [
+                "DOUBLE_ATTACK"
+            ],
+            "shortDescription": "Атакует дважды за ход",
+            "fullDescription": "Позволяет нанести урон дважды за один ход"
+        },
+        {
+            "name": "Монстр со щитом",
+            "logoPath": "Sprites/Cards/shield",
+            "attack": 5,
+            "defense": 1,
+            "manacost": 7,
+            "abilityValue": 1,
+            "abilities": [
+                "SHIELD"
+            ],
+            "shortDescription": "Щит защищает от первой атаки",
+            "fullDescription": "Первая полученная атака игнорируется благодаря щиту"
+        },
+        {
+            "name": "Контратакующий монстр",
+            "logoPath": "Sprites/Cards/counterAttack",
+            "attack": 3,
+            "defense": 1,
+            "manacost": 1,
+            "abilityValue": 3,
+            "abilities": [
+                "COUNTER_ATTACK"
+            ],
+            "shortDescription": "Атакует в ответ",
+            "fullDescription": "При получении урона контратакует на фиксированное количество урона"
+        },
+        {
+            "name": "Готовый к атаке монстр",
+            "logoPath": "Sprites/Cards/instantActive",
+            "attack": 2,
+            "defense": 1,
+            "manacost": 2,
+            "abilityValue": 1,
+            "abilities": [
+                "INSTANT_ACTIVE"
+            ],
+            "shortDescription": "Может атаковать сразу после выхода",
+            "fullDescription": "Не требуется ожидать следующего хода для атаки"
+        }
+    ],
+    "spells": [
+        {
+            "name": "Лечение всех союзников",
+            "logoPath": "Sprites/Spells/spell",
+            "manacost": 2,
+            "spellType": "HEAL_ALLY_FIELD_CARDS",
+            "targetType": "NO_TARGET",
+            "spellValue": 2,
+            "abilities": [],
+            "shortDescription": "Исцеляет всё поле",
+            "fullDescription": "Восстанавливает указанное количество здоровья всем союзным существам"
+        },
+        {
+            "name": "Урон всем врагам",
+            "logoPath": "Sprites/Spells/spell",
+            "manacost": 2,
+            "spellType": "DAMAGE_ENEMY_FIELD_CARDS",
+            "targetType": "NO_TARGET",
+            "spellValue": 2,
+            "abilities": [],
+            "shortDescription": "Наносит массированный урон",
+            "fullDescription": "Наносит урон всем вражеским картам"
+        },
+        {
+            "name": "Исцеление героя",
+            "logoPath": "Sprites/Spells/spell",
+            "manacost": 2,
+            "spellType": "HEAL_ALLY_HERO",
+            "targetType": "NO_TARGET",
+            "spellValue": 2,
+            "abilities": [],
+            "shortDescription": "Восстановление здоровья героя",
+            "fullDescription": "Исцеляет героя на заданное количество очков"
+        },
+        {
+            "name": "Урон герою противника",
+            "logoPath": "Sprites/Spells/spell",
+            "manacost": 2,
+            "spellType": "DAMAGE_ENEMY_HERO",
+            "targetType": "NO_TARGET",
+            "spellValue": 4,
+            "abilities": [],
+            "shortDescription": "Прямой урон по врагу",
+            "fullDescription": "Наносит урон герою противника"
+        },
+        {
+            "name": "Исцеление союзника",
+            "logoPath": "Sprites/Spells/spell",
+            "manacost": 2,
+            "spellType": "HEAL_ALLY_CARD",
+            "targetType": "ALLY_CARD_TARGET",
+            "spellValue": 2,
+            "abilities": [],
+            "shortDescription": "Лечит одну союзную карту",
+            "fullDescription": "Выбери цель → лечит выбранную карту"
+        },
+        {
+            "name": "Урон врагу",
+            "logoPath": "Sprites/Spells/spell",
+            "manacost": 2,
+            "spellType": "DAMAGE_ENEMY_CARD",
+            "targetType": "ENEMY_CARD_TARGET",
+            "spellValue": 2,
+            "abilities": [],
+            "shortDescription": "Целевой урон врагу",
+            "fullDescription": "Наносит урон конкретной вражеской карте"
+        },
+        {
+            "name": "Щит союзнику",
+            "logoPath": "Sprites/Spells/spell",
+            "manacost": 2,
+            "spellType": "SHIELD_ON_ALLY_CARD",
+            "targetType": "ALLY_CARD_TARGET",
+            "spellValue": 0,
+            "abilities": [],
+            "shortDescription": "Даёт щит своей карте",
+            "fullDescription": "Защищает карту от первого урона"
+        },
+        {
+            "name": "Провокация союзнику",
+            "logoPath": "Sprites/Spells/spell",
+            "manacost": 2,
+            "spellType": "PROVOCATION_ON_ALLY_CARD",
+            "targetType": "ALLY_CARD_TARGET",
+            "spellValue": 0,
+            "abilities": [],
+            "shortDescription": "Добавляет провокацию",
+            "fullDescription": "Карта обязана быть первой атакованной"
+        },
+        {
+            "name": "Усиление урона союзника",
+            "logoPath": "Sprites/Spells/spell",
+            "manacost": 2,
+            "spellType": "BUFF_CARD_DAMAGE",
+            "targetType": "ALLY_CARD_TARGET",
+            "spellValue": 2,
+            "abilities": [],
+            "shortDescription": "Увеличивает урон союзника",
+            "fullDescription": "Усиливает атаку на заданное значение"
+        },
+        {
+            "name": "Снижение урона врага",
+            "logoPath": "Sprites/Spells/spell",
+            "manacost": 2,
+            "spellType": "DEBUFF_CARD_DAMAGE",
+            "targetType": "ENEMY_CARD_TARGET",
+            "spellValue": 2,
+            "abilities": [],
+            "shortDescription": "Снижает атаку цели",
+            "fullDescription": "Уменьшает силу вражеской карты"
+        }
+    ]
+}
