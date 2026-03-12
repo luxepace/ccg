@@ -1,0 +1,24 @@
+# Force Unity scripts to use LF
+*.cs text eol=lf
+
+# Force shader files to use LF
+*.shader text eol=lf
+*.compute text eol=lf
+*.hlsl text eol=lf
+
+# Handle Unity YAML files correctly
+*.unity text eol=lf
+*.prefab text eol=lf
+*.asset text eol=lf
+*.mat text eol=lf
+
+# Binary files (no conversion)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.fbx binary
+*.obj binary
+*.dll binary
+*.exe binary
+*.unitypackage binary
