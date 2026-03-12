@@ -1,0 +1,17 @@
+{
+    "themes": [
+        {
+            "themeId": "river",
+            "themeName": "Речная долина",
+            "terrainTexture": "",
+            "skyboxMaterial": "",
+            "ambientColor": {
+                "r": 0.6000000238418579,
+                "g": 0.699999988079071,
+                "b": 0.800000011920929,
+                "a": 1.0
+            },
+            "decorationPrefabs": []
+        }
+    ]
+}

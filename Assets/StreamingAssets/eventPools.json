@@ -1,0 +1,10 @@
+{
+    "pools": [
+        {
+            "poolId": "chapter_1_events",
+            "eventIds": [
+                "merchant"
+            ]
+        }
+    ]
+}

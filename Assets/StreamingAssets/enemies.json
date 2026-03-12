@@ -1,0 +1,30 @@
+{
+    "enemies": [
+        {
+            "id": "bandit_1",
+            "enemyName": "Бандит",
+            "avatarPath": "",
+            "enemyHP": 25,
+            "enemyMaxHP": 25,
+            "enemyDeck": [],
+            "condition": 0,
+            "rewardGold": 15,
+            "rewardCardId": "",
+            "isBoss": false,
+            "themeId": ""
+        },
+        {
+            "id": "boss_river",
+            "enemyName": "Бог Реки",
+            "avatarPath": "",
+            "enemyHP": 50,
+            "enemyMaxHP": 50,
+            "enemyDeck": [],
+            "condition": 1,
+            "rewardGold": 100,
+            "rewardCardId": "",
+            "isBoss": true,
+            "themeId": "river"
+        }
+    ]
+}

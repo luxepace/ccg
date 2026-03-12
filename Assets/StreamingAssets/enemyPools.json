@@ -1,0 +1,13 @@
+{
+    "pools": [
+        {
+            "poolId": "chapter_1_enemies",
+            "enemyIds": [
+                "bandit_1"
+            ],
+            "bossIds": [
+                "boss_river"
+            ]
+        }
+    ]
+}

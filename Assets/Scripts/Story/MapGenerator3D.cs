@@ -6,10 +6,16 @@ public class MapGenerator3D : MonoBehaviour
     public static MapGenerator3D Instance;
 
     [Header("Настройки генерации")]
-    public int mapSize = 100;
-    public int mapHeight = 50;
-    public float noiseScale = 20f;
-    public float heightMultiplier = 15f;
+    public int mapSize = 200;
+    public int mapHeight = 60;
+    public float noiseScale = 50f;
+    public float heightMultiplier = 25f;
+
+    [Header("Детализация")]
+    [Range(1, 6)]
+    public int octaves = 3;
+    public float persistence = 0.5f;
+    public float lacunarity = 2f;
 
     [Header("Сохранение")]
     public string saveFileName = "mapData.json";
@@ -31,18 +37,18 @@ public class MapGenerator3D : MonoBehaviour
 
     private void Start()
     {
-        // Ищем Terrain надёжным способом
         terrain = FindObjectOfType<Terrain>();
 
         if (terrain != null)
         {
-            // Центрируем Terrain ПЕРЕД изменением размера
+            // Центрируем Terrain
             terrain.transform.position = Vector3.zero;
 
             terrainData = terrain.terrainData;
             terrainData.size = new Vector3(mapSize, mapHeight, mapSize);
 
             Debug.Log($"Terrain найден. Позиция: {terrain.transform.position}");
+            Debug.Log($"Размер карты: {mapSize}x{mapSize}, Высота: {mapHeight}");
 
             // Проверяем есть ли сохранение
             if (HasSavedMap())
@@ -60,6 +66,9 @@ public class MapGenerator3D : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Генерация новой карты
+    /// </summary>
     public void GenerateNewMap()
     {
         Debug.Log("Генерация новой карты...");
@@ -70,32 +79,71 @@ public class MapGenerator3D : MonoBehaviour
         SaveMap(heights);
     }
 
+    /// <summary>
+    /// Генерация высот через шум Перлина с октавами
+    /// </summary>
     float[,] GenerateHeights()
     {
         int resolution = terrainData.heightmapResolution;
         float[,] heights = new float[resolution, resolution];
 
+        float maxNoiseHeight = 0;
+        float minNoiseHeight = 0;
+
+        // Генерируем шум с октавами для более естественного рельефа
         for (int y = 0; y < resolution; y++)
         {
             for (int x = 0; x < resolution; x++)
             {
-                float xCoord = (float)x / resolution * noiseScale;
-                float yCoord = (float)y / resolution * noiseScale;
+                float noiseHeight = 0;
+                float amplitude = 1;
+                float frequency = 1;
 
-                float noise = Mathf.PerlinNoise(xCoord, yCoord);
-                heights[y, x] = noise * heightMultiplier / mapHeight;
+                for (int i = 0; i < octaves; i++)
+                {
+                    float xCoord = (float)x / resolution * noiseScale * frequency;
+                    float yCoord = (float)y / resolution * noiseScale * frequency;
+
+                    float perlinValue = Mathf.PerlinNoise(xCoord, yCoord) * 2 - 1;
+                    noiseHeight += perlinValue * amplitude;
+
+                    amplitude *= persistence;
+                    frequency *= lacunarity;
+                }
+
+                // Нормализуем значения
+                if (noiseHeight > maxNoiseHeight) maxNoiseHeight = noiseHeight;
+                if (noiseHeight < minNoiseHeight) minNoiseHeight = noiseHeight;
+
+                heights[y, x] = noiseHeight;
+            }
+        }
+
+        // Финальная нормализация и применение множителя высоты
+        for (int y = 0; y < resolution; y++)
+        {
+            for (int x = 0; x < resolution; x++)
+            {
+                heights[y, x] = Mathf.InverseLerp(minNoiseHeight, maxNoiseHeight, heights[y, x]);
+                heights[y, x] *= heightMultiplier / mapHeight;
             }
         }
 
         return heights;
     }
 
+    /// <summary>
+    /// Проверка наличия сохранённой карты
+    /// </summary>
     bool HasSavedMap()
     {
         string path = GetSavePath();
         return File.Exists(path);
     }
 
+    /// <summary>
+    /// Загрузка карты из файла
+    /// </summary>
     public void LoadMap()
     {
         Debug.Log("Загрузка сохранённой карты...");
@@ -105,6 +153,7 @@ public class MapGenerator3D : MonoBehaviour
 
         MapSaveData saveData = JsonUtility.FromJson<MapSaveData>(json);
 
+        // Проверка на null
         if (saveData == null || saveData.heights == null)
         {
             Debug.LogError("Не удалось загрузить данные карты!");
@@ -117,6 +166,7 @@ public class MapGenerator3D : MonoBehaviour
 
         float[,] heights = new float[width, height];
 
+        // Конвертируем 1D → 2D
         for (int y = 0; y < width; y++)
         {
             for (int x = 0; x < height; x++)
@@ -128,6 +178,9 @@ public class MapGenerator3D : MonoBehaviour
         terrainData.SetHeights(0, 0, heights);
     }
 
+    /// <summary>
+    /// Сохранение карты в файл
+    /// </summary>
     void SaveMap(float[,] heights)
     {
         Debug.Log("Сохранение карты...");
@@ -141,6 +194,7 @@ public class MapGenerator3D : MonoBehaviour
         saveData.height = height;
         saveData.heights = new float[width * height];
 
+        // Конвертируем 2D → 1D
         for (int y = 0; y < width; y++)
         {
             for (int x = 0; x < height; x++)
@@ -152,6 +206,7 @@ public class MapGenerator3D : MonoBehaviour
         string json = JsonUtility.ToJson(saveData, true);
         string path = GetSavePath();
 
+        Directory.CreateDirectory(Path.GetDirectoryName(path));
         File.WriteAllText(path, json);
         Debug.Log($"Карта сохранена в {path}");
     }
@@ -161,6 +216,9 @@ public class MapGenerator3D : MonoBehaviour
         return Path.Combine(Application.persistentDataPath, saveFileName);
     }
 
+    /// <summary>
+    /// Удалить сохранение (для новой игры)
+    /// </summary>
     public void DeleteSave()
     {
         string path = GetSavePath();
@@ -170,12 +228,40 @@ public class MapGenerator3D : MonoBehaviour
             Debug.Log("Сохранение карты удалено");
         }
     }
+
+    /// <summary>
+    /// Регенерировать карту (для тестов)
+    /// </summary>
+    [ContextMenu("Regenerate Map")]
+    public void RegenerateMap()
+    {
+        DeleteSave();
+        GenerateNewMap();
+    }
+
+    /// <summary>
+    /// Показать путь к файлу сохранения
+    /// </summary>
+    [ContextMenu("Show Save Path")]
+    public void ShowSavePath()
+    {
+        string path = GetSavePath();
+        Debug.Log($"Путь к сохранению: {path}");
+
+        // Открыть папку в проводнике (Windows)
+#if UNITY_EDITOR_WIN
+        System.Diagnostics.Process.Start("explorer.exe", "/select," + path);
+#endif
+    }
 }
 
+/// <summary>
+/// Класс для сериализации данных карты
+/// </summary>
 [System.Serializable]
 public class MapSaveData
 {
     public int width;
     public int height;
-    public float[] heights;
+    public float[] heights; // 1D массив вместо 2D
 }

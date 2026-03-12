@@ -122,6 +122,89 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &185937675
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 185937676}
+  m_Layer: 0
+  m_Name: NodesContainer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &185937676
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 185937675}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1011476633}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &408525231
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 408525233}
+  - component: {fileID: 408525232}
+  m_Layer: 0
+  m_Name: MapManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &408525232
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 408525231}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: de423f85232fb794880062f6ff37a80f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mapSize: 200
+  mapHeight: 60
+  noiseScale: 10
+  heightMultiplier: 25
+  octaves: 2
+  persistence: 0.5
+  lacunarity: 2
+  saveFileName: mapData.json
+--- !u!4 &408525233
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 408525231}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &693898607
 GameObject:
   m_ObjectHideFlags: 0
@@ -131,31 +214,14 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 693898609}
-  - component: {fileID: 693898608}
+  - component: {fileID: 693898610}
   m_Layer: 0
-  m_Name: MapManager
+  m_Name: StoryMapManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &693898608
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 693898607}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f3b9159ebd445a14fa6cce2d0ded9cf8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  mapSize: 100
-  mapHeight: 50
-  noiseScale: 20
-  heightMultiplier: 15
-  saveFileName: mapData.json
 --- !u!4 &693898609
 Transform:
   m_ObjectHideFlags: 0
@@ -165,10 +231,116 @@ Transform:
   m_GameObject: {fileID: 693898607}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 54.95715, y: 420.44797, z: -80.242195}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &693898610
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 693898607}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: de2a237184931f94498ba1b4b0d0d6f2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  generationSettings:
+    nodeSpacingY: 3
+    nodeSpacingX: 4
+    maxBranches: 3
+    connectionChance: 0.7
+    minNodesPerChapter: 10
+    maxNodesPerChapter: 15
+  saveFileName: storyMapSave.json
+  CurrentChapters: []
+  SaveData:
+    currentChapter: 0
+    completedChapters: 
+    collectedCardIds: []
+    playerGold: 0
+    playerHP: 30
+    chapters: []
+  CurrentChapter:
+    chapterIndex: 0
+    chapterName: 
+    nodes: []
+    startNodeId: 0
+    bossNodeId: 0
+    bossPoolId: 
+    enemyPoolId: 
+    eventPoolId: 
+    themeId: 
+    isCompleted: 0
+    isUnlocked: 0
+  CurrentNode:
+    nodeId: 0
+    chapterIndex: 0
+    layer: 0
+    type: 0
+    position: {x: 0, y: 0, z: 0}
+    connectedNodeIds: 
+    previousNodeIds: 
+    isVisited: 0
+    isUnlocked: 0
+    isSkipped: 0
+    enemyId: 
+    eventId: 
+    nodeVisual: {fileID: 0}
+--- !u!1 &1011476631
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1011476633}
+  - component: {fileID: 1011476632}
+  m_Layer: 0
+  m_Name: StoryMapVisual
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1011476632
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1011476631}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7efb2bd11460b334e95ec7309705d18a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  nodeBasePrefab: {fileID: 1805528868087164758, guid: 2f0b7c931863f684baec1758505a54c7,
+    type: 3}
+  nodesContainer: {fileID: 185937676}
+  linesContainer: {fileID: 2020787248}
+  linePrefab: {fileID: 4554992642230701239, guid: 5b45bd714b82dea4c9fafb16ad555d8f,
+    type: 3}
+--- !u!4 &1011476633
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1011476631}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 185937676}
+  - {fileID: 2020787248}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1509668882
@@ -258,7 +430,7 @@ Transform:
   m_GameObject: {fileID: 1509668882}
   serializedVersion: 2
   m_LocalRotation: {x: 0.4294526, y: -0, z: -0, w: 0.9030894}
-  m_LocalPosition: {x: -393, y: 62, z: -9}
+  m_LocalPosition: {x: 93.4, y: 82.6, z: 4.1}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -494,6 +666,37 @@ MonoBehaviour:
   m_LightCookieSize: {x: 1, y: 1}
   m_LightCookieOffset: {x: 0, y: 0}
   m_SoftShadowQuality: 0
+--- !u!1 &2020787247
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2020787248}
+  m_Layer: 0
+  m_Name: LinesContainer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2020787248
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2020787247}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1011476633}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2080361977
 GameObject:
   m_ObjectHideFlags: 0
@@ -581,7 +784,7 @@ Transform:
   m_GameObject: {fileID: 2080361977}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -444, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 100, y: 100, z: 50}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -596,3 +799,5 @@ SceneRoots:
   - {fileID: 1548836573}
   - {fileID: 2080361980}
   - {fileID: 693898609}
+  - {fileID: 408525233}
+  - {fileID: 1011476633}

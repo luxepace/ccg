@@ -1,0 +1,13 @@
+{
+    "events": [
+        {
+            "id": "merchant",
+            "eventTitle": "Таинственный торговец",
+            "eventDescription": "Ты встретил торговца...",
+            "type": 0,
+            "rewardCardId": "",
+            "rewardGold": 0,
+            "healAmount": 0
+        }
+    ]
+}
