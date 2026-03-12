@@ -65,7 +65,6 @@ public class GameManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject); 
         }
         else
         {
@@ -75,6 +74,8 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
+        Debug.Log("[GameManager] Start() вызван. —цена чиста€!");
+        Debug.Log($"[GameManager] PlayerHand: {PlayerHand != null}, EnemyHero: {EnemyHero != null}");
         StartGame();
     }
 

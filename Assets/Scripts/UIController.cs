@@ -30,7 +30,6 @@ public class UIController : MonoBehaviour
             return;
         }
 
-        DontDestroyOnLoad(this);
     }
 
     public void StartGame()
