@@ -10,7 +10,6 @@ public static class StoryContentLoader
     public static List<EnemyPool> AllEnemyPools { get; private set; }
     public static List<EventPool> AllEventPools { get; private set; }
     public static List<MapTheme> AllThemes { get; private set; }
-
     public static bool IsLoaded { get; private set; } = false;
 
     public static void LoadAllContent()
@@ -45,7 +44,7 @@ public static class StoryContentLoader
         AllThemes = themesWrapper?.themes ?? new List<MapTheme>();
 
         IsLoaded = true;
-        Debug.Log("Контент сюжета загружен!");
+        Debug.Log("Загрузка контента завершена!");
     }
 
     public static EnemyData GetEnemyById(string enemyId)
@@ -126,7 +125,7 @@ public static class StoryContentLoader
 
         if (data == null)
         {
-            Debug.LogError($"Не удалось распарсить {fileName}");
+            Debug.LogError($"Не удалось парсить {fileName}");
         }
 
         return data;

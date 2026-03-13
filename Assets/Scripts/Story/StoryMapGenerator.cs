@@ -8,9 +8,9 @@ public static class StoryMapGenerator
     {
         public float nodeSpacingY = 3f;
         public float nodeSpacingX = 4f;
-        public float nodeSpacingZ = 12f;   // Расстояние вдоль карты (Z)
-        public float startZ = 30f;         // Начало по Z (ближний край)
-        public float minNodeDistance = 25f; // Минимальное расстояние между узлами
+        public float nodeSpacingZ = 12f;
+        public float startZ = 30f;
+        public float minNodeDistance = 25f;
         public int maxBranches = 3;
         public float connectionChance = 0.7f;
         public int minNodesPerChapter = 10;
@@ -69,22 +69,19 @@ public static class StoryMapGenerator
 
         int nodesInChapter = Random.Range(config.minNodes, config.maxNodes + 1);
 
-        // СТАРТОВЫЙ УЗЕЛ - ближний край карты
         StoryNode startNode = new StoryNode(
             globalNodeId++,
             config.chapterIndex,
             0,
             StoryNodeType.START,
-            new Vector3(100f, 0f, settings.startZ)  // X=100 (центр), Z=30 (ближний край)
+            new Vector3(100f, 0f, settings.startZ)
         );
         chapter.nodes.Add(startNode);
 
         List<StoryNode> previousLayerNodes = new List<StoryNode> { startNode };
 
-        // ГЕНЕРАЦИЯ СЛОЁВ (двигаемся от ближнего края Z=30 к дальнему)
         for (int layer = 1; layer < nodesInChapter; layer++)
         {
-            // Базовая позиция Z для этого слоя (всегда дальше предыдущего)
             float baseZ = settings.startZ + (layer * settings.nodeSpacingZ);
             List<StoryNode> currentLayerNodes = new List<StoryNode>();
 
@@ -96,23 +93,17 @@ public static class StoryMapGenerator
                 int attempts = 0;
                 bool validPosition = false;
 
-                // Пытаемся найти позицию которая не слишком близко к другим узлам
                 do
                 {
-                    // X: СЛУЧАЙНАЯ от 30 до 170 для каждого узла
-                    float xPos = Random.Range(30f, 170f);
-
-                    // Z: базовая позиция слоя ± 10 (небольшое случайное смещение)
+                    float mapWidth = 200f;
+                    float margin = mapWidth * 0.1f;
+                    float xPos = Random.Range(margin, mapWidth - margin);
                     float zPos = baseZ + Random.Range(-10f, 10f);
                     zPos = Mathf.Clamp(zPos, settings.startZ + (layer * 10f), settings.startZ + (layer * 14f));
 
-                    // Y: 0 (высоту terrain + 5 добавит StoryMapVisual)
                     position = new Vector3(xPos, 0f, zPos);
-
-                    // Проверяем расстояние до всех существующих узлов
                     validPosition = true;
 
-                    // Проверяем расстояние до узлов текущего слоя
                     foreach (var existingNode in currentLayerNodes)
                     {
                         float distance = Vector3.Distance(position, existingNode.position);
@@ -123,13 +114,12 @@ public static class StoryMapGenerator
                         }
                     }
 
-                    // Если позиция не подходит, проверяем узлы предыдущего слоя
                     if (!validPosition)
                     {
                         foreach (var existingNode in previousLayerNodes)
                         {
                             float distance = Vector3.Distance(position, existingNode.position);
-                            if (distance < settings.minNodeDistance * 0.7f) // Меньше для предыдущего слоя
+                            if (distance < settings.minNodeDistance * 0.7f)
                             {
                                 validPosition = false;
                                 break;
@@ -140,10 +130,8 @@ public static class StoryMapGenerator
                     attempts++;
                 } while (!validPosition && attempts < 20);
 
-                // Если не нашли подходящую позицию за 20 попыток, используем последнюю
                 if (!validPosition && attempts >= 20)
                 {
-                    // Распределяем узлы равномерно если не получилось случайно
                     float spread = (nodesInLayer - 1) * settings.minNodeDistance;
                     float startX = 100f - spread / 2f;
                     float xPos = startX + i * settings.minNodeDistance;
@@ -180,10 +168,7 @@ public static class StoryMapGenerator
                 }
             }
 
-            // Сортируем узлы текущего слоя по X для уменьшения пересечений линий
             currentLayerNodes.Sort((a, b) => a.position.x.CompareTo(b.position.x));
-
-            // ГАРАНТИРУЕМ что каждый узел предыдущего слоя имеет хотя бы одно соединение
             EnsureAllNodesHaveConnection(previousLayerNodes, currentLayerNodes);
 
             previousLayerNodes = currentLayerNodes;
@@ -192,13 +177,11 @@ public static class StoryMapGenerator
         return chapter;
     }
 
-    // Гарантирует что из каждого узла предыдущего слоя есть хотя бы одно соединение
     static void EnsureAllNodesHaveConnection(List<StoryNode> previousLayer, List<StoryNode> currentLayer)
     {
         if (currentLayer.Count == 0 || previousLayer.Count == 0)
             return;
 
-        // Сортируем узлы по X для более упорядоченных соединений
         var sortedPrevious = new List<StoryNode>(previousLayer);
         sortedPrevious.Sort((a, b) => a.position.x.CompareTo(b.position.x));
 
@@ -207,7 +190,6 @@ public static class StoryMapGenerator
 
         foreach (var prevNode in sortedPrevious)
         {
-            // Проверяем есть ли уже соединения с узлами текущего слоя
             bool hasConnectionToCurrentLayer = false;
 
             foreach (int connectedId in prevNode.connectedNodeIds)
@@ -219,10 +201,8 @@ public static class StoryMapGenerator
                 }
             }
 
-            // Если нет соединений - создаем хотя бы одно
             if (!hasConnectionToCurrentLayer)
             {
-                // Находим ближайший узел по X координате для уменьшения пересечений
                 StoryNode nearestNextNode = sortedCurrent[0];
                 float minDistance = Mathf.Abs(prevNode.position.x - sortedCurrent[0].position.x);
 
@@ -294,7 +274,6 @@ public static class StoryMapGenerator
         if (previousLayer.Count == 0)
             return;
 
-        // Сортируем предыдущий слой по X для более упорядоченных соединений
         var sortedPrevious = new List<StoryNode>(previousLayer);
         sortedPrevious.Sort((a, b) => a.position.x.CompareTo(b.position.x));
 
@@ -310,7 +289,6 @@ public static class StoryMapGenerator
             }
         }
 
-        // Если не соединился случайно, соединяем с ближайшим узлом по X
         if (!connected && sortedPrevious.Count > 0)
         {
             StoryNode nearestPrev = sortedPrevious[0];

@@ -2,10 +2,6 @@ using UnityEngine;
 using System.IO;
 using System.Collections.Generic;
 
-/// <summary>
-/// Unity-контроллер для управления картой сюжета
-/// Вызывает генератор, сохраняет/загружает данные
-/// </summary>
 public class StoryMapManager : MonoBehaviour
 {
     public static StoryMapManager Instance;
@@ -58,9 +54,9 @@ public class StoryMapManager : MonoBehaviour
             {
                 nodeSpacingY = 3f,
                 nodeSpacingX = 4f,
-                nodeSpacingZ = 12f,    // Расстояние вдоль карты (Z)
-                startZ = 30f,          // Начало по Z (ближний край)
-                minNodeDistance = 25f, // Минимальное расстояние между узлами
+                nodeSpacingZ = 15f,
+                startZ = 10f,
+                minNodeDistance = 25f,
                 maxBranches = 3,
                 connectionChance = 0.7f,
                 minNodesPerChapter = 10,
@@ -69,12 +65,9 @@ public class StoryMapManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Генерация новой карты
-    /// </summary>
     public void GenerateNewMap()
     {
-        Debug.Log("Генерация новой карты сюжета...");
+        Debug.Log("Генерация новой карты...");
 
         CurrentChapters = StoryMapGenerator.GenerateFullMap(generationSettings);
         SaveData = new StorySaveData();
@@ -82,21 +75,40 @@ public class StoryMapManager : MonoBehaviour
         SaveChapters();
         SaveMap();
 
-        Debug.Log($"Сгенерировано {CurrentChapters.Count} глав");
+        Debug.Log("Сгенерировано " + CurrentChapters.Count + " глав");
 
         if (CurrentChapters.Count > 0)
         {
             StoryMapVisual visual = FindObjectOfType<StoryMapVisual>();
             if (visual != null)
             {
+                // Отображаем первую главу
                 visual.DisplayChapter(CurrentChapters[0]);
+
+                // Находим стартовый узел
+                StoryNode startNode = CurrentChapters[0].nodes.Find(n => n.type == StoryNodeType.START);
+
+                if (startNode != null)
+                {
+                    CurrentNode = startNode;
+
+                    // Разблокируем узлы следующего слоя от старта
+                    UnlockNextLayerNodes(CurrentNode);
+
+                    // Сохраняем состояние
+                    SaveMap();
+
+                    // Обновляем визуал (цвета, замки)
+                    visual.RefreshAllNodeVisuals();
+                }
+                else
+                {
+                    Debug.LogError("Стартовый узел не найден в сгенерированной главе!");
+                }
             }
         }
     }
 
-    /// <summary>
-    /// Загрузка карты из файла
-    /// </summary>
     public void LoadMap()
     {
         Debug.Log("Загрузка сохранённой карты...");
@@ -121,15 +133,34 @@ public class StoryMapManager : MonoBehaviour
             if (visual != null)
             {
                 visual.DisplayChapter(CurrentChapters[0]);
+
+                StoryNode lastVisitedNode = null;
+                foreach (var node in CurrentChapters[0].nodes)
+                {
+                    if (node.isVisited && (lastVisitedNode == null || node.layer > lastVisitedNode.layer))
+                    {
+                        lastVisitedNode = node;
+                    }
+                }
+
+                if (lastVisitedNode == null)
+                {
+                    lastVisitedNode = CurrentChapters[0].nodes.Find(n => n.type == StoryNodeType.START);
+                }
+
+                CurrentNode = lastVisitedNode;
+                UnlockNextLayerNodes(CurrentNode);
+
+                visual.RefreshAllNodeVisuals();
             }
         }
     }
 
-    /// <summary>
-    /// Сохранение глав в SaveData
-    /// </summary>
     void SaveChapters()
     {
+        if (SaveData.chapters == null)
+            SaveData.chapters = new List<ChapterSaveData>();
+
         SaveData.chapters.Clear();
 
         foreach (var chapter in CurrentChapters)
@@ -147,11 +178,11 @@ public class StoryMapManager : MonoBehaviour
                 NodeSaveData nodeData = new NodeSaveData
                 {
                     nodeId = node.nodeId,
-                    layer = node.layer,                    // ИСПРАВЛЕНО: сохраняем layer
+                    layer = node.layer,
                     type = node.type,
                     isVisited = node.isVisited,
                     isUnlocked = node.isUnlocked,
-                    isSkipped = node.isSkipped,            // ИСПРАВЛЕНО: сохраняем isSkipped
+                    isSkipped = node.isSkipped,
                     position = node.position,
                     enemyId = node.enemyId,
                     eventId = node.eventId,
@@ -164,9 +195,6 @@ public class StoryMapManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Восстановление глав из SaveData
-    /// </summary>
     void RestoreChapters()
     {
         CurrentChapters = new List<StoryChapter>();
@@ -184,14 +212,14 @@ public class StoryMapManager : MonoBehaviour
                 StoryNode node = new StoryNode(
                     nodeData.nodeId,
                     chapterData.chapterIndex,
-                    nodeData.layer,                        // ИСПРАВЛЕНО: добавлен параметр layer
+                    nodeData.layer,
                     nodeData.type,
                     nodeData.position
                 )
                 {
                     isVisited = nodeData.isVisited,
                     isUnlocked = nodeData.isUnlocked,
-                    isSkipped = nodeData.isSkipped,        // ИСПРАВЛЕНО: восстанавливаем isSkipped
+                    isSkipped = nodeData.isSkipped,
                     enemyId = nodeData.enemyId,
                     eventId = nodeData.eventId,
                     connectedNodeIds = nodeData.connectedNodeIds
@@ -204,24 +232,18 @@ public class StoryMapManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Сохранение в файл
-    /// </summary>
     void SaveMap()
     {
-        Debug.Log("Сохранение карты сюжета...");
-
+        Debug.Log("Сохранение данных карты...");
         string json = JsonUtility.ToJson(SaveData, true);
         string path = GetSavePath();
+        Debug.Log("Файл сохранён: " + path);
 
         Directory.CreateDirectory(Path.GetDirectoryName(path));
         File.WriteAllText(path, json);
-        Debug.Log($"Карта сохранена в {path}");
+        Debug.Log("Карта сохранена в " + path);
     }
 
-    /// <summary>
-    /// Проверка наличия сохранения
-    /// </summary>
     bool HasSavedMap()
     {
         string path = GetSavePath();
@@ -233,22 +255,16 @@ public class StoryMapManager : MonoBehaviour
         return Path.Combine(Application.persistentDataPath, saveFileName);
     }
 
-    /// <summary>
-    /// Удалить сохранение (для новой игры)
-    /// </summary>
     public void DeleteSave()
     {
         string path = GetSavePath();
         if (File.Exists(path))
         {
             File.Delete(path);
-            Debug.Log("Сохранение карты сюжета удалено");
+            Debug.Log("Сохранённая карта удалена");
         }
     }
 
-    /// <summary>
-    /// Получить узел по ID
-    /// </summary>
     public StoryNode GetNodeById(int chapterIndex, int nodeId)
     {
         if (chapterIndex >= 0 && chapterIndex < CurrentChapters.Count)
@@ -263,6 +279,15 @@ public class StoryMapManager : MonoBehaviour
         StoryNode node = GetNodeById(chapterIndex, nodeId);
         if (node != null)
         {
+            // ГЛАВНОЕ ИСПРАВЛЕНИЕ:
+            // Если у нас уже был текущий узел (например, стартовый), и мы переходим на новый,
+            // то СТАРЫЙ узел должен стать посещенным.
+            if (CurrentNode != null && CurrentNode.nodeId != nodeId)
+            {
+                CurrentNode.isVisited = true;
+            }
+
+            // Теперь помечаем новый узел как посещенный и делаем его текущим
             node.isVisited = true;
             CurrentNode = node;
 
@@ -289,6 +314,8 @@ public class StoryMapManager : MonoBehaviour
 
     void UnlockNextLayerNodes(StoryNode currentNode)
     {
+        if (currentNode == null) return;
+
         StoryChapter chapter = CurrentChapters[currentNode.chapterIndex];
 
         foreach (var node in chapter.nodes)
@@ -301,9 +328,6 @@ public class StoryMapManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Начать новую игру (сброс прогресса)
-    /// </summary>
     public void StartNewGame()
     {
         DeleteSave();

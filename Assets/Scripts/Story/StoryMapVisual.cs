@@ -3,19 +3,20 @@ using System.Collections.Generic;
 
 public class StoryMapVisual : MonoBehaviour
 {
-    [Header("Префабы узлов")]
+    [Header("Префаб узла")]
     public GameObject nodeBasePrefab;
 
     [Header("Контейнеры")]
     public Transform nodesContainer;
     public Transform linesContainer;
 
-    [Header("Линии")]
+    [Header("Линия")]
     public LineRenderer linePrefab;
 
     private Dictionary<int, GameObject> nodeVisuals = new Dictionary<int, GameObject>();
     private StoryMapManager mapManager;
     private Terrain terrain;
+
 
     private void Awake()
     {
@@ -23,6 +24,7 @@ public class StoryMapVisual : MonoBehaviour
         terrain = FindObjectOfType<Terrain>();
     }
 
+    // Изменён: не отображает визуалы до инициализации
     public void DisplayChapter(StoryChapter chapter)
     {
         if (chapter == null)
@@ -41,6 +43,22 @@ public class StoryMapVisual : MonoBehaviour
         DrawConnections(chapter);
     }
 
+    // Новый метод: инициализирует и отображает визуалы
+    public void InitializeAndDisplay(StoryChapter chapter)
+    {
+        ClearVisuals();
+
+        foreach (var node in chapter.nodes)
+        {
+            CreateNodeVisual(node); // создаёт визуал, но не обновляет статус
+        }
+
+        DrawConnections(chapter);
+
+        // Обновляем ВСЕ визуалы ОДИН РАЗ после полной инициализации
+        RefreshAllNodeVisuals();
+    }
+
     void CreateNodeVisual(StoryNode node)
     {
         if (nodeBasePrefab == null)
@@ -49,16 +67,12 @@ public class StoryMapVisual : MonoBehaviour
             return;
         }
 
-        // Получаем высоту terrain в этой точке
         float terrainHeight = GetTerrainHeight(node.position);
-
-        // Y = высота terrain + 5 (парим над поверхностью)
         Vector3 spawnPosition = new Vector3(node.position.x, terrainHeight + 5f, node.position.z);
 
         GameObject nodeVisual = Instantiate(nodeBasePrefab, nodesContainer);
         nodeVisual.transform.localPosition = spawnPosition;
 
-        // Поворачиваем Canvas к камере
         Canvas canvas = nodeVisual.GetComponentInChildren<Canvas>();
         if (canvas != null)
         {
@@ -69,11 +83,11 @@ public class StoryMapVisual : MonoBehaviour
         if (controller != null)
         {
             controller.Init(node, this);
+            // УБРАЛИ: controller.UpdateVisualState();
         }
 
         nodeVisuals[node.nodeId] = nodeVisual;
-
-        UpdateNodeVisualState(node);
+        // УБРАЛИ: UpdateNodeVisualState(node);
     }
 
     void DrawConnections(StoryChapter chapter)
@@ -97,68 +111,57 @@ public class StoryMapVisual : MonoBehaviour
     }
 
     void CreateConnection(StoryNode fromNode, int toNodeId)
-{
-    GameObject fromVisual = nodeVisuals[fromNode.nodeId];
-    GameObject toVisual = nodeVisuals[toNodeId];
-
-    LineRenderer line = Instantiate(linePrefab, linesContainer);
-    
-    // Получаем мировые позиции узлов
-    Vector3 startPos = fromVisual.transform.position;
-    Vector3 endPos = toVisual.transform.position;
-    
-    // Количество промежуточных точек
-    int segments = 20;
-    List<Vector3> linePoints = new List<Vector3>();
-    
-    for (int i = 0; i <= segments; i++)
     {
-        float t = i / (float)segments;
-        Vector3 point = Vector3.Lerp(startPos, endPos, t);
-        
-        // Получаем высоту terrain в этой точке
-        float terrainHeight = GetTerrainHeight(point);
-        point.y = terrainHeight + 3f; // +3 чтобы парить над поверхностью
-        
-        linePoints.Add(point);
-    }
-    
-    // Устанавливаем количество позиций
-    line.positionCount = linePoints.Count;
-    line.SetPositions(linePoints.ToArray());
-    
-    // Линии должны быть в мировых координатах
-    line.useWorldSpace = true;
-}
+        GameObject fromVisual = nodeVisuals[fromNode.nodeId];
+        GameObject toVisual = nodeVisuals[toNodeId];
+        LineRenderer line = Instantiate(linePrefab, linesContainer);
 
-// Метод для получения высоты terrain в точке
-float GetTerrainHeight(Vector3 position)
-{
-    Terrain terrain = FindObjectOfType<Terrain>();
-    if (terrain == null)
-    {
-        Debug.LogWarning("Terrain not found!");
-        return 0;
+        Vector3 startPos = fromVisual.transform.position;
+        Vector3 endPos = toVisual.transform.position;
+
+        int segments = 20;
+        List<Vector3> linePoints = new List<Vector3>();
+
+        for (int i = 0; i <= segments; i++)
+        {
+            float t = i / (float)segments;
+            Vector3 point = Vector3.Lerp(startPos, endPos, t);
+
+            float terrainHeight = GetTerrainHeight(point);
+            point.y = terrainHeight + 3f;
+
+            linePoints.Add(point);
+        }
+
+        line.positionCount = linePoints.Count;
+        line.SetPositions(linePoints.ToArray());
+        line.useWorldSpace = true;
     }
 
-    TerrainData terrainData = terrain.terrainData;
-    Vector3 terrainPos = terrain.transform.position;
+    float GetTerrainHeight(Vector3 position)
+    {
+        Terrain terrain = FindObjectOfType<Terrain>();
+        if (terrain == null)
+        {
+            Debug.LogWarning("Terrain not found!");
+            return 0;
+        }
 
-    // Нормализуем координаты относительно terrain (0-1)
-    float normalizedX = (position.x - terrainPos.x) / terrainData.size.x;
-    float normalizedZ = (position.z - terrainPos.z) / terrainData.size.z;
+        TerrainData terrainData = terrain.terrainData;
+        Vector3 terrainPos = terrain.transform.position;
 
-    // Ограничиваем от 0 до 1
-    normalizedX = Mathf.Clamp01(normalizedX);
-    normalizedZ = Mathf.Clamp01(normalizedZ);
+        float normalizedX = (position.x - terrainPos.x) / terrainData.size.x;
+        float normalizedZ = (position.z - terrainPos.z) / terrainData.size.z;
 
-    // Получаем высоту из heightmap
-    int heightmapResolution = terrainData.heightmapResolution;
-    int x = Mathf.FloorToInt(normalizedX * (heightmapResolution - 1));
-    int y = Mathf.FloorToInt(normalizedZ * (heightmapResolution - 1));
+        normalizedX = Mathf.Clamp01(normalizedX);
+        normalizedZ = Mathf.Clamp01(normalizedZ);
 
-    return terrainData.GetHeight(x, y);
-}
+        int heightmapResolution = terrainData.heightmapResolution;
+        int x = Mathf.FloorToInt(normalizedX * (heightmapResolution - 1));
+        int y = Mathf.FloorToInt(normalizedZ * (heightmapResolution - 1));
+
+        return terrainData.GetHeight(x, y);
+    }
 
     public void ClearVisuals()
     {
@@ -191,6 +194,21 @@ float GetTerrainHeight(Vector3 position)
         }
     }
 
+    public void RefreshAllNodeVisuals()
+    {
+        foreach (var visual in nodeVisuals.Values)
+        {
+            if (visual != null)
+            {
+                NodeVisualController controller = visual.GetComponent<NodeVisualController>();
+                if (controller != null)
+                {
+                    controller.UpdateVisualState();
+                }
+            }
+        }
+    }
+
     public void OnNodeClicked(StoryNode node)
     {
         if (!node.isUnlocked || node.isVisited)
@@ -200,7 +218,7 @@ float GetTerrainHeight(Vector3 position)
 
         if (currentNode != null && node.layer != currentNode.layer + 1)
         {
-            Debug.Log("Нельзя вернуться назад!");
+            Debug.Log("Узел не является следующим слоем!");
             return;
         }
 
@@ -219,11 +237,14 @@ float GetTerrainHeight(Vector3 position)
             case StoryNodeType.START:
                 break;
         }
+
+        mapManager.MarkNodeVisited(node.chapterIndex, node.nodeId);
+        RefreshAllNodeVisuals();
     }
 
     void StartBattle(StoryNode node)
     {
-        Debug.Log($"Начало боя: {node.enemyId}");
+        Debug.Log($"Бой: враг {node.enemyId}");
 
         EnemyData enemy = StoryContentLoader.GetEnemyById(node.enemyId);
         if (enemy == null)
@@ -235,7 +256,7 @@ float GetTerrainHeight(Vector3 position)
         TempData.CurrentEnemy = enemy;
         TempData.CurrentNode = node;
 
-        Debug.Log("Загрузка сцены боя...");
+        Debug.Log("Переход к бою в сцене...");
     }
 
     void ShowEvent(StoryNode node)
@@ -252,15 +273,12 @@ float GetTerrainHeight(Vector3 position)
         TempData.CurrentEvent = eventData;
         TempData.CurrentNode = node;
 
-        Debug.Log("Показ UI события...");
+        Debug.Log("Открытие UI события...");
     }
 
     void Rest(StoryNode node)
     {
         Debug.Log("Отдых: восстановление HP");
-
-        node.isVisited = true;
-        mapManager.MarkNodeVisited(node.chapterIndex, node.nodeId);
-        UpdateNodeVisualState(node);
+        Debug.Log("Здоровье восстановлено!");
     }
 }

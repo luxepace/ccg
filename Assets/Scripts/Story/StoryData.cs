@@ -64,7 +64,6 @@ public class StoryNode
     public int layer;
     public StoryNodeType type;
     public Vector3 position;
-
     public List<int> connectedNodeIds;
     public List<int> previousNodeIds;
 
@@ -76,7 +75,6 @@ public class StoryNode
     public string eventId;
     public GameObject nodeVisual;
 
-    // Полный конструктор (5 параметров)
     public StoryNode(int id, int chapter, int nodeLayer, StoryNodeType nodeType, Vector3 pos)
     {
         nodeId = id;
@@ -90,7 +88,6 @@ public class StoryNode
         isUnlocked = (nodeType == StoryNodeType.START && id == 0);
         isSkipped = false;
     }
-
 }
 
 [System.Serializable]
@@ -99,7 +96,6 @@ public class StoryChapter
     public int chapterIndex;
     public string chapterName;
     public List<StoryNode> nodes;
-
     public int startNodeId;
     public int bossNodeId;
 

@@ -82,38 +82,70 @@ public class NodeVisualController : MonoBehaviour, IPointerEnterHandler, IPointe
 
     public void UpdateVisualState()
     {
+        // 1. ПРОВЕРКА: Является ли этот узел тем, на котором сейчас стоит игрок?
+        bool isCurrentActiveNode = (StoryMapManager.Instance != null &&
+                                    StoryMapManager.Instance.CurrentNode != null &&
+                                    StoryMapManager.Instance.CurrentNode.nodeId == NodeData.nodeId);
+
         if (lockedIcon != null)
         {
+            // Замок показываем, только если узел НЕ разблокирован И это НЕ пропущенный узел
             lockedIcon.SetActive(!NodeData.isUnlocked && !NodeData.isSkipped);
         }
 
         if (iconImage != null)
         {
+            // Сброс масштаба перед применением новых значений
+            iconImage.transform.localScale = Vector3.one;
+
             if (NodeData.isSkipped)
             {
-                iconImage.color = skippedColor;
+                // ПРОПУЩЕННЫЙ УЗЕЛ: Полупрозрачный, обычная иконка, маленький размер
                 SetIconByNodeType();
+                iconImage.color = skippedColor;
+                iconImage.transform.localScale = Vector3.one * 0.8f;
             }
             else if (!NodeData.isUnlocked)
             {
+                // ЗАБЛОКИРОВАННЫЙ (будущий): Серый, иконка замка
                 iconImage.sprite = lockedSprite;
                 iconImage.color = lockedColor;
+                iconImage.transform.localScale = Vector3.one;
+            }
+            else if (isCurrentActiveNode)
+            {
+                // ТЕКУЩИЙ АКТИВНЫЙ УЗЕЛ (на котором стоит игрок): 
+                // Самый яркий, увеличенный, без галочки прогресса
+                SetIconByNodeType();
+
+                // Делаем цвет ярче доступного (можно добавить немного белого или просто оставить availableColor, но увеличить масштаб)
+                iconImage.color = Color.Lerp(availableColor, Color.white, 0.3f);
+                iconImage.transform.localScale = Vector3.one * 1.4f; // Заметно больше остальных
+
+                // Убираем галочку прогресса, так как мы еще на этом узле
+                if (progressMark != null) progressMark.gameObject.SetActive(false);
             }
             else if (NodeData.isVisited)
             {
-                iconImage.color = visitedColor;
+                // ПОСЕЩЕННЫЙ (пройденный ранее): Темный, обычная иконка, галочка
+                SetIconByNodeType();
+                iconImage.color = visitedColor; // Темно-серый
+                iconImage.transform.localScale = Vector3.one;
+
+                if (progressMark != null) progressMark.gameObject.SetActive(true);
             }
             else
             {
+                // ДОСТУПНЫЙ ДЛЯ ВЫБОРА (следующий шаг): Обычный яркий цвет
+                SetIconByNodeType();
                 iconImage.color = availableColor;
+                iconImage.transform.localScale = Vector3.one;
+
+                if (progressMark != null) progressMark.gameObject.SetActive(false);
             }
         }
 
-        if (progressMark != null)
-        {
-            progressMark.gameObject.SetActive(NodeData.isVisited);
-        }
-
+        // Обновляем текст подсказки (на всякий случай)
         UpdateTooltipText();
     }
 
@@ -122,7 +154,7 @@ public class NodeVisualController : MonoBehaviour, IPointerEnterHandler, IPointe
         if (tooltipText == null)
             return;
 
-        string text = "";
+        string text = " ";
 
         switch (NodeData.type)
         {
@@ -173,7 +205,7 @@ public class NodeVisualController : MonoBehaviour, IPointerEnterHandler, IPointe
     public void OnPointerEnter(PointerEventData eventData)
     {
         isHovering = true;
-
+        UpdateTooltipText();
         if (NodeData.isUnlocked && tooltipPanel != null)
         {
             tooltipPanel.SetActive(true);
