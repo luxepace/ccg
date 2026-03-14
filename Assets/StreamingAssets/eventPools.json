@@ -1,10 +1,8 @@
 {
-    "pools": [
-        {
-            "poolId": "chapter_1_events",
-            "eventIds": [
-                "merchant"
-            ]
-        }
-    ]
+  "pools": [
+    {
+      "poolId": "pool_test",
+      "eventIds": []
+    }
+  ]
 }

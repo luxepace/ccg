@@ -1,16 +1,16 @@
 {
-    "chapters": [
-        {
-            "chapterIndex": 0,
-            "chapterName": "Глава 1: Начало пути",
-            "minNodes": 10,
-            "maxNodes": 12,
-            "enemyPoolId": "chapter_1_enemies",
-            "eventPoolId": "chapter_1_events",
-            "bossPoolId": "chapter_1_enemies",
-            "enemyNodeChance": 0.6000000238418579,
-            "eventNodeChance": 0.30000001192092898,
-            "restNodeChance": 0.10000000149011612
-        }
-    ]
+  "chapters": [
+    {
+      "chapterIndex": 0,
+      "chapterName": "Быстрый Тест",
+      "minNodes": 3,
+      "maxNodes": 3,
+      "enemyPoolId": "pool_test",
+      "eventPoolId": "pool_test",
+      "bossPoolId": "pool_test",
+      "enemyNodeChance": 0.9,
+      "eventNodeChance": 0.0,
+      "restNodeChance": 0.1
+    }
+  ]
 }

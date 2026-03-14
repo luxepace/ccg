@@ -1,13 +1,9 @@
 {
-    "pools": [
-        {
-            "poolId": "chapter_1_enemies",
-            "enemyIds": [
-                "bandit_1"
-            ],
-            "bossIds": [
-                "boss_river"
-            ]
-        }
-    ]
+  "pools": [
+    {
+      "poolId": "pool_test",
+      "enemyIds": ["goblin_scout"],
+      "bossIds": ["boss_forest"]
+    }
+  ]
 }

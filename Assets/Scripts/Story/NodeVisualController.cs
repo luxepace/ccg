@@ -224,16 +224,24 @@ public class NodeVisualController : MonoBehaviour, IPointerEnterHandler, IPointe
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        if (!NodeData.isUnlocked || NodeData.isVisited)
-            return;
+        Debug.Log($"[UI] Клик получен контроллером узла {NodeData.nodeId}");
 
-        mapVisual.OnNodeClicked(NodeData);
+        // Убедитесь, что эта проверка не блокирует клик ошибочно
+        if (NodeData == null)
+        {
+            Debug.LogError("[UI] NodeData не инициализирован!");
+            return;
+        }
+
+        // Передаем клик дальше в StoryMapVisual
+        if (mapVisual != null)
+        {
+            mapVisual.OnNodeClicked(NodeData);
+        }
+        else
+        {
+            Debug.LogError("[UI] mapVisual не назначен в контроллере узла!");
+        }
     }
 }
 
-public static class TempData
-{
-    public static EnemyData CurrentEnemy;
-    public static StoryEventData CurrentEvent;
-    public static StoryNode CurrentNode;
-}

@@ -1,3 +1,5 @@
+// В файле MainMenuManager.cs
+
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -6,7 +8,7 @@ public class MainMenuManager : MonoBehaviour
     public GameObject mainMenuPanel;
     public GameObject settingsPanel;
 
-    public void Start()
+    private void Start()
     {
         settingsPanel.SetActive(false);
         mainMenuPanel.SetActive(true);
@@ -14,6 +16,17 @@ public class MainMenuManager : MonoBehaviour
 
     public void StartGame()
     {
+        // ЗАГРУЗКА СЦЕНЫ КАРТЫ СЮЖЕТА
+        SceneManager.LoadScene("StoryScene");
+    }
+
+    public void StartQuickGame()
+    {
+        // НАСТРОЙКА БЫСТРОЙ ИГРЫ
+        TempData.IsStoryMode = false; // Режим быстрой игры
+        TempData.CurrentEnemy = null; // Очищаем данные врага, чтобы GameManager создал случайного
+
+        // Сразу загружаем сцену боя
         SceneManager.LoadScene("CardGame");
     }
 

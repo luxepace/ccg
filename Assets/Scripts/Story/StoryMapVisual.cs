@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine.SceneManagement;
 
 public class StoryMapVisual : MonoBehaviour
 {
@@ -29,16 +30,29 @@ public class StoryMapVisual : MonoBehaviour
     {
         if (chapter == null)
         {
-            Debug.LogError("Chapter is null!");
+            Debug.LogError("[StoryMapVisual] Попытка отрисовать null главу!");
             return;
         }
 
+        if (chapter.nodes == null || chapter.nodes.Count == 0)
+        {
+            Debug.LogError("[StoryMapVisual] В главе нет узлов для отрисовки!");
+            return;
+        }
+
+        Debug.Log($"[StoryMapVisual] Начало отрисовки {chapter.nodes.Count} узлов...");
+
         ClearVisuals();
 
+        int createdCount = 0;
         foreach (var node in chapter.nodes)
         {
+            if (node == null) continue;
             CreateNodeVisual(node);
+            createdCount++;
         }
+
+        Debug.Log($"[StoryMapVisual] Создано визуальных объектов узлов: {createdCount}");
 
         DrawConnections(chapter);
     }
@@ -63,7 +77,12 @@ public class StoryMapVisual : MonoBehaviour
     {
         if (nodeBasePrefab == null)
         {
-            Debug.LogError("Node prefab not assigned!");
+            Debug.LogError($"[CRITICAL] Node Base Prefab не назначен в инспекторе StoryMapVisual! Невозможно создать узел {node.nodeId}");
+            return;
+        }
+        if (nodesContainer == null)
+        {
+            Debug.LogError($"[CRITICAL] Nodes Container не назначен в инспекторе StoryMapVisual!");
             return;
         }
 
@@ -211,17 +230,44 @@ public class StoryMapVisual : MonoBehaviour
 
     public void OnNodeClicked(StoryNode node)
     {
-        if (!node.isUnlocked || node.isVisited)
-            return;
+        Debug.Log($"[CLICK] Клик получен! Узел ID: {node.nodeId}, Тип: {node.type}");
+        Debug.Log($"[CHECK] isUnlocked: {node.isUnlocked}, isVisited: {node.isVisited}");
 
-        StoryNode currentNode = mapManager.CurrentNode;
-
-        if (currentNode != null && node.layer != currentNode.layer + 1)
+        if (!node.isUnlocked)
         {
-            Debug.Log("Узел не является следующим слоем!");
+            Debug.LogWarning("[BLOCK] Узел заблокирован!");
             return;
         }
 
+        if (node.isVisited)
+        {
+            Debug.LogWarning("[BLOCK] Узел уже посещен!");
+            // Для событий/отдыха можно убрать return, если хотите повторное посещение
+            // return; 
+        }
+
+        StoryNode currentNode = StoryMapManager.Instance.CurrentNode;
+        if (currentNode != null && node.layer != currentNode.layer + 1)
+        {
+            Debug.LogWarning($"[BLOCK] Неверный слой! Текущий: {currentNode.layer}, Целевой: {node.layer}");
+            // Раскомментируйте, если нужно строго следовать слоям
+            // return;
+        }
+
+        Debug.Log("[OK] Проверки пройдены. Запуск события...");
+
+        // === ГЛАВНОЕ: ПРИНУДИТЕЛЬНОЕ СОХРАНЕНИЕ ПЕРЕД БОЕМ ===
+        if (StoryMapManager.Instance != null)
+        {
+            Debug.Log("[SAVE] Вызываем MarkNodeVisited для узла " + node.nodeId);
+            StoryMapManager.Instance.MarkNodeVisited(node.chapterIndex, node.nodeId);
+        }
+        else
+        {
+            Debug.LogError("[ERROR] StoryMapManager.Instance == NULL!");
+        }
+
+        // Запуск соответствующего события
         switch (node.type)
         {
             case StoryNodeType.ENEMY:
@@ -234,17 +280,22 @@ public class StoryMapVisual : MonoBehaviour
             case StoryNodeType.REST:
                 Rest(node);
                 break;
-            case StoryNodeType.START:
-                break;
         }
-
-        mapManager.MarkNodeVisited(node.chapterIndex, node.nodeId);
-        RefreshAllNodeVisuals();
     }
+
+    // В файле StoryMapVisual.cs
 
     void StartBattle(StoryNode node)
     {
-        Debug.Log($"Бой: враг {node.enemyId}");
+        Debug.Log($"[BATTLE] Начало боя с узлом {node.nodeId}");
+
+        // 1. ПРЯМО ЗДЕСЬ ПРИНУДИТЕЛЬНО ВЫЗЫВАЕМ СОХРАНЕНИЕ
+        // Даже если OnNodeClicked не сработал как надо, мы спасем прогресс здесь.
+        if (StoryMapManager.Instance != null)
+        {
+            Debug.Log("[BATTLE] Принудительное сохранение прогресса перед боем...");
+            StoryMapManager.Instance.MarkNodeVisited(node.chapterIndex, node.nodeId);
+        }
 
         EnemyData enemy = StoryContentLoader.GetEnemyById(node.enemyId);
         if (enemy == null)
@@ -255,8 +306,12 @@ public class StoryMapVisual : MonoBehaviour
 
         TempData.CurrentEnemy = enemy;
         TempData.CurrentNode = node;
+        TempData.IsStoryMode = true;
 
         Debug.Log("Переход к бою в сцене...");
+
+        // 2. Загружаем сцену
+        UnityEngine.SceneManagement.SceneManager.LoadScene("CardGame");
     }
 
     void ShowEvent(StoryNode node)

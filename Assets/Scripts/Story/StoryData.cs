@@ -33,6 +33,7 @@ public class EnemyData
     public string rewardCardId;
     public bool isBoss;
     public string themeId;
+    public List<string> quotes;
 }
 
 [System.Serializable]
