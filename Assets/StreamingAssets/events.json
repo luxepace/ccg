@@ -1,13 +1,91 @@
 {
-    "events": [
+  "events": [
+    {
+      "id": "merchant_test",
+      "title": "Таинственный торговец",
+      "steps": [
         {
-            "id": "merchant",
-            "eventTitle": "Таинственный торговец",
-            "eventDescription": "Ты встретил торговца...",
-            "type": 0,
-            "rewardCardId": "",
-            "rewardGold": 0,
-            "healAmount": 0
+          "type": 0,
+          "speaker": "Торговец",
+          "text": "Приветствую! У меня лучшие товары.",
+          "backgroundSpriteName": "forest_day",
+          "frameSpriteName": "wood_frame",
+          "portraitSpriteName": "merchant_smile",
+          "choices": [
+             { "choiceText": "Показать товары", "nextStepIndex": 1 },
+             { "choiceText": "Уйти", "nextStepIndex": 3 }
+          ]
+        },
+        {
+          "type": 4,
+          "text": "Давай сыграем на скидку!",
+          "backgroundSpriteName": "forest_day",
+          "frameSpriteName": "wood_frame",
+          "portraitSpriteName": "merchant_serious",
+          "minigamePrefabName": "RPS_Panel",
+          "choices": []
+        },
+        {
+          "type": 1,
+          "text": "Отличная игра! Держи награду.",
+          "backgroundSpriteName": "forest_day",
+          "frameSpriteName": "wood_frame",
+          "portraitSpriteName": "merchant_happy",
+          "reward": { "gold": 10, "healAmount": 5, "cardNames": [], "bonusTypes": [] },
+          "choices": [ { "choiceText": "Спасибо!", "nextStepIndex": 4 } ]
+        },
+        {
+          "type": 0,
+          "speaker": "Торговец",
+          "text": "Жаль. Возвращайся, если передумаешь!",
+          "backgroundSpriteName": "forest_day",
+          "frameSpriteName": "wood_frame",
+          "portraitSpriteName": "merchant_angry",
+          "buttonText": "Уйти навсегда",
+          "isFinal": true,
+          "choices": []
+        },
+        {
+          "type": 0,
+          "speaker": "Торговец",
+          "text": "Было приятно иметь дело!",
+          "backgroundSpriteName": "forest_day",
+          "frameSpriteName": "wood_frame",
+          "portraitSpriteName": "merchant_wave",
+          "buttonText": "Прощай, друг!",
+          "isFinal": true,
+          "choices": []
         }
-    ]
+      ]
+    },
+	{
+  "id": "rest_event",
+  "title": "Привал",
+  "steps": [
+    {
+      "type": 1,
+      "text": "Вы разбили лагерь. Вы лечите раны и восстанавливаете силы.",
+      "reward": {
+        "gold": 0,
+        "healAmount": 5,
+        "cardNames": [],
+        "bonusTypes": []
+      },
+      "choices": [
+        {
+          "choiceText": "Отлично, идем дальше!",
+          "nextStepIndex": 1
+        }
+      ]
+    },
+    {
+      "type": 0,
+      "text": "Путь продолжается.",
+      "buttonText": "На карту",
+      "isFinal": true,
+      "choices": []
+    }
+  ]
+}
+  ]
 }

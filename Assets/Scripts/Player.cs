@@ -3,12 +3,14 @@ using UnityEngine;
 public class Player
 {
     public int HP, Mana, Manapool;
+    public int MaxHP = 30;
     const int MAX_MANAPOOL = 10;
 
     public Player()
     {
         HP = 30;
         Mana = Manapool = 2;
+        MaxHP = 30;
     }
 
 

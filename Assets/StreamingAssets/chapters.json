@@ -3,13 +3,13 @@
     {
       "chapterIndex": 0,
       "chapterName": "Быстрый Тест",
-      "minNodes": 3,
-      "maxNodes": 3,
+      "minNodes": 5,
+      "maxNodes": 5,
       "enemyPoolId": "pool_test",
       "eventPoolId": "pool_test",
       "bossPoolId": "pool_test",
-      "enemyNodeChance": 0.9,
-      "eventNodeChance": 0.0,
+      "enemyNodeChance": 0.3,
+      "eventNodeChance": 0.6,
       "restNodeChance": 0.1
     }
   ]

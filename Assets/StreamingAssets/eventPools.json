@@ -2,7 +2,7 @@
   "pools": [
     {
       "poolId": "pool_test",
-      "eventIds": []
+      "eventIds": ["merchant_test"]
     }
   ]
 }

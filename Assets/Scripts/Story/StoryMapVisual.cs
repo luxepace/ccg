@@ -230,55 +230,78 @@ public class StoryMapVisual : MonoBehaviour
 
     public void OnNodeClicked(StoryNode node)
     {
-        Debug.Log($"[CLICK] Клик получен! Узел ID: {node.nodeId}, Тип: {node.type}");
-        Debug.Log($"[CHECK] isUnlocked: {node.isUnlocked}, isVisited: {node.isVisited}");
+        Debug.Log($"[UI] Клик получен контроллером узла {node.nodeId}");
 
+        // 1. ПРОВЕРКА: Заблокирован ли узел?
         if (!node.isUnlocked)
         {
-            Debug.LogWarning("[BLOCK] Узел заблокирован!");
+            Debug.LogWarning($"[BLOCK] Узел {node.nodeId} заблокирован!");
             return;
         }
 
+        // 2. ПРОВЕРКА: Это стартовый узел? (Он никогда не должен быть активным для клика)
+        if (node.type == StoryNodeType.START)
+        {
+            Debug.Log("[IGNORE] Клик по стартовому узлу проигнорирован.");
+            return;
+        }
+
+        // 3. ПРОВЕРКА: Игрок уже находится на этом узле?
+        if (StoryMapManager.Instance != null && StoryMapManager.Instance.CurrentNode != null)
+        {
+            if (StoryMapManager.Instance.CurrentNode.nodeId == node.nodeId &&
+                StoryMapManager.Instance.CurrentNode.layer == node.layer)
+            {
+                Debug.Log($"[IGNORE] Игрок уже находится на узле {node.nodeId}. Повторный вход запрещен.");
+                return;
+            }
+        }
+
+        // 4. ПРОВЕРКА: Узел уже посещен? (Нельзя ходить назад)
+        // Разрешаем клик только если узел еще НЕ посещен.
+        // Исключение: если у тебя есть механика возврата, то эту проверку можно убрать или усложнить.
         if (node.isVisited)
         {
-            Debug.LogWarning("[BLOCK] Узел уже посещен!");
-            // Для событий/отдыха можно убрать return, если хотите повторное посещение
-            // return; 
+            Debug.LogWarning($"[BLOCK] Узел {node.nodeId} уже посещен. Возврат назад невозможен.");
+            return;
         }
 
-        StoryNode currentNode = StoryMapManager.Instance.CurrentNode;
-        if (currentNode != null && node.layer != currentNode.layer + 1)
-        {
-            Debug.LogWarning($"[BLOCK] Неверный слой! Текущий: {currentNode.layer}, Целевой: {node.layer}");
-            // Раскомментируйте, если нужно строго следовать слоям
-            // return;
-        }
+        // === ЕСЛИ ВСЕ ПРОВЕРКИ ПРОЙДЕНЫ, ЗАПУСКАЕМ ЛОГИКУ ===
 
-        Debug.Log("[OK] Проверки пройдены. Запуск события...");
+        Debug.Log($"[CLICK] Обработка клика по узлу {node.nodeId} типа {node.type}");
 
-        // === ГЛАВНОЕ: ПРИНУДИТЕЛЬНОЕ СОХРАНЕНИЕ ПЕРЕД БОЕМ ===
+        // 1. Сохраняем прогресс (помечаем узел как посещаемый прямо сейчас)
         if (StoryMapManager.Instance != null)
         {
-            Debug.Log("[SAVE] Вызываем MarkNodeVisited для узла " + node.nodeId);
             StoryMapManager.Instance.MarkNodeVisited(node.chapterIndex, node.nodeId);
         }
         else
         {
             Debug.LogError("[ERROR] StoryMapManager.Instance == NULL!");
+            return;
         }
 
-        // Запуск соответствующего события
+        // 2. Обновляем визуал (снимаем замок, подсвечиваем путь)
+        UpdateNodeVisualState(node);
+
+        // 3. Запускаем соответствующее событие
         switch (node.type)
         {
             case StoryNodeType.ENEMY:
             case StoryNodeType.BOSS:
                 StartBattle(node);
                 break;
+
             case StoryNodeType.EVENT:
                 ShowEvent(node);
                 break;
+
             case StoryNodeType.REST:
                 Rest(node);
+                break;
+
+            default:
+                Debug.LogWarning($"Неизвестный тип узла: {node.type}");
                 break;
         }
     }
@@ -288,9 +311,15 @@ public class StoryMapVisual : MonoBehaviour
     void StartBattle(StoryNode node)
     {
         Debug.Log($"[BATTLE] Начало боя с узлом {node.nodeId}");
-
+        BattleStats.Reset();
         // 1. ПРЯМО ЗДЕСЬ ПРИНУДИТЕЛЬНО ВЫЗЫВАЕМ СОХРАНЕНИЕ
         // Даже если OnNodeClicked не сработал как надо, мы спасем прогресс здесь.
+        if (PlayerStats.Instance != null)
+        {
+            PlayerStats.Instance.HealToFull();
+            Debug.Log($"[BATTLE] Здоровье сюжетного героя восстановлено до {PlayerStats.Instance.MaxHealth}");
+        }
+
         if (StoryMapManager.Instance != null)
         {
             Debug.Log("[BATTLE] Принудительное сохранение прогресса перед боем...");
@@ -316,24 +345,163 @@ public class StoryMapVisual : MonoBehaviour
 
     void ShowEvent(StoryNode node)
     {
-        Debug.Log($"Событие: {node.eventId}");
+        Debug.Log($"[EVENT] Запуск события: {node.eventId}");
 
-        StoryEventData eventData = StoryContentLoader.GetEventById(node.eventId);
-        if (eventData == null)
+        // 1. Загружаем префаб
+        GameObject eventPrefab = Resources.Load<GameObject>("Events/EventWindowPrefab");
+
+        if (eventPrefab == null)
         {
-            Debug.LogError("Событие не найдено!");
+            Debug.LogError("[ERROR] Префаб события не найден! Путь: Assets/Resources/Events/EventWindowPrefab");
             return;
         }
 
-        TempData.CurrentEvent = eventData;
-        TempData.CurrentNode = node;
+        // 2. Ищем ГЛАВНЫЙ Canvas сцены (обычно он один и называется "Canvas")
+        // Мы НЕ используем nodesContainer или любой другой 3D объект как родителя!
+        GameObject canvasObj = GameObject.Find("MainCanvas");
 
-        Debug.Log("Открытие UI события...");
+        if (canvasObj == null)
+        {
+            Debug.LogError("Главный Canvas 'MainCanvas' не найден! Проверь имя объекта в иерархии.");
+            return;
+        }
+
+        Canvas mainCanvas = canvasObj.GetComponent<Canvas>();
+
+        if (mainCanvas == null)
+        {
+            Debug.LogError("[ERROR] В сцене не найден ни один Canvas! UI не сможет отобразиться корректно.");
+            return;
+        }
+
+        // 3. Создаем префаб ВНУТРИ главного Canvas
+        // false означает, что мы не сохраняем мировую позицию/ротацию префаба, а берем локальные (что нам и нужно для UI)
+        GameObject eventInstance = Instantiate(eventPrefab, mainCanvas.transform, false);
+
+        // 4. СБРАСЫВАЕМ трансформацию, чтобы UI встал ровно по центру и на весь экран
+        // Это критически важно, иначе он может улететь в сторону или стать микроскопическим
+        RectTransform rectTransform = eventInstance.GetComponent<RectTransform>();
+
+        if (rectTransform != null)
+        {
+            rectTransform.localPosition = Vector3.zero;
+            rectTransform.localRotation = Quaternion.identity;
+            rectTransform.localScale = Vector3.one;
+
+            // Если в префабе не настроены Anchors на Stretch-Stretch, можно сделать это здесь:
+            rectTransform.anchorMin = Vector2.zero;
+            rectTransform.anchorMax = Vector2.one;
+            rectTransform.offsetMin = Vector2.zero;
+            rectTransform.offsetMax = Vector2.zero;
+        }
+        else
+        {
+            // Если вдруг нет RectTransform (что странно для UI), пробуем обычный Transform
+            eventInstance.transform.localPosition = Vector3.zero;
+            eventInstance.transform.localRotation = Quaternion.identity;
+            eventInstance.transform.localScale = Vector3.one;
+        }
+
+        // Поднимаем на самый верх иерархии Canvas, чтобы было поверх всего (кнопки, тултипы узлов)
+        eventInstance.transform.SetAsLastSibling();
+
+        Debug.Log("[OK] Окно события создано на главном Canvas.");
+
+        // 5. Запускаем логику
+        EventManager manager = eventInstance.GetComponent<EventManager>();
+        if (manager != null)
+        {
+            manager.Init(node);
+        }
+        else
+        {
+            Debug.LogError("[ERROR] У префаба нет компонента EventManager!");
+            Destroy(eventInstance);
+        }
     }
 
     void Rest(StoryNode node)
     {
-        Debug.Log("Отдых: восстановление HP");
-        Debug.Log("Здоровье восстановлено!");
+        Debug.Log("[REST] Анализ ситуации для выбора типа привала...");
+
+        string chosenEventId = "";
+
+        // ... (твоя логика сбора статистики HP, ходов и т.д. остается той же) ...
+        // Определяем веса кандидатов (словарь ID -> вес)
+        Dictionary<string, int> candidates = new Dictionary<string, int>();
+
+        // Пример логики (упрощенно):
+        int hpPercent = 100;
+        if (BattleStats.PlayerMaxHP > 0)
+            hpPercent = Mathf.FloorToInt((float)BattleStats.PlayerEndHP / BattleStats.PlayerMaxHP * 100f);
+
+        if (hpPercent < 30)
+        {
+            candidates.Add("rest_max_hp", 80);
+            candidates.Add("rest_exhaustion", 10);
+            candidates.Add("rest_curse", 10);
+        }
+        else if (BattleStats.TurnsCount > 5)
+        {
+            candidates.Add("rest_mana_boost", 70);
+            candidates.Add("rest_new_card", 20);
+            candidates.Add("rest_rat_eats_card", 10);
+        }
+        else
+        {
+            // Равный шанс или небольшой перекос
+            candidates.Add("rest_max_hp", 17);
+            candidates.Add("rest_mana_boost", 17);
+            candidates.Add("rest_new_card", 16);
+            candidates.Add("rest_rat_eats_card", 17);
+            candidates.Add("rest_exhaustion", 17);
+            candidates.Add("rest_curse", 16);
+        }
+
+        // Выбираем ID по весам
+        chosenEventId = GetWeightedRandomEvent(candidates);
+
+        Debug.Log($"[REST] Выбрано событие привала: {chosenEventId}");
+
+        // Ищем событие в НОВОМ списке allRestEvents
+        StoryEventData restData = StoryContentLoader.GetRestEventById(chosenEventId);
+
+        if (restData == null)
+        {
+            Debug.LogError($"[ERROR] Событие привала '{chosenEventId}' не найдено в rest_events.json! Запускаем дефолтное.");
+            // Фоллбэк на первое доступное, если вдруг ошибка
+            if (StoryContentLoader.AllRestEvents.Count > 0)
+                restData = StoryContentLoader.AllRestEvents[0];
+            else
+                return; // Если совсем ничего нет
+        }
+
+        // Создаем узел, передавая обязательные параметры в конструктор
+        StoryNode restNode = new StoryNode(
+            node.nodeId,          // 1. ID (было node.chapterIndex - НЕВЕРНО)
+            node.chapterIndex,    // 2. Глава (было node.nodeId - НЕВЕРНО)
+            node.layer,           // 3. Слой
+            StoryNodeType.EVENT,  // 4. Тип
+            Vector3.zero          // 5. Позиция
+        );
+
+        restNode.eventId = chosenEventId;
+
+        ShowEvent(restNode);
+    }
+
+    // Твой вспомогательный метод взвешенного рандома
+    string GetWeightedRandomEvent(Dictionary<string, int> weights)
+    {
+        int totalWeight = 0;
+        foreach (var w in weights.Values) totalWeight += w;
+        int randomValue = Random.Range(0, totalWeight);
+        int currentSum = 0;
+        foreach (var kvp in weights)
+        {
+            currentSum += kvp.Value;
+            if (randomValue < currentSum) return kvp.Key;
+        }
+        return weights.Keys.GetEnumerator().Current;
     }
 }

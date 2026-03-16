@@ -37,27 +37,6 @@ public class EnemyData
 }
 
 [System.Serializable]
-public class StoryEventData
-{
-    public string id;
-    public string eventTitle;
-    [TextArea(3, 5)] public string eventDescription;
-    public EventType type;
-    public string rewardCardId;
-    public int rewardGold;
-    public int healAmount;
-}
-
-public enum EventType
-{
-    GET_RANDOM_CARD,
-    GET_GOLD,
-    HEAL_HERO,
-    NOTHING,
-    CHOOSE_ONE_OF_THREE
-}
-
-[System.Serializable]
 public class StoryNode
 {
     public int nodeId;
@@ -124,13 +103,6 @@ public class EnemyPool
     public string poolId;
     public List<string> enemyIds;
     public List<string> bossIds;
-}
-
-[System.Serializable]
-public class EventPool
-{
-    public string poolId;
-    public List<string> eventIds;
 }
 
 [System.Serializable]

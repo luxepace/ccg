@@ -1,0 +1,105 @@
+{
+  "events": [
+    {
+      "id": "rest_max_hp",
+      "title": "Крепкий сон",
+      "steps": [
+        {
+          "type": 1,
+          "text": "Вы спали как убитый. Проснувшись, вы чувствуете, что ваше тело стало крепче.",
+          "backgroundSpriteName": "forest_day",
+          "frameSpriteName": "wood_frame",
+          "portraitSpriteName": "", 
+          "reward": { "gold": 0, "healAmount": 999, "cardNames": [], "bonusTypes": ["MAX_HP_UP"] },
+          "choices": [ { "choiceText": "В путь!", "nextStepIndex": 1 } ]
+        },
+        { "type": 0, "text": "Максимальное здоровье увеличено!", "buttonText": "Продолжить", "isFinal": true, "choices": [] }
+      ]
+    },
+    {
+      "id": "rest_mana_boost",
+      "title": "Магический источник",
+      "steps": [
+        {
+          "type": 1,
+          "text": "Вы испили воды из светящегося источника. Ваша магическая сила возросла.",
+          "backgroundSpriteName": "magic_spring",
+          "frameSpriteName": "gold_frame",
+          "portraitSpriteName": "",
+          "reward": { "gold": 0, "healAmount": 5, "cardNames": ["Сфера маны"], "bonusTypes": [] },
+          "choices": [ { "choiceText": "Отлично!", "nextStepIndex": 1 } ]
+        },
+        { "type": 0, "text": "Получена карта 'Сфера маны'!", "buttonText": "В путь", "isFinal": true, "choices": [] }
+      ]
+    },
+    {
+      "id": "rest_new_card",
+      "title": "Странствующий торговец",
+      "steps": [
+        {
+          "type": 1,
+          "text": "Вы встретили торговца, который подарил вам новую карту за помощь.",
+          "backgroundSpriteName": "market_square",
+          "frameSpriteName": "ornate_frame",
+          "portraitSpriteName": "",
+          "reward": { "gold": 0, "healAmount": 2, "cardNames": ["Охотник с копьём"], "bonusTypes": [] },
+          "choices": [ { "choiceText": "Спасибо!", "nextStepIndex": 1 } ]
+        },
+        { "type": 0, "text": "Карта добавлена в колоду.", "buttonText": "Идти дальше", "isFinal": true, "choices": [] }
+      ]
+    },
+    {
+      "id": "rest_rat_eats_card",
+      "title": "Ночной гость",
+      "steps": [
+        {
+          "type": 0,
+          "text": "Пока вы спали, крыса перегрызла одну из ваших карт!",
+          "backgroundSpriteName": "camp_night",
+          "frameSpriteName": "dark_frame",
+          "portraitSpriteName": "",
+          "choices": [ { "choiceText": "Нет!", "nextStepIndex": 1 } ]
+        },
+        {
+          "type": 1,
+          "text": "Придется обойтись без неё.",
+          "reward": { "gold": 0, "healAmount": 0, "cardNames": [], "bonusTypes": ["REMOVE_RANDOM_CARD"] },
+          "choices": [ { "choiceText": "Жаль...", "nextStepIndex": 2 } ]
+        },
+        { "type": 0, "text": "Карта удалена.", "buttonText": "В путь", "isFinal": true, "choices": [] }
+      ]
+    },
+    {
+      "id": "rest_exhaustion",
+      "title": "Бессонная ночь",
+      "steps": [
+        {
+          "type": 1,
+          "text": "Вас мучили кошмары. Вы проснулись уставшим и потеряли здоровье.",
+          "backgroundSpriteName": "camp_night",
+          "frameSpriteName": "dark_frame",
+          "portraitSpriteName": "",
+          "reward": { "gold": 0, "healAmount": -5, "cardNames": [], "bonusTypes": [] },
+          "choices": [ { "choiceText": "Как больно...", "nextStepIndex": 1 } ]
+        },
+        { "type": 0, "text": "Здоровье уменьшено.", "buttonText": "Брести дальше", "isFinal": true, "choices": [] }
+      ]
+    },
+    {
+      "id": "rest_curse",
+      "title": "Проклятое место",
+      "steps": [
+        {
+          "type": 1,
+          "text": "Это место проклято. В вашу колоду затесалась карта 'Камень'.",
+          "backgroundSpriteName": "swamp",
+          "frameSpriteName": "cursed_frame",
+          "portraitSpriteName": "",
+          "reward": { "gold": 0, "healAmount": 0, "cardNames": ["Камень"], "bonusTypes": [] },
+          "choices": [ { "choiceText": "За что?!", "nextStepIndex": 1 } ]
+        },
+        { "type": 0, "text": "Проклятие получено.", "buttonText": "Идти", "isFinal": true, "choices": [] }
+      ]
+    }
+  ]
+}

@@ -176,7 +176,7 @@ public class NodeVisualController : MonoBehaviour, IPointerEnterHandler, IPointe
                 if (!string.IsNullOrEmpty(NodeData.eventId))
                 {
                     StoryEventData eventData = StoryContentLoader.GetEventById(NodeData.eventId);
-                    text = eventData != null ? eventData.eventTitle : "Событие";
+                    text = eventData != null ? eventData.title : "Событие";
                 }
                 else
                 {
@@ -244,4 +244,3 @@ public class NodeVisualController : MonoBehaviour, IPointerEnterHandler, IPointe
         }
     }
 }
-

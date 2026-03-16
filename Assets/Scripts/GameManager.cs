@@ -24,15 +24,28 @@ public class Game
     // НОВЫЙ Конструктор для боя с конкретным врагом (из карты сюжета)
     public Game(EnemyData enemyData)
     {
-        // 1. Игрок всегда стандартный
-        PlayerDeck = GiveRandomDeck();
+        // 1. Игрок: Берем данные из глобального PlayerStats, если он есть
         Player = new Player();
 
-        // 2. Настраиваем врага на основе данных из JSON
-        Enemy = new Player();
-        Enemy.HP = enemyData.enemyHP; // Устанавливаем HP босса из конфига
+        // ПРОВЕРКА: Если мы в сюжете, синхронизируем HP
+        if (PlayerStats.Instance != null)
+        {
+            Player.HP = PlayerStats.Instance.CurrentHealth; // Можно брать текущее или полное, если лечим перед боем
+            Player.MaxHP = PlayerStats.Instance.MaxHealth;  // Если добавишь поле MaxHP в класс Player
 
-        // 3. Генерируем колоду врага СТРОГО по списку из JSON (enemyDeck)
+            // Передача колоды: Генерируем колоду игрока на основе DeckCardNames из PlayerStats
+            PlayerDeck = GenerateDeckFromList(PlayerStats.Instance.DeckCardNames);
+            Debug.Log($"[Game] Колода игрока загружена из сохранения ({PlayerDeck.Count} карт).");
+        }
+        else
+        {
+            PlayerDeck = GiveRandomDeck();
+            Debug.Log("[Game] PlayerStats не найден, генерируем случайную колоду.");
+        }
+
+        // 2. Враг: Все как было
+        Enemy = new Player();
+        Enemy.HP = enemyData.enemyHP;
         EnemyDeck = GenerateDeckFromList(enemyData.enemyDeck);
     }
 
@@ -354,7 +367,7 @@ public class GameManager : MonoBehaviour
         StopAllCoroutines();
 
         Turn++;
-
+        BattleStats.IncrementTurn();
         UIController.Instance.OnOffTurnBtn();
 
         if (IsPlayerTurn)
@@ -416,9 +429,32 @@ public class GameManager : MonoBehaviour
 
     public void CheckForResult()
     {
-        if (CurrentGame.Enemy.HP == 0 || CurrentGame.Player.HP == 0)
+        bool isPlayerDead = CurrentGame.Player.HP <= 0;
+        bool isEnemyDead = CurrentGame.Enemy.HP <= 0;
+        if (isPlayerDead || isEnemyDead)
         {
             StopAllCoroutines();
+            // 1. Считаем карты в руке
+            int handCount = PlayerHandCards != null ? PlayerHandCards.Count : 0;
+
+            // 2. Определяем, была ли победа (враг мертв)
+            bool isVictory = isEnemyDead;
+
+            // 3. Получаем имя врага (если есть данные, иначе "Unknown")
+            string enemyName = "Unknown";
+            if (TempData.CurrentEnemy != null && !string.IsNullOrEmpty(TempData.CurrentEnemy.enemyName))
+            {
+                enemyName = TempData.CurrentEnemy.enemyName;
+            }
+
+            // 4. Вызываем метод со ВСЕМИ аргументами
+            BattleStats.FinishBattle(
+                CurrentGame.Player.HP,
+                CurrentGame.Player.MaxHP, // Убедись, что это поле есть в классе Player!
+                handCount,
+                isVictory,
+                enemyName
+            );
             UIController.Instance.ShowResult();
         }
     }

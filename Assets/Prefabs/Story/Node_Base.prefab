@@ -84,7 +84,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6766197485692162577}
-  - component: {fileID: 4865779023292991940}
+  - component: {fileID: 4217113421584907358}
   m_Layer: 0
   m_Name: Node_Base
   m_TagString: Untagged
@@ -108,7 +108,7 @@ Transform:
   - {fileID: 9028343652734114803}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &4865779023292991940
+--- !u!114 &4217113421584907358
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -117,7 +117,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1805528868087164758}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4b983aa88ac4c0444b601b8de6bd300a, type: 3}
+  m_Script: {fileID: 11500000, guid: 08a73e8187c93284cb12a815c05ed44d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   NodeData:
@@ -141,10 +141,10 @@ MonoBehaviour:
   tooltipText: {fileID: 8505458171052661363}
   startSprite: {fileID: 21300000, guid: 40825574995000e4ba89c97f7f6e6e35, type: 3}
   enemySprite: {fileID: 21300000, guid: 40825574995000e4ba89c97f7f6e6e35, type: 3}
-  eventSprite: {fileID: 21300000, guid: 40825574995000e4ba89c97f7f6e6e35, type: 3}
-  bossSprite: {fileID: 21300000, guid: 40825574995000e4ba89c97f7f6e6e35, type: 3}
-  restSprite: {fileID: 21300000, guid: 40825574995000e4ba89c97f7f6e6e35, type: 3}
-  lockedSprite: {fileID: 21300000, guid: 40825574995000e4ba89c97f7f6e6e35, type: 3}
+  eventSprite: {fileID: 21300000, guid: 07776202665cf214f95e2746ef656d58, type: 3}
+  bossSprite: {fileID: 21300000, guid: 015feb8b4400fa349a3e54f960fd4067, type: 3}
+  restSprite: {fileID: 21300000, guid: 6858d23c5441c7847ba9ceb890242b06, type: 3}
+  lockedSprite: {fileID: 21300000, guid: beee318d3ff5c8045a315078b17189d3, type: 3}
   lockedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   availableColor: {r: 1, g: 1, b: 1, a: 1}
   visitedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
@@ -507,8 +507,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 5302535af1044152a457ed104f1f4b91, type: 2}
+  m_sharedMaterial: {fileID: 2164040, guid: 5302535af1044152a457ed104f1f4b91, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []

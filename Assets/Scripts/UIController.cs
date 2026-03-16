@@ -114,13 +114,19 @@ public class UIController : MonoBehaviour
     void ReturnToStoryMap()
     {
         Time.timeScale = 1f;
-        // ¬озвращаемс€ на сцену карты. 
-        // StoryMapManager уже сохранил прогресс при клике на узел (MarkNodeVisited),
-        // поэтому при загрузке сцены мы увидим обновленную карту.
+
+        // ≈сли победили - сюжетный герой остаетс€ живым (HP мы лечим перед следующим боем)
+        // ≈сли нужно сохранить остаток HP (если уберешь авто-лечение), то:
+        if (GameManager.Instance != null && PlayerStats.Instance != null)
+        {
+            // PlayerStats.Instance.CurrentHealth = GameManager.Instance.CurrentGame.Player.HP; 
+            // Ќо пока у нас логика "полное лечение перед боем", так что тут ничего делать не надо.
+        }
+
         TempData.CurrentEnemy = null;
         TempData.IsStoryMode = false;
         SceneManager.LoadScene("StoryScene");
-    }
+    }  
 
     void RestartCurrentBattle()
     {
