@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+п»їusing System.Collections.Generic;
 using UnityEngine;
 
 [System.Serializable]
@@ -8,8 +8,8 @@ public class BattleRecord
     public int playerEndHP;
     public int playerMaxHP;
     public int cardsInHandAtEnd;
-    public bool isVictory; // Добавим флаг победы позже, пока пусть будет
-    public string enemyName; // Можно передать имя врага
+    public bool isVictory; // Р”РѕР±Р°РІРёРј С„Р»Р°Рі РїРѕР±РµРґС‹ РїРѕР·Р¶Рµ, РїРѕРєР° РїСѓСЃС‚СЊ Р±СѓРґРµС‚
+    public string enemyName; // РњРѕР¶РЅРѕ РїРµСЂРµРґР°С‚СЊ РёРјСЏ РІСЂР°РіР°
 
     public BattleRecord(int turns, int hp, int maxHp, int hand, bool win, string name)
     {
@@ -24,10 +24,10 @@ public class BattleRecord
 
 public static class BattleStats
 {
-    // История всех боев в текущей сессии
+    // РСЃС‚РѕСЂРёСЏ РІСЃРµС… Р±РѕРµРІ РІ С‚РµРєСѓС‰РµР№ СЃРµСЃСЃРёРё
     public static List<BattleRecord> BattleHistory = new List<BattleRecord>();
 
-    // Данные текущего (последнего) боя
+    // Р”Р°РЅРЅС‹Рµ С‚РµРєСѓС‰РµРіРѕ (РїРѕСЃР»РµРґРЅРµРіРѕ) Р±РѕСЏ
     public static int TurnsCount { get; private set; } = 0;
     public static int PlayerEndHP { get; private set; } = 0;
     public static int PlayerMaxHP { get; private set; } = 0;
@@ -41,7 +41,7 @@ public static class BattleStats
         PlayerEndHP = 0;
         CardsInHandAtEnd = 0;
         IsBattleCompleted = false;
-        // Историю НЕ сбрасываем!
+        // РСЃС‚РѕСЂРёСЋ РќР• СЃР±СЂР°СЃС‹РІР°РµРј!
     }
 
     public static void IncrementTurn()
@@ -50,7 +50,7 @@ public static class BattleStats
             TurnsCount++;
     }
 
-    // Добавили параметр isVictory и enemyName
+    // Р”РѕР±Р°РІРёР»Рё РїР°СЂР°РјРµС‚СЂ isVictory Рё enemyName
     public static void FinishBattle(int currentHp, int maxHp, int handCount, bool isVictory, string enemyName = "Unknown")
     {
         PlayerEndHP = currentHp;
@@ -58,15 +58,15 @@ public static class BattleStats
         CardsInHandAtEnd = handCount;
         IsBattleCompleted = true;
 
-        // Сохраняем в историю
+        // РЎРѕС…СЂР°РЅСЏРµРј РІ РёСЃС‚РѕСЂРёСЋ
         BattleRecord record = new BattleRecord(TurnsCount, currentHp, maxHp, handCount, isVictory, enemyName);
         BattleHistory.Add(record);
 
-        Debug.Log($"[BATTLE STATS] БОЙ ЗАВЕРШЕН! | Ходов: {TurnsCount} | ХП: {currentHp}/{maxHp} | Карт: {handCount} | Победа: {isVictory}");
-        Debug.Log($"[HISTORY] Всего боев записано: {BattleHistory.Count}");
+        Debug.Log($"[BATTLE STATS] Р‘РћР™ Р—РђР’Р•Р РЁР•Рќ! | РҐРѕРґРѕРІ: {TurnsCount} | РҐРџ: {currentHp}/{maxHp} | РљР°СЂС‚: {handCount} | РџРѕР±РµРґР°: {isVictory}");
+        Debug.Log($"[HISTORY] Р’СЃРµРіРѕ Р±РѕРµРІ Р·Р°РїРёСЃР°РЅРѕ: {BattleHistory.Count}");
     }
 
-    // Метод для очистки истории (например, при начале новой игры)
+    // РњРµС‚РѕРґ РґР»СЏ РѕС‡РёСЃС‚РєРё РёСЃС‚РѕСЂРёРё (РЅР°РїСЂРёРјРµСЂ, РїСЂРё РЅР°С‡Р°Р»Рµ РЅРѕРІРѕР№ РёРіСЂС‹)
     public static void ClearHistory()
     {
         BattleHistory.Clear();

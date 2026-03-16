@@ -1,15 +1,19 @@
-using System.Collections;
+п»їusing System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.SceneManagement; // Нужно для загрузки сцен
+using UnityEngine.SceneManagement;
 
 public class UIController : MonoBehaviour
 {
     public static UIController Instance;
-    public TextMeshProUGUI PlayerMana, EnemyMana;
-    public TextMeshProUGUI PlayerHP, EnemyHP;
+
+    [Header("UI References")]
+    public TextMeshProUGUI PlayerMana;
+    public TextMeshProUGUI EnemyMana;
+    public TextMeshProUGUI PlayerHP;
+    public TextMeshProUGUI EnemyHP;
 
     public GameObject ResultGO;
     public TextMeshProUGUI ResultTxt;
@@ -17,7 +21,7 @@ public class UIController : MonoBehaviour
     public TextMeshProUGUI TurnTime;
     public Button EndTurnBtn;
 
-    // НОВЫЕ ПОЛЯ ДЛЯ КНОПОК
+    [Header("Result Buttons")]
     public Button BtnContinue;
     public Button BtnMainMenu;
 
@@ -36,13 +40,15 @@ public class UIController : MonoBehaviour
 
     public void StartGame()
     {
-        if (EndTurnBtn.interactable == false)
+        if (EndTurnBtn != null && EndTurnBtn.interactable == false)
             EndTurnBtn.interactable = true;
 
-        ResultGO.SetActive(false);
+        if (ResultGO != null)
+            ResultGO.SetActive(false);
+
         UpdateHPAndMana();
 
-        // Настраиваем кнопки при старте боя (скрываем их до конца боя)
+        // РЎРєСЂС‹РІР°РµРј РєРЅРѕРїРєРё СЂРµР·СѓР»СЊС‚Р°С‚Р° РїСЂРё СЃС‚Р°СЂС‚Рµ Р±РѕСЏ
         if (BtnContinue != null) BtnContinue.gameObject.SetActive(false);
         if (BtnMainMenu != null) BtnMainMenu.gameObject.SetActive(false);
     }
@@ -51,56 +57,74 @@ public class UIController : MonoBehaviour
     {
         if (GameManager.Instance != null && GameManager.Instance.CurrentGame != null)
         {
-            PlayerMana.text = GameManager.Instance.CurrentGame.Player.Mana.ToString();
-            EnemyMana.text = GameManager.Instance.CurrentGame.Enemy.Mana.ToString();
-            PlayerHP.text = GameManager.Instance.CurrentGame.Player.HP.ToString();
-            EnemyHP.text = GameManager.Instance.CurrentGame.Enemy.HP.ToString();
+            if (PlayerMana != null)
+                PlayerMana.text = GameManager.Instance.CurrentGame.Player.Mana.ToString();
+
+            if (EnemyMana != null)
+                EnemyMana.text = GameManager.Instance.CurrentGame.Enemy.Mana.ToString();
+
+            if (PlayerHP != null)
+                PlayerHP.text = GameManager.Instance.CurrentGame.Player.HP.ToString();
+
+            if (EnemyHP != null)
+                EnemyHP.text = GameManager.Instance.CurrentGame.Enemy.HP.ToString();
         }
     }
 
     public void ShowResult()
     {
-        ResultGO.SetActive(true);
-        Time.timeScale = 0f; // Пауза
+        if (ResultGO != null)
+        {
+            ResultGO.SetActive(true);
+        }
 
-        bool isWin = GameManager.Instance.CurrentGame.Enemy.HP == 0;
+        Time.timeScale = 0f; // РџР°СѓР·Р° РёРіСЂС‹
 
-        if (isWin)
-            ResultTxt.text = "ПОБЕДА!";
-        else
-            ResultTxt.text = "ПОРАЖЕНИЕ";
+        bool isWin = GameManager.Instance.CurrentGame.Enemy.HP <= 0;
 
-        // Показываем кнопки и настраиваем их
+        if (ResultTxt != null)
+        {
+            if (isWin)
+                ResultTxt.text = "РџРћР‘Р•Р”Рђ!";
+            else
+                ResultTxt.text = "РџРћР РђР–Р•РќРР•";
+        }
+
+        // РќР°СЃС‚СЂРѕР№РєР° РєРЅРѕРїРєРё "РџСЂРѕРґРѕР»Р¶РёС‚СЊ"
         if (BtnContinue != null)
         {
             BtnContinue.gameObject.SetActive(true);
+            TextMeshProUGUI btnText = BtnContinue.GetComponentInChildren<TextMeshProUGUI>();
 
             if (TempData.IsStoryMode)
             {
-                // Если сюжетный режим
+                // --- РЎР®Р–Р•РўРќР«Р™ Р Р•Р–РРњ ---
                 if (isWin)
                 {
-                    BtnContinue.GetComponentInChildren<TextMeshProUGUI>().text = "Продолжить путь";
+                    if (btnText != null) btnText.text = "РџСЂРѕРґРѕР»Р¶РёС‚СЊ РїСѓС‚СЊ";
+
                     BtnContinue.onClick.RemoveAllListeners();
                     BtnContinue.onClick.AddListener(ReturnToStoryMap);
                 }
                 else
                 {
-                    // При поражении в сюжете - рестарт главы или возврат к началу
-                    BtnContinue.GetComponentInChildren<TextMeshProUGUI>().text = "Попробовать снова";
+                    if (btnText != null) btnText.text = "РџРѕРїСЂРѕР±РѕРІР°С‚СЊ СЃРЅРѕРІР°";
+
                     BtnContinue.onClick.RemoveAllListeners();
                     BtnContinue.onClick.AddListener(RestartCurrentBattle);
                 }
             }
             else
             {
-                // Если быстрая игра
-                BtnContinue.GetComponentInChildren<TextMeshProUGUI>().text = "Играть снова";
+                // --- Р‘Р«РЎРўР РђРЇ РР“Р Рђ / РўР•РЎРў ---
+                if (btnText != null) btnText.text = "РРіСЂР°С‚СЊ СЃРЅРѕРІР°";
+
                 BtnContinue.onClick.RemoveAllListeners();
                 BtnContinue.onClick.AddListener(RestartQuickGame);
             }
         }
 
+        // РќР°СЃС‚СЂРѕР№РєР° РєРЅРѕРїРєРё "Р’ РіР»Р°РІРЅРѕРµ РјРµРЅСЋ"
         if (BtnMainMenu != null)
         {
             BtnMainMenu.gameObject.SetActive(true);
@@ -109,60 +133,57 @@ public class UIController : MonoBehaviour
         }
     }
 
-    // --- МЕТОДЫ ДЕЙСТВИЙ ---
+    // === РњР•РўРћР”Р« Р”Р•Р™РЎРўР’РР™ ===
 
     void ReturnToStoryMap()
     {
         Time.timeScale = 1f;
 
-        // Если победили - сюжетный герой остается живым (HP мы лечим перед следующим боем)
-        // Если нужно сохранить остаток HP (если уберешь авто-лечение), то:
-        if (GameManager.Instance != null && PlayerStats.Instance != null)
-        {
-            // PlayerStats.Instance.CurrentHealth = GameManager.Instance.CurrentGame.Player.HP; 
-            // Но пока у нас логика "полное лечение перед боем", так что тут ничего делать не надо.
-        }
-
+        // РћС‡РёС‰Р°РµРј РІСЂРµРјРµРЅРЅС‹Рµ РґР°РЅРЅС‹Рµ Р±РѕСЏ
         TempData.CurrentEnemy = null;
         TempData.IsStoryMode = false;
+
+        // Р—Р°РіСЂСѓР¶Р°РµРј СЃС†РµРЅСѓ РєР°СЂС‚С‹
         SceneManager.LoadScene("StoryScene");
-    }  
+    }
 
     void RestartCurrentBattle()
     {
         Time.timeScale = 1f;
-        // Просто перезапускаем текущую сцену боя (для попытки снова после поражения)
+        // РџРµСЂРµР·Р°РїСѓСЃРєР°РµРј С‚РµРєСѓС‰СѓСЋ СЃС†РµРЅСѓ Р±РѕСЏ (РґР»СЏ РїРѕРїС‹С‚РєРё СЃРЅРѕРІР° РїРѕСЃР»Рµ РїРѕСЂР°Р¶РµРЅРёСЏ РІ СЃСЋР¶РµС‚Рµ)
         SceneManager.LoadScene("CardGame");
     }
 
     void RestartQuickGame()
     {
         Time.timeScale = 1f;
-        // Перезапуск быстрой игры (с новым рандомным врагом)
-        TempData.CurrentEnemy = null; // Сброс врага
+        // РЎР±СЂРѕСЃ РІСЂР°РіР° РґР»СЏ РЅРѕРІРѕР№ СЃР»СѓС‡Р°Р№РЅРѕР№ РіРµРЅРµСЂР°С†РёРё
+        TempData.CurrentEnemy = null;
         SceneManager.LoadScene("CardGame");
     }
 
     void GoToMainMenu()
     {
         Time.timeScale = 1f;
-        // Очистка временных данных
+
+        // РћС‡РёСЃС‚РєР° РІСЂРµРјРµРЅРЅС‹С… РґР°РЅРЅС‹С…
         TempData.CurrentEnemy = null;
         TempData.CurrentEvent = null;
         TempData.CurrentNode = null;
-        // Можно сбросить флаг, но он перепишется при следующем входе
+        TempData.IsStoryMode = false;
 
         SceneManager.LoadScene("MainMenu");
     }
 
     public void UpdateTurnTime(int time)
     {
-        TurnTime.text = time.ToString();
+        if (TurnTime != null)
+            TurnTime.text = time.ToString();
     }
-
 
     public void OnOffTurnBtn()
     {
-        EndTurnBtn.interactable = GameManager.Instance.IsPlayerTurn;
+        if (EndTurnBtn != null)
+            EndTurnBtn.interactable = GameManager.Instance.IsPlayerTurn;
     }
 }

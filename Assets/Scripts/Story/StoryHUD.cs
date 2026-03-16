@@ -1,4 +1,4 @@
-using UnityEngine;
+п»їusing UnityEngine;
 using TMPro;
 
 public class StoryHUD : MonoBehaviour
@@ -9,36 +9,35 @@ public class StoryHUD : MonoBehaviour
 
     private void Start()
     {
-        // Проверяем наличие глобального менеджера игрока
-        if (PlayerStats.Instance == null)
-        {
-            Debug.LogError("[StoryHUD] PlayerStats не найден в сцене!");
-            return;
-        }
-
-        // Первоначальное обновление
         UpdateUI();
     }
 
     private void Update()
     {
-        // Обновляем каждый кадр. Для двух строк текста это ничтожно мало ресурсов,
-        // зато цифры меняются мгновенно при любом изменении в PlayerStats.
+        // РћР±РЅРѕРІР»СЏРµРј РєР°Р¶РґС‹Р№ РєР°РґСЂ, С‡С‚РѕР±С‹ РІРёРґРµС‚СЊ РёР·РјРµРЅРµРЅРёСЏ СЃСЂР°Р·Сѓ
         UpdateUI();
     }
 
     void UpdateUI()
     {
-        if (PlayerStats.Instance == null) return;
+        // РџР РћР’Р•Р РљРђ: РСЃРїРѕР»СЊР·СѓРµРј PlayerProgressionManager РІРјРµСЃС‚Рѕ PlayerStats
+        if (PlayerProgressionManager.Instance == null)
+        {
+            // Р•СЃР»Рё РјРµРЅРµРґР¶РµСЂР° РЅРµС‚ (РЅР°РїСЂРёРјРµСЂ, РІ СЂРµРґР°РєС‚РѕСЂРµ РґРѕ СЃС‚Р°СЂС‚Р°), РјРѕР¶РЅРѕ СЃРєСЂС‹С‚СЊ UI РёР»Рё РїРѕСЃС‚Р°РІРёС‚СЊ Р·Р°РіР»СѓС€РєСѓ
+            if (textHP) textHP.text = "HP: --";
+            if (textGold) textGold.text = "Gold: --";
+            return;
+        }
 
         if (textHP != null)
         {
-            textHP.text = $"HP: {PlayerStats.Instance.CurrentHealth} / {PlayerStats.Instance.MaxHealth}";
+            // Р‘РµСЂРµРј РґР°РЅРЅС‹Рµ РёР· РЅРѕРІРѕРіРѕ РјРµРЅРµРґР¶РµСЂР°
+            textHP.text = $"HP: {PlayerProgressionManager.Instance.CurrentHp} / {PlayerProgressionManager.Instance.MaxHp}";
         }
 
         if (textGold != null)
         {
-            textGold.text = $"Gold: {PlayerStats.Instance.Gold}";
+            textGold.text = $"Gold: {PlayerProgressionManager.Instance.Gold}";
         }
     }
 }

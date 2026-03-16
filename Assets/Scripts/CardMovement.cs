@@ -1,4 +1,4 @@
-using System.Collections;
+п»їusing System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -122,7 +122,7 @@ public class CardMovement : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
 
     IEnumerator MoveToTargetCor(Transform target)
     {
-        // Проверяем, что объект ещё существует
+        // РџСЂРѕРІРµСЂСЏРµРј, С‡С‚Рѕ РѕР±СЉРµРєС‚ РµС‰С‘ СЃСѓС‰РµСЃС‚РІСѓРµС‚
         if (transform == null || !gameObject.activeInHierarchy)
             yield return null;
 
@@ -130,40 +130,40 @@ public class CardMovement : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
         Transform parent = transform.parent;
         int index = transform.GetSiblingIndex();
 
-        // Отключаем layout, если нужно
+        // РћС‚РєР»СЋС‡Р°РµРј layout, РµСЃР»Рё РЅСѓР¶РЅРѕ
         if (parent != null && parent.GetComponent<HorizontalLayoutGroup>())
         {
             var layout = parent.GetComponent<HorizontalLayoutGroup>();
             layout.enabled = false;
         }
 
-        // Перемещаем карту на Canvas для корректной анимации
+        // РџРµСЂРµРјРµС‰Р°РµРј РєР°СЂС‚Сѓ РЅР° Canvas РґР»СЏ РєРѕСЂСЂРµРєС‚РЅРѕР№ Р°РЅРёРјР°С†РёРё
         Transform canvasTransform = GameObject.Find("Canvas").transform;
         if (canvasTransform == null)
         {
-            Debug.LogError("Canvas не найден!");
+            Debug.LogError("Canvas РЅРµ РЅР°Р№РґРµРЅ!");
             yield break;
         }
 
         transform.SetParent(canvasTransform);
 
-        // Проверяем перед первой анимацией
+        // РџСЂРѕРІРµСЂСЏРµРј РїРµСЂРµРґ РїРµСЂРІРѕР№ Р°РЅРёРјР°С†РёРµР№
         if (transform == null || !gameObject.activeInHierarchy)
             yield break;
 
-        // Анимация к цели
+        // РђРЅРёРјР°С†РёСЏ Рє С†РµР»Рё
         transform.DOMove(target.position, 0.25f);
         yield return new WaitForSeconds(0.25f);
 
-        // Проверяем перед второй частью анимации
+        // РџСЂРѕРІРµСЂСЏРµРј РїРµСЂРµРґ РІС‚РѕСЂРѕР№ С‡Р°СЃС‚СЊСЋ Р°РЅРёРјР°С†РёРё
         if (transform == null || !gameObject.activeInHierarchy)
             yield break;
 
-        // Возвращаемся обратно
+        // Р’РѕР·РІСЂР°С‰Р°РµРјСЃСЏ РѕР±СЂР°С‚РЅРѕ
         transform.DOMove(pos, 0.25f);
         yield return new WaitForSeconds(0.25f);
 
-        // Восстанавливаем родителя и позицию
+        // Р’РѕСЃСЃС‚Р°РЅР°РІР»РёРІР°РµРј СЂРѕРґРёС‚РµР»СЏ Рё РїРѕР·РёС†РёСЋ
         if (parent != null)
         {
             transform.SetParent(parent);

@@ -1,17 +1,17 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using UnityEngine;
 
 // =============================================================================
-// ДАННЫЕ СОБЫТИЙ (ТОЛЬКО ЗДЕСЬ)
-// Все классы ниже объявлены в глобальном пространстве имен, чтобы быть доступными везде.
+// Р”РђРќРќР«Р• РЎРћР‘Р«РўРР™ (РўРћР›Р¬РљРћ Р—Р”Р•РЎР¬)
+// Р’СЃРµ РєР»Р°СЃСЃС‹ РЅРёР¶Рµ РѕР±СЉСЏРІР»РµРЅС‹ РІ РіР»РѕР±Р°Р»СЊРЅРѕРј РїСЂРѕСЃС‚СЂР°РЅСЃС‚РІРµ РёРјРµРЅ, С‡С‚РѕР±С‹ Р±С‹С‚СЊ РґРѕСЃС‚СѓРїРЅС‹РјРё РІРµР·РґРµ.
 // =============================================================================
 
 [Serializable]
 public class StoryEventData
 {
     public string id;
-    public string title; // Заголовок события (например, "Таинственный торговец")
+    public string title; // Р—Р°РіРѕР»РѕРІРѕРє СЃРѕР±С‹С‚РёСЏ (РЅР°РїСЂРёРјРµСЂ, "РўР°РёРЅСЃС‚РІРµРЅРЅС‹Р№ С‚РѕСЂРіРѕРІРµС†")
     public List<EventStep> steps = new List<EventStep>();
 }
 
@@ -19,35 +19,35 @@ public class StoryEventData
 public class EventStep
 {
     public StepType type;
-    public string text; // Основной текст диалога или описания
-    public string speaker; // Имя говорящего
+    public string text; // РћСЃРЅРѕРІРЅРѕР№ С‚РµРєСЃС‚ РґРёР°Р»РѕРіР° РёР»Рё РѕРїРёСЃР°РЅРёСЏ
+    public string speaker; // РРјСЏ РіРѕРІРѕСЂСЏС‰РµРіРѕ
     public string backgroundSpriteName;
 
     public string frameSpriteName;
 
     public string portraitSpriteName;
     public string buttonText;
-    // Для шага REWARD
+    // Р”Р»СЏ С€Р°РіР° REWARD
     public RewardData reward;
 
-    // Для шагов мини-игр (имя префаба в Resources/Events/Minigames/)
+    // Р”Р»СЏ С€Р°РіРѕРІ РјРёРЅРё-РёРіСЂ (РёРјСЏ РїСЂРµС„Р°Р±Р° РІ Resources/Events/Minigames/)
     public string minigamePrefabName;
 
     public bool isFinal = false;
-    // Параметры для мини-игр или логики
+    // РџР°СЂР°РјРµС‚СЂС‹ РґР»СЏ РјРёРЅРё-РёРіСЂ РёР»Рё Р»РѕРіРёРєРё
     public List<ParamPair> parameters = new List<ParamPair>();
 
-    // Варианты выбора для игрока
-    // Если список пуст -> показываем кнопку "Далее" (линейный переход)
-    // Если есть элементы -> скрываем "Далее" и показываем кнопки выбора
+    // Р’Р°СЂРёР°РЅС‚С‹ РІС‹Р±РѕСЂР° РґР»СЏ РёРіСЂРѕРєР°
+    // Р•СЃР»Рё СЃРїРёСЃРѕРє РїСѓСЃС‚ -> РїРѕРєР°Р·С‹РІР°РµРј РєРЅРѕРїРєСѓ "Р”Р°Р»РµРµ" (Р»РёРЅРµР№РЅС‹Р№ РїРµСЂРµС…РѕРґ)
+    // Р•СЃР»Рё РµСЃС‚СЊ СЌР»РµРјРµРЅС‚С‹ -> СЃРєСЂС‹РІР°РµРј "Р”Р°Р»РµРµ" Рё РїРѕРєР°Р·С‹РІР°РµРј РєРЅРѕРїРєРё РІС‹Р±РѕСЂР°
     public List<StepChoice> choices = new List<StepChoice>();
 }
 
 [Serializable]
 public class StepChoice
 {
-    public string choiceText; // Текст на кнопке (например, "Купить", "Уйти")
-    public int nextStepIndex; // Индекс следующего шага в списке steps
+    public string choiceText; // РўРµРєСЃС‚ РЅР° РєРЅРѕРїРєРµ (РЅР°РїСЂРёРјРµСЂ, "РљСѓРїРёС‚СЊ", "РЈР№С‚Рё")
+    public int nextStepIndex; // РРЅРґРµРєСЃ СЃР»РµРґСѓСЋС‰РµРіРѕ С€Р°РіР° РІ СЃРїРёСЃРєРµ steps
 }
 
 [Serializable]

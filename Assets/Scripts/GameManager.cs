@@ -1,18 +1,18 @@
-using System.Collections;
+п»їusing System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 
 // =============================================================================
-// КЛАСС ДАННЫХ ИГРЫ (Модель)
+// РљР›РђРЎРЎ Р”РђРќРќР«РҐ РР“Р Р« (РњРѕРґРµР»СЊ)
 // =============================================================================
 public class Game
 {
     public Player Player, Enemy;
     public List<Card> EnemyDeck, PlayerDeck;
 
-    // Конструктор для обычной игры (случайные колоды, стандартные HP)
+    // РљРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ РґР»СЏ РѕР±С‹С‡РЅРѕР№ РёРіСЂС‹ (СЃР»СѓС‡Р°Р№РЅС‹Рµ РєРѕР»РѕРґС‹, СЃС‚Р°РЅРґР°СЂС‚РЅС‹Рµ HP)
     public Game()
     {
         EnemyDeck = GiveRandomDeck();
@@ -21,39 +21,41 @@ public class Game
         Enemy = new Player();
     }
 
-    // НОВЫЙ Конструктор для боя с конкретным врагом (из карты сюжета)
+    // РќРћР’Р«Р™ РљРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ РґР»СЏ Р±РѕСЏ СЃ РєРѕРЅРєСЂРµС‚РЅС‹Рј РІСЂР°РіРѕРј (РёР· РєР°СЂС‚С‹ СЃСЋР¶РµС‚Р°)
     public Game(EnemyData enemyData)
     {
-        // 1. Игрок: Берем данные из глобального PlayerStats, если он есть
-        Player = new Player();
-
-        // ПРОВЕРКА: Если мы в сюжете, синхронизируем HP
-        if (PlayerStats.Instance != null)
-        {
-            Player.HP = PlayerStats.Instance.CurrentHealth; // Можно брать текущее или полное, если лечим перед боем
-            Player.MaxHP = PlayerStats.Instance.MaxHealth;  // Если добавишь поле MaxHP в класс Player
-
-            // Передача колоды: Генерируем колоду игрока на основе DeckCardNames из PlayerStats
-            PlayerDeck = GenerateDeckFromList(PlayerStats.Instance.DeckCardNames);
-            Debug.Log($"[Game] Колода игрока загружена из сохранения ({PlayerDeck.Count} карт).");
-        }
-        else
-        {
-            PlayerDeck = GiveRandomDeck();
-            Debug.Log("[Game] PlayerStats не найден, генерируем случайную колоду.");
-        }
-
-        // 2. Враг: Все как было
+        // 1. Р’Р РђР“ (Р±РµР· РёР·РјРµРЅРµРЅРёР№)
         Enemy = new Player();
         Enemy.HP = enemyData.enemyHP;
         EnemyDeck = GenerateDeckFromList(enemyData.enemyDeck);
+
+        // 2. РР“Р РћРљ (Р‘Р•Р Р•Рњ Р”РђРќРќР«Р• РР— PROGRESSION MANAGER)
+        Player = new Player();
+
+        if (PlayerProgressionManager.Instance != null)
+        {
+            // Р‘РµСЂРµРј С‚РµРєСѓС‰РµРµ РјР°РєСЃ. РҐРџ (РѕРЅРѕ СѓР¶Рµ РїРѕР»РЅРѕРµ Р±Р»Р°РіРѕРґР°СЂСЏ PrepareForBattle, РЅРѕ СЃС‚Р°РІРёРј СЏРІРЅРѕ)
+            Player.MaxHP = PlayerProgressionManager.Instance.MaxHp;
+            Player.HP = PlayerProgressionManager.Instance.CurrentHp;
+
+            // Р“РµРЅРµСЂРёСЂСѓРµРј РєРѕР»РѕРґСѓ РёР· СЃРѕС…СЂР°РЅРµРЅРЅРѕРіРѕ СЃРїРёСЃРєР° РёРјРµРЅ
+            PlayerDeck = GenerateDeckFromList(PlayerProgressionManager.Instance.DeckCardNames);
+
+            Debug.Log($"[Game] РљРѕР»РѕРґР° РёРіСЂРѕРєР° Р·Р°РіСЂСѓР¶РµРЅР° РёР· РїСЂРѕРіСЂРµСЃСЃР° ({PlayerDeck.Count} РєР°СЂС‚). HP: {Player.HP}/{Player.MaxHP}");
+        }
+        else
+        {
+            // Р¤РѕР»Р»Р±СЌРє РЅР° СЂР°РЅРґРѕРј, РµСЃР»Рё РјРµРЅРµРґР¶РµСЂ РЅРµ РЅР°Р№РґРµРЅ (РѕС€РёР±РєР°)
+            PlayerDeck = GiveRandomDeck();
+            Debug.LogError("[Game] PlayerProgressionManager РЅРµ РЅР°Р№РґРµРЅ! Р“РµРЅРµСЂРёСЂСѓРµРј СЃР»СѓС‡Р°Р№РЅСѓСЋ РєРѕР»РѕРґСѓ.");
+        }
     }
 
-    // Генерация случайной колоды (для игрока или тестового режима)
+    // Р“РµРЅРµСЂР°С†РёСЏ СЃР»СѓС‡Р°Р№РЅРѕР№ РєРѕР»РѕРґС‹ (РґР»СЏ РёРіСЂРѕРєР° РёР»Рё С‚РµСЃС‚РѕРІРѕРіРѕ СЂРµР¶РёРјР°)
     List<Card> GiveRandomDeck()
     {
         List<Card> list = new List<Card>();
-        // Генерируем 8 карт для скорости теста (можно вернуть 10)
+        // Р“РµРЅРµСЂРёСЂСѓРµРј 8 РєР°СЂС‚ РґР»СЏ СЃРєРѕСЂРѕСЃС‚Рё С‚РµСЃС‚Р° (РјРѕР¶РЅРѕ РІРµСЂРЅСѓС‚СЊ 10)
         int deckSize = 8;
 
         for (int i = 0; i < deckSize; i++)
@@ -69,20 +71,20 @@ public class Game
         return list;
     }
 
-    // НОВЫЙ МЕТОД: Создание колоды из списка имен карт
+    // РќРћР’Р«Р™ РњР•РўРћР”: РЎРѕР·РґР°РЅРёРµ РєРѕР»РѕРґС‹ РёР· СЃРїРёСЃРєР° РёРјРµРЅ РєР°СЂС‚
     List<Card> GenerateDeckFromList(List<string> cardNames)
     {
         List<Card> list = new List<Card>();
 
         if (cardNames == null || cardNames.Count == 0)
         {
-            Debug.LogWarning("[Game] У врага не задана колода (enemyDeck пуст). Генерируем случайную.");
+            Debug.LogWarning("[Game] РЈ РІСЂР°РіР° РЅРµ Р·Р°РґР°РЅР° РєРѕР»РѕРґР° (enemyDeck РїСѓСЃС‚). Р“РµРЅРµСЂРёСЂСѓРµРј СЃР»СѓС‡Р°Р№РЅСѓСЋ.");
             return GiveRandomDeck();
         }
 
         foreach (string name in cardNames)
         {
-            // Ищем карту в общей базе по имени (должно совпадать точь-в-точь с cards.json)
+            // РС‰РµРј РєР°СЂС‚Сѓ РІ РѕР±С‰РµР№ Р±Р°Р·Рµ РїРѕ РёРјРµРЅРё (РґРѕР»Р¶РЅРѕ СЃРѕРІРїР°РґР°С‚СЊ С‚РѕС‡СЊ-РІ-С‚РѕС‡СЊ СЃ cards.json)
             Card found = CardM.AllCards.Find(c => c.Name == name);
 
             if (found != null)
@@ -94,11 +96,11 @@ public class Game
             }
             else
             {
-                Debug.LogError($"[Game] Карта с именем '{name}' НЕ НАЙДЕНА в базе карт! Проверьте опечатки в JSON врага.");
+                Debug.LogError($"[Game] РљР°СЂС‚Р° СЃ РёРјРµРЅРµРј '{name}' РќР• РќРђР™Р”Р•РќРђ РІ Р±Р°Р·Рµ РєР°СЂС‚! РџСЂРѕРІРµСЂСЊС‚Рµ РѕРїРµС‡Р°С‚РєРё РІ JSON РІСЂР°РіР°.");
             }
         }
 
-        // Перемешиваем собранную колоду врага
+        // РџРµСЂРµРјРµС€РёРІР°РµРј СЃРѕР±СЂР°РЅРЅСѓСЋ РєРѕР»РѕРґСѓ РІСЂР°РіР°
         for (int i = 0; i < list.Count; i++)
         {
             Card temp = list[i];
@@ -107,13 +109,13 @@ public class Game
             list[r] = temp;
         }
 
-        Debug.Log($"[Game] Колода врага сформирована: {list.Count} карт.");
+        Debug.Log($"[Game] РљРѕР»РѕРґР° РІСЂР°РіР° СЃС„РѕСЂРјРёСЂРѕРІР°РЅР°: {list.Count} РєР°СЂС‚.");
         return list;
     }
 }
 
 // =============================================================================
-// МЕНЕДЖЕР ИГРЫ (MonoBehaviour)
+// РњР•РќР•Р”Р–Р•Р  РР“Р Р« (MonoBehaviour)
 // =============================================================================
 public class GameManager : MonoBehaviour
 {
@@ -157,7 +159,7 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
-        Debug.Log("[GameManager] Start() вызван. Начинаем игру!");
+        Debug.Log("[GameManager] Start() РІС‹Р·РІР°РЅ. РќР°С‡РёРЅР°РµРј РёРіСЂСѓ!");
         StartGame();
     }
 
@@ -196,37 +198,37 @@ public class GameManager : MonoBehaviour
     }
 
     // =========================================================================
-    // ГЛАВНОЕ ИЗМЕНЕНИЕ: Логика старта игры
+    // Р“Р›РђР’РќРћР• РР—РњР•РќР•РќРР•: Р›РѕРіРёРєР° СЃС‚Р°СЂС‚Р° РёРіСЂС‹
     // =========================================================================
     void StartGame()
     {
         Time.timeScale = 1f;
         Turn = 0;
 
-        // ПРОВЕРКА: Есть ли данные о враге из карты сюжета?
+        // РџР РћР’Р•Р РљРђ: Р•СЃС‚СЊ Р»Рё РґР°РЅРЅС‹Рµ Рѕ РІСЂР°РіРµ РёР· РєР°СЂС‚С‹ СЃСЋР¶РµС‚Р°?
         if (TempData.CurrentEnemy != null)
         {
-            Debug.Log($"[GameManager] >>> ЗАПУСК БОЯ С БОССОМ: {TempData.CurrentEnemy.enemyName}");
-            Debug.Log($"[GameManager] HP Босса: {TempData.CurrentEnemy.enemyHP}");
-            Debug.Log($"[GameManager] Размер колоды босса: {TempData.CurrentEnemy.enemyDeck?.Count ?? 0} карт");
+            Debug.Log($"[GameManager] >>> Р—РђРџРЈРЎРљ Р‘РћРЇ РЎ Р‘РћРЎРЎРћРњ: {TempData.CurrentEnemy.enemyName}");
+            Debug.Log($"[GameManager] HP Р‘РѕСЃСЃР°: {TempData.CurrentEnemy.enemyHP}");
+            Debug.Log($"[GameManager] Р Р°Р·РјРµСЂ РєРѕР»РѕРґС‹ Р±РѕСЃСЃР°: {TempData.CurrentEnemy.enemyDeck?.Count ?? 0} РєР°СЂС‚");
 
-            // Создаем игру с данными конкретного врага
+            // РЎРѕР·РґР°РµРј РёРіСЂСѓ СЃ РґР°РЅРЅС‹РјРё РєРѕРЅРєСЂРµС‚РЅРѕРіРѕ РІСЂР°РіР°
             CurrentGame = new Game(TempData.CurrentEnemy);
 
-            // Настраиваем визуал и применяем фишки
+            // РќР°СЃС‚СЂР°РёРІР°РµРј РІРёР·СѓР°Р» Рё РїСЂРёРјРµРЅСЏРµРј С„РёС€РєРё
             SetupEnemyVisuals(TempData.CurrentEnemy);
 
-            // Очищаем TempData, чтобы следующий перезапуск сцены не подхватил старого врага
-            // (Но не очищаем CurrentNode, он может понадобиться для возврата)
+            // РћС‡РёС‰Р°РµРј TempData, С‡С‚РѕР±С‹ СЃР»РµРґСѓСЋС‰РёР№ РїРµСЂРµР·Р°РїСѓСЃРє СЃС†РµРЅС‹ РЅРµ РїРѕРґС…РІР°С‚РёР» СЃС‚Р°СЂРѕРіРѕ РІСЂР°РіР°
+            // (РќРѕ РЅРµ РѕС‡РёС‰Р°РµРј CurrentNode, РѕРЅ РјРѕР¶РµС‚ РїРѕРЅР°РґРѕР±РёС‚СЊСЃСЏ РґР»СЏ РІРѕР·РІСЂР°С‚Р°)
             // TempData.CurrentEnemy = null; 
         }
         else
         {
-            Debug.Log("[GameManager] >>> ЗАПУСК СЛУЧАЙНОГО БОЯ (Режим тестирования / Нет данных врага)");
+            Debug.Log("[GameManager] >>> Р—РђРџРЈРЎРљ РЎР›РЈР§РђР™РќРћР“Рћ Р‘РћРЇ (Р РµР¶РёРј С‚РµСЃС‚РёСЂРѕРІР°РЅРёСЏ / РќРµС‚ РґР°РЅРЅС‹С… РІСЂР°РіР°)");
             CurrentGame = new Game();
         }
 
-        // Раздача карт (теперь колоды уже правильные: у врага - из JSON, у игрока - рандом)
+        // Р Р°Р·РґР°С‡Р° РєР°СЂС‚ (С‚РµРїРµСЂСЊ РєРѕР»РѕРґС‹ СѓР¶Рµ РїСЂР°РІРёР»СЊРЅС‹Рµ: Сѓ РІСЂР°РіР° - РёР· JSON, Сѓ РёРіСЂРѕРєР° - СЂР°РЅРґРѕРј)
         GiveHandCards(CurrentGame.EnemyDeck, EnemyHand);
         GiveHandCards(CurrentGame.PlayerDeck, PlayerHand);
 
@@ -234,10 +236,10 @@ public class GameManager : MonoBehaviour
         StartCoroutine(TurnFunc());
     }
 
-    // Метод настройки врага (аватар, реплики, особые условия)
+    // РњРµС‚РѕРґ РЅР°СЃС‚СЂРѕР№РєРё РІСЂР°РіР° (Р°РІР°С‚Р°СЂ, СЂРµРїР»РёРєРё, РѕСЃРѕР±С‹Рµ СѓСЃР»РѕРІРёСЏ)
     void SetupEnemyVisuals(EnemyData enemy)
     {
-        // 1. Установка аватара (если у EnemyHero есть дочерний Image)
+        // 1. РЈСЃС‚Р°РЅРѕРІРєР° Р°РІР°С‚Р°СЂР° (РµСЃР»Рё Сѓ EnemyHero РµСЃС‚СЊ РґРѕС‡РµСЂРЅРёР№ Image)
         Image avatarImage = EnemyHero.GetComponentInChildren<Image>();
         if (avatarImage != null && !string.IsNullOrEmpty(enemy.avatarPath))
         {
@@ -246,45 +248,45 @@ public class GameManager : MonoBehaviour
             {
                 avatarImage.sprite = avatarSprite;
                 avatarImage.preserveAspect = true;
-                Debug.Log($"[Setup] Аватар врага установлен: {enemy.avatarPath}");
+                Debug.Log($"[Setup] РђРІР°С‚Р°СЂ РІСЂР°РіР° СѓСЃС‚Р°РЅРѕРІР»РµРЅ: {enemy.avatarPath}");
             }
             else
             {
-                Debug.LogWarning($"[Setup] Спрайт аватара не найден по пути: {enemy.avatarPath}. Проверьте папку Resources.");
+                Debug.LogWarning($"[Setup] РЎРїСЂР°Р№С‚ Р°РІР°С‚Р°СЂР° РЅРµ РЅР°Р№РґРµРЅ РїРѕ РїСѓС‚Рё: {enemy.avatarPath}. РџСЂРѕРІРµСЂСЊС‚Рµ РїР°РїРєСѓ Resources.");
             }
         }
 
-        // 2. Вывод реплики врага при начале боя
+        // 2. Р’С‹РІРѕРґ СЂРµРїР»РёРєРё РІСЂР°РіР° РїСЂРё РЅР°С‡Р°Р»Рµ Р±РѕСЏ
         if (enemy.quotes != null && enemy.quotes.Count > 0)
         {
             string quote = enemy.quotes[Random.Range(0, enemy.quotes.Count)];
             Debug.Log($"[BOSS SAY]: '{quote}'");
-            // Здесь можно добавить код для отображения текста в UI пузыре, если создадите его
+            // Р—РґРµСЃСЊ РјРѕР¶РЅРѕ РґРѕР±Р°РІРёС‚СЊ РєРѕРґ РґР»СЏ РѕС‚РѕР±СЂР°Р¶РµРЅРёСЏ С‚РµРєСЃС‚Р° РІ UI РїСѓР·С‹СЂРµ, РµСЃР»Рё СЃРѕР·РґР°РґРёС‚Рµ РµРіРѕ
         }
 
-        // 3. Применение особых условий (Фишек) из JSON
+        // 3. РџСЂРёРјРµРЅРµРЅРёРµ РѕСЃРѕР±С‹С… СѓСЃР»РѕРІРёР№ (Р¤РёС€РµРє) РёР· JSON
         if (enemy.condition == EnemyConditionType.START_WITH_LESS_HP)
         {
-            CurrentGame.Player.HP = 15; // Игрок начинает с малым здоровьем
-            Debug.Log("[ФИШКА] Игрок начинает бой с 15 HP!");
+            CurrentGame.Player.HP = 15; // РРіСЂРѕРє РЅР°С‡РёРЅР°РµС‚ СЃ РјР°Р»С‹Рј Р·РґРѕСЂРѕРІСЊРµРј
+            Debug.Log("[Р¤РРЁРљРђ] РРіСЂРѕРє РЅР°С‡РёРЅР°РµС‚ Р±РѕР№ СЃ 15 HP!");
         }
         else if (enemy.condition == EnemyConditionType.REDUCED_MANA)
         {
-            CurrentGame.Player.Manapool = 5; // Макс маны снижен
+            CurrentGame.Player.Manapool = 5; // РњР°РєСЃ РјР°РЅС‹ СЃРЅРёР¶РµРЅ
             CurrentGame.Player.Mana = 5;
-            Debug.Log("[ФИШКА] Максимум маны игрока снижен до 5!");
+            Debug.Log("[Р¤РРЁРљРђ] РњР°РєСЃРёРјСѓРј РјР°РЅС‹ РёРіСЂРѕРєР° СЃРЅРёР¶РµРЅ РґРѕ 5!");
         }
         else if (enemy.condition == EnemyConditionType.MAX_HAND_SIZE_4)
         {
-            Debug.Log("[ФИШКА] Ограничение руки игрока до 4 карт (требуется доработка логики раздачи)!");
-            // Пока просто лог, так как логика руки жестко зашита в циклах
+            Debug.Log("[Р¤РРЁРљРђ] РћРіСЂР°РЅРёС‡РµРЅРёРµ СЂСѓРєРё РёРіСЂРѕРєР° РґРѕ 4 РєР°СЂС‚ (С‚СЂРµР±СѓРµС‚СЃСЏ РґРѕСЂР°Р±РѕС‚РєР° Р»РѕРіРёРєРё СЂР°Р·РґР°С‡Рё)!");
+            // РџРѕРєР° РїСЂРѕСЃС‚Рѕ Р»РѕРі, С‚Р°Рє РєР°Рє Р»РѕРіРёРєР° СЂСѓРєРё Р¶РµСЃС‚РєРѕ Р·Р°С€РёС‚Р° РІ С†РёРєР»Р°С…
         }
 
         UIController.Instance.UpdateHPAndMana();
     }
 
     // =========================================================================
-    // Стандартная логика хода и механик
+    // РЎС‚Р°РЅРґР°СЂС‚РЅР°СЏ Р»РѕРіРёРєР° С…РѕРґР° Рё РјРµС…Р°РЅРёРє
     // =========================================================================
 
     void GiveHandCards(List<Card> deck, Transform hand)
@@ -434,23 +436,23 @@ public class GameManager : MonoBehaviour
         if (isPlayerDead || isEnemyDead)
         {
             StopAllCoroutines();
-            // 1. Считаем карты в руке
+            // 1. РЎС‡РёС‚Р°РµРј РєР°СЂС‚С‹ РІ СЂСѓРєРµ
             int handCount = PlayerHandCards != null ? PlayerHandCards.Count : 0;
 
-            // 2. Определяем, была ли победа (враг мертв)
+            // 2. РћРїСЂРµРґРµР»СЏРµРј, Р±С‹Р»Р° Р»Рё РїРѕР±РµРґР° (РІСЂР°Рі РјРµСЂС‚РІ)
             bool isVictory = isEnemyDead;
 
-            // 3. Получаем имя врага (если есть данные, иначе "Unknown")
+            // 3. РџРѕР»СѓС‡Р°РµРј РёРјСЏ РІСЂР°РіР° (РµСЃР»Рё РµСЃС‚СЊ РґР°РЅРЅС‹Рµ, РёРЅР°С‡Рµ "Unknown")
             string enemyName = "Unknown";
             if (TempData.CurrentEnemy != null && !string.IsNullOrEmpty(TempData.CurrentEnemy.enemyName))
             {
                 enemyName = TempData.CurrentEnemy.enemyName;
             }
 
-            // 4. Вызываем метод со ВСЕМИ аргументами
+            // 4. Р’С‹Р·С‹РІР°РµРј РјРµС‚РѕРґ СЃРѕ Р’РЎР•РњР Р°СЂРіСѓРјРµРЅС‚Р°РјРё
             BattleStats.FinishBattle(
                 CurrentGame.Player.HP,
-                CurrentGame.Player.MaxHP, // Убедись, что это поле есть в классе Player!
+                CurrentGame.Player.MaxHP, // РЈР±РµРґРёСЃСЊ, С‡С‚Рѕ СЌС‚Рѕ РїРѕР»Рµ РµСЃС‚СЊ РІ РєР»Р°СЃСЃРµ Player!
                 handCount,
                 isVictory,
                 enemyName

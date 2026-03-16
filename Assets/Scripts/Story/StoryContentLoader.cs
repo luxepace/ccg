@@ -1,14 +1,14 @@
-using UnityEngine;
+п»їusing UnityEngine;
 using System.IO;
 using System.Collections.Generic;
 
 public static class StoryContentLoader
 {
-    // Основные данные
+    // РћСЃРЅРѕРІРЅС‹Рµ РґР°РЅРЅС‹Рµ
     public static List<EnemyData> AllEnemies { get; private set; }
     public static List<StoryEventData> AllEvents { get; private set; }
 
-    // НОВЫЙ СПИСОК: События привалов
+    // РќРћР’Р«Р™ РЎРџРРЎРћРљ: РЎРѕР±С‹С‚РёСЏ РїСЂРёРІР°Р»РѕРІ
     public static List<StoryEventData> AllRestEvents { get; private set; }
 
     public static List<ChapterConfig> AllChapters { get; private set; }
@@ -22,33 +22,33 @@ public static class StoryContentLoader
     {
         if (IsLoaded)
         {
-            Debug.Log("Контент уже загружен");
+            Debug.Log("РљРѕРЅС‚РµРЅС‚ СѓР¶Рµ Р·Р°РіСЂСѓР¶РµРЅ");
             return;
         }
 
-        Debug.Log("Загрузка контента сюжета...");
+        Debug.Log("Р—Р°РіСЂСѓР·РєР° РєРѕРЅС‚РµРЅС‚Р° СЃСЋР¶РµС‚Р°...");
 
-        // 1. Загрузка врагов
+        // 1. Р—Р°РіСЂСѓР·РєР° РІСЂР°РіРѕРІ
         var enemiesWrapper = LoadJSONFile<EnemyDataWrapper>("enemies.json");
         AllEnemies = enemiesWrapper?.enemies ?? new List<EnemyData>();
-        Debug.Log($"Загружено врагов: {AllEnemies.Count}");
+        Debug.Log($"Р—Р°РіСЂСѓР¶РµРЅРѕ РІСЂР°РіРѕРІ: {AllEnemies.Count}");
 
-        // 2. Загрузка основных событий (квесты, торговцы)
+        // 2. Р—Р°РіСЂСѓР·РєР° РѕСЃРЅРѕРІРЅС‹С… СЃРѕР±С‹С‚РёР№ (РєРІРµСЃС‚С‹, С‚РѕСЂРіРѕРІС†С‹)
         var eventsWrapper = LoadJSONFile<StoryEventDataWrapper>("events.json");
         AllEvents = eventsWrapper?.events ?? new List<StoryEventData>();
-        Debug.Log($"Загружено событий: {AllEvents.Count}");
+        Debug.Log($"Р—Р°РіСЂСѓР¶РµРЅРѕ СЃРѕР±С‹С‚РёР№: {AllEvents.Count}");
 
-        // 3. НОВОЕ: Загрузка событий привалов
+        // 3. РќРћР’РћР•: Р—Р°РіСЂСѓР·РєР° СЃРѕР±С‹С‚РёР№ РїСЂРёРІР°Р»РѕРІ
         var restEventsWrapper = LoadJSONFile<RestEventDataWrapper>("rest_events.json");
         AllRestEvents = restEventsWrapper?.events ?? new List<StoryEventData>();
-        Debug.Log($"Загружено событий привалов: {AllRestEvents.Count}");
+        Debug.Log($"Р—Р°РіСЂСѓР¶РµРЅРѕ СЃРѕР±С‹С‚РёР№ РїСЂРёРІР°Р»РѕРІ: {AllRestEvents.Count}");
 
-        // 4. Загрузка глав
+        // 4. Р—Р°РіСЂСѓР·РєР° РіР»Р°РІ
         var chaptersWrapper = LoadJSONFile<ChapterConfigWrapper>("chapters.json");
         AllChapters = chaptersWrapper?.chapters ?? new List<ChapterConfig>();
-        Debug.Log($"Загружено глав: {AllChapters.Count}");
+        Debug.Log($"Р—Р°РіСЂСѓР¶РµРЅРѕ РіР»Р°РІ: {AllChapters.Count}");
 
-        // 5. Загрузка пулов
+        // 5. Р—Р°РіСЂСѓР·РєР° РїСѓР»РѕРІ
         var enemyPoolsWrapper = LoadJSONFile<EnemyPoolWrapper>("enemyPools.json");
         AllEnemyPools = enemyPoolsWrapper?.pools ?? new List<EnemyPool>();
 
@@ -59,10 +59,10 @@ public static class StoryContentLoader
         AllThemes = themesWrapper?.themes ?? new List<MapTheme>();
 
         IsLoaded = true;
-        Debug.Log("Загрузка контента завершена!");
+        Debug.Log("Р—Р°РіСЂСѓР·РєР° РєРѕРЅС‚РµРЅС‚Р° Р·Р°РІРµСЂС€РµРЅР°!");
     }
 
-    // --- Методы поиска ---
+    // --- РњРµС‚РѕРґС‹ РїРѕРёСЃРєР° ---
 
     public static EnemyData GetEnemyById(string enemyId)
     {
@@ -76,22 +76,22 @@ public static class StoryContentLoader
         return AllEvents?.Find(e => e.id == eventId);
     }
 
-    // НОВЫЙ МЕТОД: Поиск события привала по ID
-    // В файле StoryContentLoader.cs
+    // РќРћР’Р«Р™ РњР•РўРћР”: РџРѕРёСЃРє СЃРѕР±С‹С‚РёСЏ РїСЂРёРІР°Р»Р° РїРѕ ID
+    // Р’ С„Р°Р№Р»Рµ StoryContentLoader.cs
     public static StoryEventData GetAnyEventById(string eventId)
     {
         if (!IsLoaded) LoadAllContent();
 
-        // 1. Ищем в основных событиях
+        // 1. РС‰РµРј РІ РѕСЃРЅРѕРІРЅС‹С… СЃРѕР±С‹С‚РёСЏС…
         StoryEventData eventData = AllEvents?.Find(e => e.id == eventId);
         if (eventData != null) return eventData;
 
-        // 2. Если не нашли, ищем в привалах
+        // 2. Р•СЃР»Рё РЅРµ РЅР°С€Р»Рё, РёС‰РµРј РІ РїСЂРёРІР°Р»Р°С…
         eventData = AllRestEvents?.Find(e => e.id == eventId);
         if (eventData != null) return eventData;
 
-        // 3. Если совсем не нашли
-        Debug.LogError($"[StoryContentLoader] Событие '{eventId}' не найдено ни в основных событиях, ни в привалах!");
+        // 3. Р•СЃР»Рё СЃРѕРІСЃРµРј РЅРµ РЅР°С€Р»Рё
+        Debug.LogError($"[StoryContentLoader] РЎРѕР±С‹С‚РёРµ '{eventId}' РЅРµ РЅР°Р№РґРµРЅРѕ РЅРё РІ РѕСЃРЅРѕРІРЅС‹С… СЃРѕР±С‹С‚РёСЏС…, РЅРё РІ РїСЂРёРІР°Р»Р°С…!");
         return null;
     }
 
@@ -101,7 +101,7 @@ public static class StoryContentLoader
 
         if (AllRestEvents == null || AllRestEvents.Count == 0)
         {
-            Debug.LogError("[StoryContentLoader] Список AllRestEvents пуст! Проверь загрузку rest_events.json.");
+            Debug.LogError("[StoryContentLoader] РЎРїРёСЃРѕРє AllRestEvents РїСѓСЃС‚! РџСЂРѕРІРµСЂСЊ Р·Р°РіСЂСѓР·РєСѓ rest_events.json.");
             return null;
         }
 
@@ -109,11 +109,11 @@ public static class StoryContentLoader
 
         if (eventData == null)
         {
-            Debug.LogError($"[StoryContentLoader] Событие привала '{restEventId}' не найдено в списке из {AllRestEvents.Count} элементов.");
-            // Для отладки выведем все доступные ID
+            Debug.LogError($"[StoryContentLoader] РЎРѕР±С‹С‚РёРµ РїСЂРёРІР°Р»Р° '{restEventId}' РЅРµ РЅР°Р№РґРµРЅРѕ РІ СЃРїРёСЃРєРµ РёР· {AllRestEvents.Count} СЌР»РµРјРµРЅС‚РѕРІ.");
+            // Р”Р»СЏ РѕС‚Р»Р°РґРєРё РІС‹РІРµРґРµРј РІСЃРµ РґРѕСЃС‚СѓРїРЅС‹Рµ ID
             foreach (var ev in AllRestEvents)
             {
-                Debug.Log($"Доступный ID привала: {ev.id}");
+                Debug.Log($"Р”РѕСЃС‚СѓРїРЅС‹Р№ ID РїСЂРёРІР°Р»Р°: {ev.id}");
             }
             return null;
         }
@@ -148,7 +148,7 @@ public static class StoryContentLoader
         return GetEventById(eventId);
     }
 
-    // НОВЫЙ МЕТОД: Получить случайный привал (если нужно, хотя лучше использовать GetRestEventById после выбора веса)
+    // РќРћР’Р«Р™ РњР•РўРћР”: РџРѕР»СѓС‡РёС‚СЊ СЃР»СѓС‡Р°Р№РЅС‹Р№ РїСЂРёРІР°Р» (РµСЃР»Рё РЅСѓР¶РЅРѕ, С…РѕС‚СЏ Р»СѓС‡С€Рµ РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ GetRestEventById РїРѕСЃР»Рµ РІС‹Р±РѕСЂР° РІРµСЃР°)
     public static StoryEventData GetRandomRestEvent()
     {
         if (!IsLoaded) LoadAllContent();
@@ -162,7 +162,7 @@ public static class StoryContentLoader
         return AllThemes?.Find(t => t.themeId == themeId);
     }
 
-    // --- Вспомогательные методы загрузки ---
+    // --- Р’СЃРїРѕРјРѕРіР°С‚РµР»СЊРЅС‹Рµ РјРµС‚РѕРґС‹ Р·Р°РіСЂСѓР·РєРё ---
 
     static T LoadJSONFile<T>(string fileName) where T : class
     {
@@ -170,7 +170,7 @@ public static class StoryContentLoader
 
         if (!File.Exists(path))
         {
-            Debug.LogError($"Файл не найден: {path}");
+            Debug.LogError($"Р¤Р°Р№Р» РЅРµ РЅР°Р№РґРµРЅ: {path}");
             return null;
         }
 
@@ -179,7 +179,7 @@ public static class StoryContentLoader
 
         if (data == null)
         {
-            Debug.LogError($"Не удалось парсить {fileName}");
+            Debug.LogError($"РќРµ СѓРґР°Р»РѕСЃСЊ РїР°СЂСЃРёС‚СЊ {fileName}");
         }
 
         return data;
@@ -189,7 +189,7 @@ public static class StoryContentLoader
     {
         AllEnemies = null;
         AllEvents = null;
-        AllRestEvents = null; // Очистка привалов
+        AllRestEvents = null; // РћС‡РёСЃС‚РєР° РїСЂРёРІР°Р»РѕРІ
         AllChapters = null;
         AllEnemyPools = null;
         AllEventPools = null;
@@ -198,7 +198,7 @@ public static class StoryContentLoader
     }
 }
 
-// --- Классы-обертки для JSON ---
+// --- РљР»Р°СЃСЃС‹-РѕР±РµСЂС‚РєРё РґР»СЏ JSON ---
 
 [System.Serializable]
 public class EnemyDataWrapper
@@ -212,7 +212,7 @@ public class StoryEventDataWrapper
     public List<StoryEventData> events;
 }
 
-// НОВАЯ ОБЕРТКА: Для файла rest_events.json
+// РќРћР’РђРЇ РћР‘Р•Р РўРљРђ: Р”Р»СЏ С„Р°Р№Р»Р° rest_events.json
 [System.Serializable]
 public class RestEventDataWrapper
 {

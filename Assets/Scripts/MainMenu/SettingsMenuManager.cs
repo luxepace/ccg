@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+п»їusing System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -25,7 +25,7 @@ public class SettingsMenuManager : MonoBehaviour
     {
         if (resolutionDropdown == null)
         {
-            Debug.LogError("resolutionDropdown не назначен!");
+            Debug.LogError("resolutionDropdown РЅРµ РЅР°Р·РЅР°С‡РµРЅ!");
             return;
         }
 

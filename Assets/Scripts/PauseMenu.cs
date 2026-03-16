@@ -1,22 +1,22 @@
-using UnityEngine;
+п»їusing UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class PauseMenu : MonoBehaviour
 {
-    public GameObject pauseMenuUI; // Сюда перетащи панель меню из UI_HUD_Canvas
+    public GameObject pauseMenuUI; // РЎСЋРґР° РїРµСЂРµС‚Р°С‰Рё РїР°РЅРµР»СЊ РјРµРЅСЋ РёР· UI_HUD_Canvas
     private bool isPaused = false;
 
     void Update()
     {
-        // ЭТА ПРОВЕРКА РАБОТАЕТ ТОЛЬКО ЗДЕСЬ (в Update)
+        // Р­РўРђ РџР РћР’Р•Р РљРђ Р РђР‘РћРўРђР•Рў РўРћР›Р¬РљРћ Р—Р”Р•РЎР¬ (РІ Update)
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             TogglePause();
         }
     }
 
-    // Этот метод теперь вызывает и Update (при Esc), и Кнопка (при клике)
+    // Р­С‚РѕС‚ РјРµС‚РѕРґ С‚РµРїРµСЂСЊ РІС‹Р·С‹РІР°РµС‚ Рё Update (РїСЂРё Esc), Рё РљРЅРѕРїРєР° (РїСЂРё РєР»РёРєРµ)
     public void TogglePause()
     {
         if (isPaused)
@@ -29,20 +29,20 @@ public class PauseMenu : MonoBehaviour
         }
     }
 
-    // Метод ТОЛЬКО для кнопки "Пауза" в интерфейсе
-    // В инспекторе кнопки на событие OnClick() повесь именно этот метод!
+    // РњРµС‚РѕРґ РўРћР›Р¬РљРћ РґР»СЏ РєРЅРѕРїРєРё "РџР°СѓР·Р°" РІ РёРЅС‚РµСЂС„РµР№СЃРµ
+    // Р’ РёРЅСЃРїРµРєС‚РѕСЂРµ РєРЅРѕРїРєРё РЅР° СЃРѕР±С‹С‚РёРµ OnClick() РїРѕРІРµСЃСЊ РёРјРµРЅРЅРѕ СЌС‚РѕС‚ РјРµС‚РѕРґ!
     public void OnPauseButtonClicked()
     {
-        // Если игра уже на паузе (например, нажали Esc), то кнопка должна закрывать меню
-        // Но обычно кнопка "Пауза" нужна только чтобы открыть её.
-        // Логичнее сделать так:
+        // Р•СЃР»Рё РёРіСЂР° СѓР¶Рµ РЅР° РїР°СѓР·Рµ (РЅР°РїСЂРёРјРµСЂ, РЅР°Р¶Р°Р»Рё Esc), С‚Рѕ РєРЅРѕРїРєР° РґРѕР»Р¶РЅР° Р·Р°РєСЂС‹РІР°С‚СЊ РјРµРЅСЋ
+        // РќРѕ РѕР±С‹С‡РЅРѕ РєРЅРѕРїРєР° "РџР°СѓР·Р°" РЅСѓР¶РЅР° С‚РѕР»СЊРєРѕ С‡С‚РѕР±С‹ РѕС‚РєСЂС‹С‚СЊ РµС‘.
+        // Р›РѕРіРёС‡РЅРµРµ СЃРґРµР»Р°С‚СЊ С‚Р°Рє:
         if (!isPaused)
         {
             PauseGame();
         }
         else
         {
-            // Если вдруг нажали кнопку, когда меню открыто - закрываем
+            // Р•СЃР»Рё РІРґСЂСѓРі РЅР°Р¶Р°Р»Рё РєРЅРѕРїРєСѓ, РєРѕРіРґР° РјРµРЅСЋ РѕС‚РєСЂС‹С‚Рѕ - Р·Р°РєСЂС‹РІР°РµРј
             ResumeGame();
         }
     }
@@ -51,14 +51,14 @@ public class PauseMenu : MonoBehaviour
     {
         if (pauseMenuUI == null)
         {
-            Debug.LogError("PauseMenuUI не назначен в инспекторе!");
+            Debug.LogError("PauseMenuUI РЅРµ РЅР°Р·РЅР°С‡РµРЅ РІ РёРЅСЃРїРµРєС‚РѕСЂРµ!");
             return;
         }
 
         pauseMenuUI.SetActive(true);
         Time.timeScale = 0f;
         isPaused = true;
-        Debug.Log("[PAUSE] Игра приостановлена.");
+        Debug.Log("[PAUSE] РРіСЂР° РїСЂРёРѕСЃС‚Р°РЅРѕРІР»РµРЅР°.");
     }
 
     void ResumeGame()
@@ -68,13 +68,13 @@ public class PauseMenu : MonoBehaviour
         pauseMenuUI.SetActive(false);
         Time.timeScale = 1f;
         isPaused = false;
-        Debug.Log("[PAUSE] Игра возобновлена.");
+        Debug.Log("[PAUSE] РРіСЂР° РІРѕР·РѕР±РЅРѕРІР»РµРЅР°.");
     }
 
     public void ToMainMenu()
     {
         Time.timeScale = 1f;
-        // Сохранение прогресса перед выходом (опционально)
+        // РЎРѕС…СЂР°РЅРµРЅРёРµ РїСЂРѕРіСЂРµСЃСЃР° РїРµСЂРµРґ РІС‹С…РѕРґРѕРј (РѕРїС†РёРѕРЅР°Р»СЊРЅРѕ)
         // StoryMapManager.Instance.SaveMap(); 
 
         SceneManager.LoadScene("MainMenu");
@@ -83,7 +83,7 @@ public class PauseMenu : MonoBehaviour
     public void ExitGame()
     {
         Time.timeScale = 1f;
-        Debug.Log("Выход из игры");
+        Debug.Log("Р’С‹С…РѕРґ РёР· РёРіСЂС‹");
         Application.Quit();
     }
 }

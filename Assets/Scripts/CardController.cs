@@ -1,4 +1,4 @@
-using DG.Tweening;
+п»їusing DG.Tweening;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -183,16 +183,16 @@ public class CardController : MonoBehaviour
     {
         Movement.OnEndDrag(null);
 
-        // Остановить все анимации DOTween на этом объекте
+        // РћСЃС‚Р°РЅРѕРІРёС‚СЊ РІСЃРµ Р°РЅРёРјР°С†РёРё DOTween РЅР° СЌС‚РѕРј РѕР±СЉРµРєС‚Рµ
         transform.DOKill();
 
-        // Удаляем из списков
+        // РЈРґР°Р»СЏРµРј РёР· СЃРїРёСЃРєРѕРІ
         RemoveCardFromList(gameManager.EnemyFieldCards);
         RemoveCardFromList(gameManager.EnemyHandCards);
         RemoveCardFromList(gameManager.PlayerFieldCards);
         RemoveCardFromList(gameManager.PlayerHandCards);
 
-        // Уничтожаем объект
+        // РЈРЅРёС‡С‚РѕР¶Р°РµРј РѕР±СЉРµРєС‚
         Destroy(gameObject);
     }
 

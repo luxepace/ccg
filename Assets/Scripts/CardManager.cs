@@ -1,4 +1,4 @@
-using System.Collections;
+п»їusing System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
@@ -185,10 +185,10 @@ public class CardManager : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("Файл JSON с картами не найден");
+            Debug.LogWarning("Р¤Р°Р№Р» JSON СЃ РєР°СЂС‚Р°РјРё РЅРµ РЅР°Р№РґРµРЅ");
         }
 
-        // Передаём всё в менеджер карт
+        // РџРµСЂРµРґР°С‘Рј РІСЃС‘ РІ РјРµРЅРµРґР¶РµСЂ РєР°СЂС‚
         CardM.AllCards = new List<Card>(cardDatabase.fieldCards);
         CardM.AllCards.AddRange(cardDatabase.spells);
     }
@@ -199,12 +199,12 @@ public class CardManager : MonoBehaviour
 //{
 //    public void Awake()
 //    {
-//        CardManager.AllCards.Add(new Card("Охотник с копьём", "Sprites/Cards/osk", 3, 2, 2));
-//        CardManager.AllCards.Add(new Card("Волк-одиночка", "Sprites/Cards/volk", 2, 2, 3));
-//        CardManager.AllCards.Add(new Card("Вожак волков", "Sprites/Cards/vojak", 3, 3, 3));
-//        CardManager.AllCards.Add(new Card("Паксява", "Sprites/Cards/paksyava", 3, 4, 3));
-//        CardManager.AllCards.Add(new Card("Шайтан", "Sprites/Cards/shaitan", 4, 3, 3));
-//        CardManager.AllCards.Add(new Card("Шкай", "Sprites/Cards/shkay", 7, 6, 3));
+//        CardManager.AllCards.Add(new Card("РћС…РѕС‚РЅРёРє СЃ РєРѕРїСЊС‘Рј", "Sprites/Cards/osk", 3, 2, 2));
+//        CardManager.AllCards.Add(new Card("Р’РѕР»Рє-РѕРґРёРЅРѕС‡РєР°", "Sprites/Cards/volk", 2, 2, 3));
+//        CardManager.AllCards.Add(new Card("Р’РѕР¶Р°Рє РІРѕР»РєРѕРІ", "Sprites/Cards/vojak", 3, 3, 3));
+//        CardManager.AllCards.Add(new Card("РџР°РєСЃСЏРІР°", "Sprites/Cards/paksyava", 3, 4, 3));
+//        CardManager.AllCards.Add(new Card("РЁР°Р№С‚Р°РЅ", "Sprites/Cards/shaitan", 4, 3, 3));
+//        CardManager.AllCards.Add(new Card("РЁРєР°Р№", "Sprites/Cards/shkay", 7, 6, 3));
 
 //CardManager.AllCards.Add(new Card("provocation", "Sprites/Cards/provocation", 1, 2, 3, Card.AbilityType.PROVOCATION));
 //CardManager.AllCards.Add(new Card("regeneration", "Sprites/Cards/regen", 4, 2, 5, Card.AbilityType.REGENERATION_EACH_TURN));

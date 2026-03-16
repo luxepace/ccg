@@ -1,17 +1,17 @@
-using UnityEngine;
+п»їusing UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 
 public class StoryMapVisual : MonoBehaviour
 {
-    [Header("Префаб узла")]
+    [Header("РџСЂРµС„Р°Р± СѓР·Р»Р°")]
     public GameObject nodeBasePrefab;
 
-    [Header("Контейнеры")]
+    [Header("РљРѕРЅС‚РµР№РЅРµСЂС‹")]
     public Transform nodesContainer;
     public Transform linesContainer;
 
-    [Header("Линия")]
+    [Header("Р›РёРЅРёСЏ")]
     public LineRenderer linePrefab;
 
     private Dictionary<int, GameObject> nodeVisuals = new Dictionary<int, GameObject>();
@@ -25,22 +25,22 @@ public class StoryMapVisual : MonoBehaviour
         terrain = FindObjectOfType<Terrain>();
     }
 
-    // Изменён: не отображает визуалы до инициализации
+    // РР·РјРµРЅС‘РЅ: РЅРµ РѕС‚РѕР±СЂР°Р¶Р°РµС‚ РІРёР·СѓР°Р»С‹ РґРѕ РёРЅРёС†РёР°Р»РёР·Р°С†РёРё
     public void DisplayChapter(StoryChapter chapter)
     {
         if (chapter == null)
         {
-            Debug.LogError("[StoryMapVisual] Попытка отрисовать null главу!");
+            Debug.LogError("[StoryMapVisual] РџРѕРїС‹С‚РєР° РѕС‚СЂРёСЃРѕРІР°С‚СЊ null РіР»Р°РІСѓ!");
             return;
         }
 
         if (chapter.nodes == null || chapter.nodes.Count == 0)
         {
-            Debug.LogError("[StoryMapVisual] В главе нет узлов для отрисовки!");
+            Debug.LogError("[StoryMapVisual] Р’ РіР»Р°РІРµ РЅРµС‚ СѓР·Р»РѕРІ РґР»СЏ РѕС‚СЂРёСЃРѕРІРєРё!");
             return;
         }
 
-        Debug.Log($"[StoryMapVisual] Начало отрисовки {chapter.nodes.Count} узлов...");
+        Debug.Log($"[StoryMapVisual] РќР°С‡Р°Р»Рѕ РѕС‚СЂРёСЃРѕРІРєРё {chapter.nodes.Count} СѓР·Р»РѕРІ...");
 
         ClearVisuals();
 
@@ -52,24 +52,24 @@ public class StoryMapVisual : MonoBehaviour
             createdCount++;
         }
 
-        Debug.Log($"[StoryMapVisual] Создано визуальных объектов узлов: {createdCount}");
+        Debug.Log($"[StoryMapVisual] РЎРѕР·РґР°РЅРѕ РІРёР·СѓР°Р»СЊРЅС‹С… РѕР±СЉРµРєС‚РѕРІ СѓР·Р»РѕРІ: {createdCount}");
 
         DrawConnections(chapter);
     }
 
-    // Новый метод: инициализирует и отображает визуалы
+    // РќРѕРІС‹Р№ РјРµС‚РѕРґ: РёРЅРёС†РёР°Р»РёР·РёСЂСѓРµС‚ Рё РѕС‚РѕР±СЂР°Р¶Р°РµС‚ РІРёР·СѓР°Р»С‹
     public void InitializeAndDisplay(StoryChapter chapter)
     {
         ClearVisuals();
 
         foreach (var node in chapter.nodes)
         {
-            CreateNodeVisual(node); // создаёт визуал, но не обновляет статус
+            CreateNodeVisual(node); // СЃРѕР·РґР°С‘С‚ РІРёР·СѓР°Р», РЅРѕ РЅРµ РѕР±РЅРѕРІР»СЏРµС‚ СЃС‚Р°С‚СѓСЃ
         }
 
         DrawConnections(chapter);
 
-        // Обновляем ВСЕ визуалы ОДИН РАЗ после полной инициализации
+        // РћР±РЅРѕРІР»СЏРµРј Р’РЎР• РІРёР·СѓР°Р»С‹ РћР”РРќ Р РђР— РїРѕСЃР»Рµ РїРѕР»РЅРѕР№ РёРЅРёС†РёР°Р»РёР·Р°С†РёРё
         RefreshAllNodeVisuals();
     }
 
@@ -77,12 +77,12 @@ public class StoryMapVisual : MonoBehaviour
     {
         if (nodeBasePrefab == null)
         {
-            Debug.LogError($"[CRITICAL] Node Base Prefab не назначен в инспекторе StoryMapVisual! Невозможно создать узел {node.nodeId}");
+            Debug.LogError($"[CRITICAL] Node Base Prefab РЅРµ РЅР°Р·РЅР°С‡РµРЅ РІ РёРЅСЃРїРµРєС‚РѕСЂРµ StoryMapVisual! РќРµРІРѕР·РјРѕР¶РЅРѕ СЃРѕР·РґР°С‚СЊ СѓР·РµР» {node.nodeId}");
             return;
         }
         if (nodesContainer == null)
         {
-            Debug.LogError($"[CRITICAL] Nodes Container не назначен в инспекторе StoryMapVisual!");
+            Debug.LogError($"[CRITICAL] Nodes Container РЅРµ РЅР°Р·РЅР°С‡РµРЅ РІ РёРЅСЃРїРµРєС‚РѕСЂРµ StoryMapVisual!");
             return;
         }
 
@@ -102,11 +102,11 @@ public class StoryMapVisual : MonoBehaviour
         if (controller != null)
         {
             controller.Init(node, this);
-            // УБРАЛИ: controller.UpdateVisualState();
+            // РЈР‘Р РђР›Р: controller.UpdateVisualState();
         }
 
         nodeVisuals[node.nodeId] = nodeVisual;
-        // УБРАЛИ: UpdateNodeVisualState(node);
+        // РЈР‘Р РђР›Р: UpdateNodeVisualState(node);
     }
 
     void DrawConnections(StoryChapter chapter)
@@ -230,47 +230,47 @@ public class StoryMapVisual : MonoBehaviour
 
     public void OnNodeClicked(StoryNode node)
     {
-        Debug.Log($"[UI] Клик получен контроллером узла {node.nodeId}");
+        Debug.Log($"[UI] РљР»РёРє РїРѕР»СѓС‡РµРЅ РєРѕРЅС‚СЂРѕР»Р»РµСЂРѕРј СѓР·Р»Р° {node.nodeId}");
 
-        // 1. ПРОВЕРКА: Заблокирован ли узел?
+        // 1. РџР РћР’Р•Р РљРђ: Р—Р°Р±Р»РѕРєРёСЂРѕРІР°РЅ Р»Рё СѓР·РµР»?
         if (!node.isUnlocked)
         {
-            Debug.LogWarning($"[BLOCK] Узел {node.nodeId} заблокирован!");
+            Debug.LogWarning($"[BLOCK] РЈР·РµР» {node.nodeId} Р·Р°Р±Р»РѕРєРёСЂРѕРІР°РЅ!");
             return;
         }
 
-        // 2. ПРОВЕРКА: Это стартовый узел? (Он никогда не должен быть активным для клика)
+        // 2. РџР РћР’Р•Р РљРђ: Р­С‚Рѕ СЃС‚Р°СЂС‚РѕРІС‹Р№ СѓР·РµР»? (РћРЅ РЅРёРєРѕРіРґР° РЅРµ РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ Р°РєС‚РёРІРЅС‹Рј РґР»СЏ РєР»РёРєР°)
         if (node.type == StoryNodeType.START)
         {
-            Debug.Log("[IGNORE] Клик по стартовому узлу проигнорирован.");
+            Debug.Log("[IGNORE] РљР»РёРє РїРѕ СЃС‚Р°СЂС‚РѕРІРѕРјСѓ СѓР·Р»Сѓ РїСЂРѕРёРіРЅРѕСЂРёСЂРѕРІР°РЅ.");
             return;
         }
 
-        // 3. ПРОВЕРКА: Игрок уже находится на этом узле?
+        // 3. РџР РћР’Р•Р РљРђ: РРіСЂРѕРє СѓР¶Рµ РЅР°С…РѕРґРёС‚СЃСЏ РЅР° СЌС‚РѕРј СѓР·Р»Рµ?
         if (StoryMapManager.Instance != null && StoryMapManager.Instance.CurrentNode != null)
         {
             if (StoryMapManager.Instance.CurrentNode.nodeId == node.nodeId &&
                 StoryMapManager.Instance.CurrentNode.layer == node.layer)
             {
-                Debug.Log($"[IGNORE] Игрок уже находится на узле {node.nodeId}. Повторный вход запрещен.");
+                Debug.Log($"[IGNORE] РРіСЂРѕРє СѓР¶Рµ РЅР°С…РѕРґРёС‚СЃСЏ РЅР° СѓР·Р»Рµ {node.nodeId}. РџРѕРІС‚РѕСЂРЅС‹Р№ РІС…РѕРґ Р·Р°РїСЂРµС‰РµРЅ.");
                 return;
             }
         }
 
-        // 4. ПРОВЕРКА: Узел уже посещен? (Нельзя ходить назад)
-        // Разрешаем клик только если узел еще НЕ посещен.
-        // Исключение: если у тебя есть механика возврата, то эту проверку можно убрать или усложнить.
+        // 4. РџР РћР’Р•Р РљРђ: РЈР·РµР» СѓР¶Рµ РїРѕСЃРµС‰РµРЅ? (РќРµР»СЊР·СЏ С…РѕРґРёС‚СЊ РЅР°Р·Р°Рґ)
+        // Р Р°Р·СЂРµС€Р°РµРј РєР»РёРє С‚РѕР»СЊРєРѕ РµСЃР»Рё СѓР·РµР» РµС‰Рµ РќР• РїРѕСЃРµС‰РµРЅ.
+        // РСЃРєР»СЋС‡РµРЅРёРµ: РµСЃР»Рё Сѓ С‚РµР±СЏ РµСЃС‚СЊ РјРµС…Р°РЅРёРєР° РІРѕР·РІСЂР°С‚Р°, С‚Рѕ СЌС‚Сѓ РїСЂРѕРІРµСЂРєСѓ РјРѕР¶РЅРѕ СѓР±СЂР°С‚СЊ РёР»Рё СѓСЃР»РѕР¶РЅРёС‚СЊ.
         if (node.isVisited)
         {
-            Debug.LogWarning($"[BLOCK] Узел {node.nodeId} уже посещен. Возврат назад невозможен.");
+            Debug.LogWarning($"[BLOCK] РЈР·РµР» {node.nodeId} СѓР¶Рµ РїРѕСЃРµС‰РµРЅ. Р’РѕР·РІСЂР°С‚ РЅР°Р·Р°Рґ РЅРµРІРѕР·РјРѕР¶РµРЅ.");
             return;
         }
 
-        // === ЕСЛИ ВСЕ ПРОВЕРКИ ПРОЙДЕНЫ, ЗАПУСКАЕМ ЛОГИКУ ===
+        // === Р•РЎР›Р Р’РЎР• РџР РћР’Р•Р РљР РџР РћР™Р”Р•РќР«, Р—РђРџРЈРЎРљРђР•Рњ Р›РћР“РРљРЈ ===
 
-        Debug.Log($"[CLICK] Обработка клика по узлу {node.nodeId} типа {node.type}");
+        Debug.Log($"[CLICK] РћР±СЂР°Р±РѕС‚РєР° РєР»РёРєР° РїРѕ СѓР·Р»Сѓ {node.nodeId} С‚РёРїР° {node.type}");
 
-        // 1. Сохраняем прогресс (помечаем узел как посещаемый прямо сейчас)
+        // 1. РЎРѕС…СЂР°РЅСЏРµРј РїСЂРѕРіСЂРµСЃСЃ (РїРѕРјРµС‡Р°РµРј СѓР·РµР» РєР°Рє РїРѕСЃРµС‰Р°РµРјС‹Р№ РїСЂСЏРјРѕ СЃРµР№С‡Р°СЃ)
         if (StoryMapManager.Instance != null)
         {
             StoryMapManager.Instance.MarkNodeVisited(node.chapterIndex, node.nodeId);
@@ -281,10 +281,10 @@ public class StoryMapVisual : MonoBehaviour
             return;
         }
 
-        // 2. Обновляем визуал (снимаем замок, подсвечиваем путь)
+        // 2. РћР±РЅРѕРІР»СЏРµРј РІРёР·СѓР°Р» (СЃРЅРёРјР°РµРј Р·Р°РјРѕРє, РїРѕРґСЃРІРµС‡РёРІР°РµРј РїСѓС‚СЊ)
         UpdateNodeVisualState(node);
 
-        // 3. Запускаем соответствующее событие
+        // 3. Р—Р°РїСѓСЃРєР°РµРј СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓСЋС‰РµРµ СЃРѕР±С‹С‚РёРµ
         switch (node.type)
         {
             case StoryNodeType.ENEMY:
@@ -301,35 +301,35 @@ public class StoryMapVisual : MonoBehaviour
                 break;
 
             default:
-                Debug.LogWarning($"Неизвестный тип узла: {node.type}");
+                Debug.LogWarning($"РќРµРёР·РІРµСЃС‚РЅС‹Р№ С‚РёРї СѓР·Р»Р°: {node.type}");
                 break;
         }
     }
 
-    // В файле StoryMapVisual.cs
+    // Р’ С„Р°Р№Р»Рµ StoryMapVisual.cs
 
     void StartBattle(StoryNode node)
     {
-        Debug.Log($"[BATTLE] Начало боя с узлом {node.nodeId}");
-        BattleStats.Reset();
-        // 1. ПРЯМО ЗДЕСЬ ПРИНУДИТЕЛЬНО ВЫЗЫВАЕМ СОХРАНЕНИЕ
-        // Даже если OnNodeClicked не сработал как надо, мы спасем прогресс здесь.
-        if (PlayerStats.Instance != null)
-        {
-            PlayerStats.Instance.HealToFull();
-            Debug.Log($"[BATTLE] Здоровье сюжетного героя восстановлено до {PlayerStats.Instance.MaxHealth}");
-        }
+        Debug.Log($"[BATTLE] РќР°С‡Р°Р»Рѕ Р±РѕСЏ СЃ СѓР·Р»РѕРј {node.nodeId}");
 
+        // 1. РЎР‘Р РћРЎ РЎРўРђРўРРЎРўРРљР Р‘РћРЇ
+        BattleStats.Reset();
+
+        // 2. РџРћР”Р“РћРўРћР’РљРђ РР“Р РћРљРђ (Р›Р•Р§Р•РќРР• Р”Рћ РњРђРљРЎРРњРЈРњРђ)
+        // Р­С‚Рѕ РєР»СЋС‡РµРІРѕРµ РёР·РјРµРЅРµРЅРёРµ: РїРµСЂРµРґ РєР°Р¶РґС‹Рј Р±РѕРµРј РҐРџ СЃС‚Р°РЅРѕРІРёС‚СЃСЏ РїРѕР»РЅС‹Рј
+        PlayerProgressionManager.Instance.PrepareForBattle();
+
+        // 3. РЎРћРҐР РђРќР•РќРР• РџР РћР“Р Р•РЎРЎРђ РљРђР РўР« (РїРѕРјРµС‡Р°РµРј СѓР·РµР» РєР°Рє РїРѕСЃРµС‰Р°РµРјС‹Р№)
         if (StoryMapManager.Instance != null)
         {
-            Debug.Log("[BATTLE] Принудительное сохранение прогресса перед боем...");
             StoryMapManager.Instance.MarkNodeVisited(node.chapterIndex, node.nodeId);
         }
 
+        // 4. Р—РђР“Р РЈР—РљРђ Р”РђРќРќР«РҐ Р’Р РђР“Рђ
         EnemyData enemy = StoryContentLoader.GetEnemyById(node.enemyId);
         if (enemy == null)
         {
-            Debug.LogError("Враг не найден!");
+            Debug.LogError("Р’СЂР°Рі РЅРµ РЅР°Р№РґРµРЅ!");
             return;
         }
 
@@ -337,32 +337,30 @@ public class StoryMapVisual : MonoBehaviour
         TempData.CurrentNode = node;
         TempData.IsStoryMode = true;
 
-        Debug.Log("Переход к бою в сцене...");
-
-        // 2. Загружаем сцену
+        Debug.Log("РџРµСЂРµС…РѕРґ Рє Р±РѕСЋ РІ СЃС†РµРЅРµ...");
         UnityEngine.SceneManagement.SceneManager.LoadScene("CardGame");
     }
 
     void ShowEvent(StoryNode node)
     {
-        Debug.Log($"[EVENT] Запуск события: {node.eventId}");
+        Debug.Log($"[EVENT] Р—Р°РїСѓСЃРє СЃРѕР±С‹С‚РёСЏ: {node.eventId}");
 
-        // 1. Загружаем префаб
+        // 1. Р—Р°РіСЂСѓР¶Р°РµРј РїСЂРµС„Р°Р±
         GameObject eventPrefab = Resources.Load<GameObject>("Events/EventWindowPrefab");
 
         if (eventPrefab == null)
         {
-            Debug.LogError("[ERROR] Префаб события не найден! Путь: Assets/Resources/Events/EventWindowPrefab");
+            Debug.LogError("[ERROR] РџСЂРµС„Р°Р± СЃРѕР±С‹С‚РёСЏ РЅРµ РЅР°Р№РґРµРЅ! РџСѓС‚СЊ: Assets/Resources/Events/EventWindowPrefab");
             return;
         }
 
-        // 2. Ищем ГЛАВНЫЙ Canvas сцены (обычно он один и называется "Canvas")
-        // Мы НЕ используем nodesContainer или любой другой 3D объект как родителя!
+        // 2. РС‰РµРј Р“Р›РђР’РќР«Р™ Canvas СЃС†РµРЅС‹ (РѕР±С‹С‡РЅРѕ РѕРЅ РѕРґРёРЅ Рё РЅР°Р·С‹РІР°РµС‚СЃСЏ "Canvas")
+        // РњС‹ РќР• РёСЃРїРѕР»СЊР·СѓРµРј nodesContainer РёР»Рё Р»СЋР±РѕР№ РґСЂСѓРіРѕР№ 3D РѕР±СЉРµРєС‚ РєР°Рє СЂРѕРґРёС‚РµР»СЏ!
         GameObject canvasObj = GameObject.Find("MainCanvas");
 
         if (canvasObj == null)
         {
-            Debug.LogError("Главный Canvas 'MainCanvas' не найден! Проверь имя объекта в иерархии.");
+            Debug.LogError("Р“Р»Р°РІРЅС‹Р№ Canvas 'MainCanvas' РЅРµ РЅР°Р№РґРµРЅ! РџСЂРѕРІРµСЂСЊ РёРјСЏ РѕР±СЉРµРєС‚Р° РІ РёРµСЂР°СЂС…РёРё.");
             return;
         }
 
@@ -370,16 +368,16 @@ public class StoryMapVisual : MonoBehaviour
 
         if (mainCanvas == null)
         {
-            Debug.LogError("[ERROR] В сцене не найден ни один Canvas! UI не сможет отобразиться корректно.");
+            Debug.LogError("[ERROR] Р’ СЃС†РµРЅРµ РЅРµ РЅР°Р№РґРµРЅ РЅРё РѕРґРёРЅ Canvas! UI РЅРµ СЃРјРѕР¶РµС‚ РѕС‚РѕР±СЂР°Р·РёС‚СЊСЃСЏ РєРѕСЂСЂРµРєС‚РЅРѕ.");
             return;
         }
 
-        // 3. Создаем префаб ВНУТРИ главного Canvas
-        // false означает, что мы не сохраняем мировую позицию/ротацию префаба, а берем локальные (что нам и нужно для UI)
+        // 3. РЎРѕР·РґР°РµРј РїСЂРµС„Р°Р± Р’РќРЈРўР Р РіР»Р°РІРЅРѕРіРѕ Canvas
+        // false РѕР·РЅР°С‡Р°РµС‚, С‡С‚Рѕ РјС‹ РЅРµ СЃРѕС…СЂР°РЅСЏРµРј РјРёСЂРѕРІСѓСЋ РїРѕР·РёС†РёСЋ/СЂРѕС‚Р°С†РёСЋ РїСЂРµС„Р°Р±Р°, Р° Р±РµСЂРµРј Р»РѕРєР°Р»СЊРЅС‹Рµ (С‡С‚Рѕ РЅР°Рј Рё РЅСѓР¶РЅРѕ РґР»СЏ UI)
         GameObject eventInstance = Instantiate(eventPrefab, mainCanvas.transform, false);
 
-        // 4. СБРАСЫВАЕМ трансформацию, чтобы UI встал ровно по центру и на весь экран
-        // Это критически важно, иначе он может улететь в сторону или стать микроскопическим
+        // 4. РЎР‘Р РђРЎР«Р’РђР•Рњ С‚СЂР°РЅСЃС„РѕСЂРјР°С†РёСЋ, С‡С‚РѕР±С‹ UI РІСЃС‚Р°Р» СЂРѕРІРЅРѕ РїРѕ С†РµРЅС‚СЂСѓ Рё РЅР° РІРµСЃСЊ СЌРєСЂР°РЅ
+        // Р­С‚Рѕ РєСЂРёС‚РёС‡РµСЃРєРё РІР°Р¶РЅРѕ, РёРЅР°С‡Рµ РѕРЅ РјРѕР¶РµС‚ СѓР»РµС‚РµС‚СЊ РІ СЃС‚РѕСЂРѕРЅСѓ РёР»Рё СЃС‚Р°С‚СЊ РјРёРєСЂРѕСЃРєРѕРїРёС‡РµСЃРєРёРј
         RectTransform rectTransform = eventInstance.GetComponent<RectTransform>();
 
         if (rectTransform != null)
@@ -388,7 +386,7 @@ public class StoryMapVisual : MonoBehaviour
             rectTransform.localRotation = Quaternion.identity;
             rectTransform.localScale = Vector3.one;
 
-            // Если в префабе не настроены Anchors на Stretch-Stretch, можно сделать это здесь:
+            // Р•СЃР»Рё РІ РїСЂРµС„Р°Р±Рµ РЅРµ РЅР°СЃС‚СЂРѕРµРЅС‹ Anchors РЅР° Stretch-Stretch, РјРѕР¶РЅРѕ СЃРґРµР»Р°С‚СЊ СЌС‚Рѕ Р·РґРµСЃСЊ:
             rectTransform.anchorMin = Vector2.zero;
             rectTransform.anchorMax = Vector2.one;
             rectTransform.offsetMin = Vector2.zero;
@@ -396,18 +394,18 @@ public class StoryMapVisual : MonoBehaviour
         }
         else
         {
-            // Если вдруг нет RectTransform (что странно для UI), пробуем обычный Transform
+            // Р•СЃР»Рё РІРґСЂСѓРі РЅРµС‚ RectTransform (С‡С‚Рѕ СЃС‚СЂР°РЅРЅРѕ РґР»СЏ UI), РїСЂРѕР±СѓРµРј РѕР±С‹С‡РЅС‹Р№ Transform
             eventInstance.transform.localPosition = Vector3.zero;
             eventInstance.transform.localRotation = Quaternion.identity;
             eventInstance.transform.localScale = Vector3.one;
         }
 
-        // Поднимаем на самый верх иерархии Canvas, чтобы было поверх всего (кнопки, тултипы узлов)
+        // РџРѕРґРЅРёРјР°РµРј РЅР° СЃР°РјС‹Р№ РІРµСЂС… РёРµСЂР°СЂС…РёРё Canvas, С‡С‚РѕР±С‹ Р±С‹Р»Рѕ РїРѕРІРµСЂС… РІСЃРµРіРѕ (РєРЅРѕРїРєРё, С‚СѓР»С‚РёРїС‹ СѓР·Р»РѕРІ)
         eventInstance.transform.SetAsLastSibling();
 
-        Debug.Log("[OK] Окно события создано на главном Canvas.");
+        Debug.Log("[OK] РћРєРЅРѕ СЃРѕР±С‹С‚РёСЏ СЃРѕР·РґР°РЅРѕ РЅР° РіР»Р°РІРЅРѕРј Canvas.");
 
-        // 5. Запускаем логику
+        // 5. Р—Р°РїСѓСЃРєР°РµРј Р»РѕРіРёРєСѓ
         EventManager manager = eventInstance.GetComponent<EventManager>();
         if (manager != null)
         {
@@ -415,22 +413,22 @@ public class StoryMapVisual : MonoBehaviour
         }
         else
         {
-            Debug.LogError("[ERROR] У префаба нет компонента EventManager!");
+            Debug.LogError("[ERROR] РЈ РїСЂРµС„Р°Р±Р° РЅРµС‚ РєРѕРјРїРѕРЅРµРЅС‚Р° EventManager!");
             Destroy(eventInstance);
         }
     }
 
     void Rest(StoryNode node)
     {
-        Debug.Log("[REST] Анализ ситуации для выбора типа привала...");
+        Debug.Log("[REST] РђРЅР°Р»РёР· СЃРёС‚СѓР°С†РёРё РґР»СЏ РІС‹Р±РѕСЂР° С‚РёРїР° РїСЂРёРІР°Р»Р°...");
 
         string chosenEventId = "";
 
-        // ... (твоя логика сбора статистики HP, ходов и т.д. остается той же) ...
-        // Определяем веса кандидатов (словарь ID -> вес)
+        // ... (С‚РІРѕСЏ Р»РѕРіРёРєР° СЃР±РѕСЂР° СЃС‚Р°С‚РёСЃС‚РёРєРё HP, С…РѕРґРѕРІ Рё С‚.Рґ. РѕСЃС‚Р°РµС‚СЃСЏ С‚РѕР№ Р¶Рµ) ...
+        // РћРїСЂРµРґРµР»СЏРµРј РІРµСЃР° РєР°РЅРґРёРґР°С‚РѕРІ (СЃР»РѕРІР°СЂСЊ ID -> РІРµСЃ)
         Dictionary<string, int> candidates = new Dictionary<string, int>();
 
-        // Пример логики (упрощенно):
+        // РџСЂРёРјРµСЂ Р»РѕРіРёРєРё (СѓРїСЂРѕС‰РµРЅРЅРѕ):
         int hpPercent = 100;
         if (BattleStats.PlayerMaxHP > 0)
             hpPercent = Mathf.FloorToInt((float)BattleStats.PlayerEndHP / BattleStats.PlayerMaxHP * 100f);
@@ -449,7 +447,7 @@ public class StoryMapVisual : MonoBehaviour
         }
         else
         {
-            // Равный шанс или небольшой перекос
+            // Р Р°РІРЅС‹Р№ С€Р°РЅСЃ РёР»Рё РЅРµР±РѕР»СЊС€РѕР№ РїРµСЂРµРєРѕСЃ
             candidates.Add("rest_max_hp", 17);
             candidates.Add("rest_mana_boost", 17);
             candidates.Add("rest_new_card", 16);
@@ -458,31 +456,31 @@ public class StoryMapVisual : MonoBehaviour
             candidates.Add("rest_curse", 16);
         }
 
-        // Выбираем ID по весам
+        // Р’С‹Р±РёСЂР°РµРј ID РїРѕ РІРµСЃР°Рј
         chosenEventId = GetWeightedRandomEvent(candidates);
 
-        Debug.Log($"[REST] Выбрано событие привала: {chosenEventId}");
+        Debug.Log($"[REST] Р’С‹Р±СЂР°РЅРѕ СЃРѕР±С‹С‚РёРµ РїСЂРёРІР°Р»Р°: {chosenEventId}");
 
-        // Ищем событие в НОВОМ списке allRestEvents
+        // РС‰РµРј СЃРѕР±С‹С‚РёРµ РІ РќРћР’РћРњ СЃРїРёСЃРєРµ allRestEvents
         StoryEventData restData = StoryContentLoader.GetRestEventById(chosenEventId);
 
         if (restData == null)
         {
-            Debug.LogError($"[ERROR] Событие привала '{chosenEventId}' не найдено в rest_events.json! Запускаем дефолтное.");
-            // Фоллбэк на первое доступное, если вдруг ошибка
+            Debug.LogError($"[ERROR] РЎРѕР±С‹С‚РёРµ РїСЂРёРІР°Р»Р° '{chosenEventId}' РЅРµ РЅР°Р№РґРµРЅРѕ РІ rest_events.json! Р—Р°РїСѓСЃРєР°РµРј РґРµС„РѕР»С‚РЅРѕРµ.");
+            // Р¤РѕР»Р»Р±СЌРє РЅР° РїРµСЂРІРѕРµ РґРѕСЃС‚СѓРїРЅРѕРµ, РµСЃР»Рё РІРґСЂСѓРі РѕС€РёР±РєР°
             if (StoryContentLoader.AllRestEvents.Count > 0)
                 restData = StoryContentLoader.AllRestEvents[0];
             else
-                return; // Если совсем ничего нет
+                return; // Р•СЃР»Рё СЃРѕРІСЃРµРј РЅРёС‡РµРіРѕ РЅРµС‚
         }
 
-        // Создаем узел, передавая обязательные параметры в конструктор
+        // РЎРѕР·РґР°РµРј СѓР·РµР», РїРµСЂРµРґР°РІР°СЏ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹Рµ РїР°СЂР°РјРµС‚СЂС‹ РІ РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ
         StoryNode restNode = new StoryNode(
-            node.nodeId,          // 1. ID (было node.chapterIndex - НЕВЕРНО)
-            node.chapterIndex,    // 2. Глава (было node.nodeId - НЕВЕРНО)
-            node.layer,           // 3. Слой
-            StoryNodeType.EVENT,  // 4. Тип
-            Vector3.zero          // 5. Позиция
+            node.nodeId,          // 1. ID (Р±С‹Р»Рѕ node.chapterIndex - РќР•Р’Р•Р РќРћ)
+            node.chapterIndex,    // 2. Р“Р»Р°РІР° (Р±С‹Р»Рѕ node.nodeId - РќР•Р’Р•Р РќРћ)
+            node.layer,           // 3. РЎР»РѕР№
+            StoryNodeType.EVENT,  // 4. РўРёРї
+            Vector3.zero          // 5. РџРѕР·РёС†РёСЏ
         );
 
         restNode.eventId = chosenEventId;
@@ -490,7 +488,7 @@ public class StoryMapVisual : MonoBehaviour
         ShowEvent(restNode);
     }
 
-    // Твой вспомогательный метод взвешенного рандома
+    // РўРІРѕР№ РІСЃРїРѕРјРѕРіР°С‚РµР»СЊРЅС‹Р№ РјРµС‚РѕРґ РІР·РІРµС€РµРЅРЅРѕРіРѕ СЂР°РЅРґРѕРјР°
     string GetWeightedRandomEvent(Dictionary<string, int> weights)
     {
         int totalWeight = 0;

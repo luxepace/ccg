@@ -1,19 +1,19 @@
-using UnityEngine;
+п»їusing UnityEngine;
 using System.IO;
 using System.Collections.Generic;
-using System.Collections; // Нужно для IEnumerator
+using System.Collections; // РќСѓР¶РЅРѕ РґР»СЏ IEnumerator
 
 public class StoryMapManager : MonoBehaviour
 {
     public static StoryMapManager Instance;
 
-    [Header("Настройки генерации")]
+    [Header("РќР°СЃС‚СЂРѕР№РєРё РіРµРЅРµСЂР°С†РёРё")]
     public StoryMapGenerator.GenerationSettings generationSettings;
 
-    [Header("Сохранение")]
+    [Header("РЎРѕС…СЂР°РЅРµРЅРёРµ")]
     public string saveFileName = "storyMapSave.json";
 
-    [Header("Данные")]
+    [Header("Р”Р°РЅРЅС‹Рµ")]
     public List<StoryChapter> CurrentChapters;
     public StorySaveData SaveData;
     public StoryChapter CurrentChapter;
@@ -31,22 +31,22 @@ public class StoryMapManager : MonoBehaviour
         }
     }
 
-    // ИСПОЛЬЗУЕМ OnEnable ЧТОБЫ РЕАГИРОВАТЬ НА КАЖДОЕ ВКЛЮЧЕНИЕ ОБЪЕКТА (В Т.Ч. ПРИ ЗАГРУЗКЕ СЦЕНЫ)
+    // РРЎРџРћР›Р¬Р—РЈР•Рњ OnEnable Р§РўРћР‘Р« Р Р•РђР“РР РћР’РђРўР¬ РќРђ РљРђР–Р”РћР• Р’РљР›Р®Р§Р•РќРР• РћР‘РЄР•РљРўРђ (Р’ Рў.Р§. РџР Р Р—РђР“Р РЈР—РљР• РЎР¦Р•РќР«)
     void Start()
     {
-        Debug.Log("[Manager] Start вызван. Инициализация...");
+        Debug.Log("[Manager] Start РІС‹Р·РІР°РЅ. РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ...");
 
         InitializeSettings();
         StoryContentLoader.LoadAllContent();
 
         if (HasSavedMap())
         {
-            Debug.Log("[Manager] Сохранение найдено. Загружаем...");
+            Debug.Log("[Manager] РЎРѕС…СЂР°РЅРµРЅРёРµ РЅР°Р№РґРµРЅРѕ. Р—Р°РіСЂСѓР¶Р°РµРј...");
             LoadMap();
         }
         else
         {
-            Debug.Log("[Manager] Сохранения нет. Генерируем...");
+            Debug.Log("[Manager] РЎРѕС…СЂР°РЅРµРЅРёСЏ РЅРµС‚. Р“РµРЅРµСЂРёСЂСѓРµРј...");
             GenerateNewMap();
         }
     }
@@ -72,7 +72,7 @@ public class StoryMapManager : MonoBehaviour
 
     public void GenerateNewMap()
     {
-        Debug.Log("Генерация новой карты сюжета...");
+        Debug.Log("Р“РµРЅРµСЂР°С†РёСЏ РЅРѕРІРѕР№ РєР°СЂС‚С‹ СЃСЋР¶РµС‚Р°...");
         CurrentChapters = StoryMapGenerator.GenerateFullMap(generationSettings);
         SaveData = new StorySaveData();
 
@@ -87,7 +87,7 @@ public class StoryMapManager : MonoBehaviour
 
     public void LoadMap()
     {
-        Debug.Log("=== [START] Загрузка сохранённой карты сюжета... ===");
+        Debug.Log("=== [START] Р—Р°РіСЂСѓР·РєР° СЃРѕС…СЂР°РЅС‘РЅРЅРѕР№ РєР°СЂС‚С‹ СЃСЋР¶РµС‚Р°... ===");
 
         string path = GetSavePath();
 
@@ -95,7 +95,7 @@ public class StoryMapManager : MonoBehaviour
         {
             if (!File.Exists(path))
             {
-                Debug.LogError($"Файл сохранения сюжета не найден: {path}");
+                Debug.LogError($"Р¤Р°Р№Р» СЃРѕС…СЂР°РЅРµРЅРёСЏ СЃСЋР¶РµС‚Р° РЅРµ РЅР°Р№РґРµРЅ: {path}");
                 GenerateNewMap();
                 return;
             }
@@ -105,34 +105,34 @@ public class StoryMapManager : MonoBehaviour
 
             if (SaveData == null || SaveData.chapters == null || SaveData.chapters.Count == 0)
             {
-                Debug.LogError("Ошибка: Данные глав пусты или некорректны!");
+                Debug.LogError("РћС€РёР±РєР°: Р”Р°РЅРЅС‹Рµ РіР»Р°РІ РїСѓСЃС‚С‹ РёР»Рё РЅРµРєРѕСЂСЂРµРєС‚РЅС‹!");
                 GenerateNewMap();
                 return;
             }
 
-            Debug.Log($"Успешно загружено глав: {SaveData.chapters.Count}");
+            Debug.Log($"РЈСЃРїРµС€РЅРѕ Р·Р°РіСЂСѓР¶РµРЅРѕ РіР»Р°РІ: {SaveData.chapters.Count}");
 
             RestoreChapters();
 
             if (CurrentChapters.Count == 0)
             {
-                Debug.LogError("Не удалось восстановить главы в памяти!");
+                Debug.LogError("РќРµ СѓРґР°Р»РѕСЃСЊ РІРѕСЃСЃС‚Р°РЅРѕРІРёС‚СЊ РіР»Р°РІС‹ РІ РїР°РјСЏС‚Рё!");
                 return;
             }
 
-            // Рисуем загруженную главу
+            // Р РёСЃСѓРµРј Р·Р°РіСЂСѓР¶РµРЅРЅСѓСЋ РіР»Р°РІСѓ
             DrawCurrentChapter();
 
-            Debug.Log("=== [END] Карта сюжета успешно загружена ===");
+            Debug.Log("=== [END] РљР°СЂС‚Р° СЃСЋР¶РµС‚Р° СѓСЃРїРµС€РЅРѕ Р·Р°РіСЂСѓР¶РµРЅР° ===");
         }
         catch (System.Exception e)
         {
-            Debug.LogError("Критическая ошибка при загрузке сюжета: " + e.Message);
+            Debug.LogError("РљСЂРёС‚РёС‡РµСЃРєР°СЏ РѕС€РёР±РєР° РїСЂРё Р·Р°РіСЂСѓР·РєРµ СЃСЋР¶РµС‚Р°: " + e.Message);
             GenerateNewMap();
         }
     }
 
-    // Вспомогательный метод для отрисовки текущей главы
+    // Р’СЃРїРѕРјРѕРіР°С‚РµР»СЊРЅС‹Р№ РјРµС‚РѕРґ РґР»СЏ РѕС‚СЂРёСЃРѕРІРєРё С‚РµРєСѓС‰РµР№ РіР»Р°РІС‹
     void DrawCurrentChapter()
     {
         if (CurrentChapters.Count == 0) return;
@@ -140,19 +140,19 @@ public class StoryMapManager : MonoBehaviour
         StoryMapVisual visual = FindObjectOfType<StoryMapVisual>();
         if (visual == null)
         {
-            Debug.LogError("StoryMapVisual не найден на сцене! Узлы не будут отображены.");
+            Debug.LogError("StoryMapVisual РЅРµ РЅР°Р№РґРµРЅ РЅР° СЃС†РµРЅРµ! РЈР·Р»С‹ РЅРµ Р±СѓРґСѓС‚ РѕС‚РѕР±СЂР°Р¶РµРЅС‹.");
             return;
         }
 
         StoryChapter chapter = CurrentChapters[0];
 
-        Debug.Log($"Отрисовка главы: {chapter.chapterName}, узлов: {chapter.nodes.Count}");
+        Debug.Log($"РћС‚СЂРёСЃРѕРІРєР° РіР»Р°РІС‹: {chapter.chapterName}, СѓР·Р»РѕРІ: {chapter.nodes.Count}");
 
         visual.ClearVisuals();
         visual.DisplayChapter(chapter);
 
-        // Восстанавливаем текущий узел (последний посещенный)
-        // НОВЫЙ КОД: Ищем узел с максимальным номером слоя среди посещенных
+        // Р’РѕСЃСЃС‚Р°РЅР°РІР»РёРІР°РµРј С‚РµРєСѓС‰РёР№ СѓР·РµР» (РїРѕСЃР»РµРґРЅРёР№ РїРѕСЃРµС‰РµРЅРЅС‹Р№)
+        // РќРћР’Р«Р™ РљРћР”: РС‰РµРј СѓР·РµР» СЃ РјР°РєСЃРёРјР°Р»СЊРЅС‹Рј РЅРѕРјРµСЂРѕРј СЃР»РѕСЏ СЃСЂРµРґРё РїРѕСЃРµС‰РµРЅРЅС‹С…
         StoryNode lastVisited = null;
         int maxLayer = -1;
 
@@ -160,25 +160,25 @@ public class StoryMapManager : MonoBehaviour
         {
             if (node.isVisited)
             {
-                // Если слой больше текущего максимума — запоминаем узел
+                // Р•СЃР»Рё СЃР»РѕР№ Р±РѕР»СЊС€Рµ С‚РµРєСѓС‰РµРіРѕ РјР°РєСЃРёРјСѓРјР° вЂ” Р·Р°РїРѕРјРёРЅР°РµРј СѓР·РµР»
                 if (node.layer > maxLayer)
                 {
                     maxLayer = node.layer;
                     lastVisited = node;
                 }
-                // Если слои равны, можно добавить дополнительную логику, но обычно достаточно номера слоя
+                // Р•СЃР»Рё СЃР»РѕРё СЂР°РІРЅС‹, РјРѕР¶РЅРѕ РґРѕР±Р°РІРёС‚СЊ РґРѕРїРѕР»РЅРёС‚РµР»СЊРЅСѓСЋ Р»РѕРіРёРєСѓ, РЅРѕ РѕР±С‹С‡РЅРѕ РґРѕСЃС‚Р°С‚РѕС‡РЅРѕ РЅРѕРјРµСЂР° СЃР»РѕСЏ
             }
         }
 
-        // Если ни один узел не посещен (совсем новая игра), берем стартовый
+        // Р•СЃР»Рё РЅРё РѕРґРёРЅ СѓР·РµР» РЅРµ РїРѕСЃРµС‰РµРЅ (СЃРѕРІСЃРµРј РЅРѕРІР°СЏ РёРіСЂР°), Р±РµСЂРµРј СЃС‚Р°СЂС‚РѕРІС‹Р№
         if (lastVisited == null)
         {
             lastVisited = chapter.nodes.Find(n => n.type == StoryNodeType.START);
-            Debug.LogWarning("Ни один узел не найден как посещенный. Сброс на старт.");
+            Debug.LogWarning("РќРё РѕРґРёРЅ СѓР·РµР» РЅРµ РЅР°Р№РґРµРЅ РєР°Рє РїРѕСЃРµС‰РµРЅРЅС‹Р№. РЎР±СЂРѕСЃ РЅР° СЃС‚Р°СЂС‚.");
         }
 
         CurrentNode = lastVisited;
-        Debug.Log($"[Load] Восстановлен прогресс. Последний узел: {CurrentNode.nodeId} (Слой {CurrentNode.layer})");
+        Debug.Log($"[Load] Р’РѕСЃСЃС‚Р°РЅРѕРІР»РµРЅ РїСЂРѕРіСЂРµСЃСЃ. РџРѕСЃР»РµРґРЅРёР№ СѓР·РµР»: {CurrentNode.nodeId} (РЎР»РѕР№ {CurrentNode.layer})");
 
         if (lastVisited == null)
         {
@@ -190,7 +190,7 @@ public class StoryMapManager : MonoBehaviour
             CurrentNode = lastVisited;
             UnlockNextLayerNodes(CurrentNode);
             visual.RefreshAllNodeVisuals();
-            Debug.Log($"Текущий узел установлен: {CurrentNode.type} (Layer {CurrentNode.layer})");
+            Debug.Log($"РўРµРєСѓС‰РёР№ СѓР·РµР» СѓСЃС‚Р°РЅРѕРІР»РµРЅ: {CurrentNode.type} (Layer {CurrentNode.layer})");
         }
     }
 
@@ -213,7 +213,7 @@ public class StoryMapManager : MonoBehaviour
 
             foreach (var node in chapter.nodes)
             {
-                // Создаем объект сохранения
+                // РЎРѕР·РґР°РµРј РѕР±СЉРµРєС‚ СЃРѕС…СЂР°РЅРµРЅРёСЏ
                 NodeSaveData nodeData = new NodeSaveData
                 {
                     nodeId = node.nodeId,
@@ -224,36 +224,36 @@ public class StoryMapManager : MonoBehaviour
                     eventId = node.eventId,
                     connectedNodeIds = new List<int>(node.connectedNodeIds),
 
-                    // Явно копируем флаги
+                    // РЇРІРЅРѕ РєРѕРїРёСЂСѓРµРј С„Р»Р°РіРё
                     isVisited = node.isVisited,
                     isUnlocked = node.isUnlocked,
                     isSkipped = node.isSkipped
                 };
 
-                // === ОТЛАДКА: Печатаем состояние ПЕРЕД добавлением в список ===
+                // === РћРўР›РђР”РљРђ: РџРµС‡Р°С‚Р°РµРј СЃРѕСЃС‚РѕСЏРЅРёРµ РџР•Р Р•Р” РґРѕР±Р°РІР»РµРЅРёРµРј РІ СЃРїРёСЃРѕРє ===
                 if (node.isVisited)
                 {
-                    Debug.Log($"[SAVE DEBUG] Узел ID:{node.nodeId} (Слой {node.layer}) -> isVisited = TRUE");
+                    Debug.Log($"[SAVE DEBUG] РЈР·РµР» ID:{node.nodeId} (РЎР»РѕР№ {node.layer}) -> isVisited = TRUE");
                 }
                 else
                 {
-                    // Раскомментируйте, если хотите видеть и непосещенные
-                    // Debug.Log($"[SAVE DEBUG] Узел ID:{node.nodeId} -> isVisited = FALSE");
+                    // Р Р°СЃРєРѕРјРјРµРЅС‚РёСЂСѓР№С‚Рµ, РµСЃР»Рё С…РѕС‚РёС‚Рµ РІРёРґРµС‚СЊ Рё РЅРµРїРѕСЃРµС‰РµРЅРЅС‹Рµ
+                    // Debug.Log($"[SAVE DEBUG] РЈР·РµР» ID:{node.nodeId} -> isVisited = FALSE");
                 }
 
                 chapterData.nodes.Add(nodeData);
             }
-            // В конец метода SaveChapters, после цикла foreach
+            // Р’ РєРѕРЅРµС† РјРµС‚РѕРґР° SaveChapters, РїРѕСЃР»Рµ С†РёРєР»Р° foreach
             int totalVisited = 0;
             foreach (var ch in CurrentChapters)
                 foreach (var n in ch.nodes)
                     if (n.isVisited) totalVisited++;
 
-            Debug.Log($"[SAVE SUMMARY] Всего посещенных узлов в списке CurrentChapters: {totalVisited}");
+            Debug.Log($"[SAVE SUMMARY] Р’СЃРµРіРѕ РїРѕСЃРµС‰РµРЅРЅС‹С… СѓР·Р»РѕРІ РІ СЃРїРёСЃРєРµ CurrentChapters: {totalVisited}");
             SaveData.chapters.Add(chapterData);
         }
 
-        Debug.Log($"[SAVE DEBUG] Всего глав подготовлено к сохранению: {SaveData.chapters.Count}");
+        Debug.Log($"[SAVE DEBUG] Р’СЃРµРіРѕ РіР»Р°РІ РїРѕРґРіРѕС‚РѕРІР»РµРЅРѕ Рє СЃРѕС…СЂР°РЅРµРЅРёСЋ: {SaveData.chapters.Count}");
     }
 
     void RestoreChapters()
@@ -295,33 +295,33 @@ public class StoryMapManager : MonoBehaviour
 
     void SaveMap()
     {
-        // === КРИТИЧЕСКОЕ ИЗМЕНЕНИЕ ===
-        // Сначала обновляем данные в объекте SaveData из актуального списка CurrentChapters
+        // === РљР РРўРР§Р•РЎРљРћР• РР—РњР•РќР•РќРР• ===
+        // РЎРЅР°С‡Р°Р»Р° РѕР±РЅРѕРІР»СЏРµРј РґР°РЅРЅС‹Рµ РІ РѕР±СЉРµРєС‚Рµ SaveData РёР· Р°РєС‚СѓР°Р»СЊРЅРѕРіРѕ СЃРїРёСЃРєР° CurrentChapters
         SaveChapters();
-        Debug.Log("[SAVE] Данные обновлены из CurrentChapters.");
+        Debug.Log("[SAVE] Р”Р°РЅРЅС‹Рµ РѕР±РЅРѕРІР»РµРЅС‹ РёР· CurrentChapters.");
         // ==============================
 
-        Debug.Log("Сохранение данных карты...");
+        Debug.Log("РЎРѕС…СЂР°РЅРµРЅРёРµ РґР°РЅРЅС‹С… РєР°СЂС‚С‹...");
 
         string json = JsonUtility.ToJson(SaveData, true);
         string path = GetSavePath();
 
-        Debug.Log("Файл сохранён: " + path);
+        Debug.Log("Р¤Р°Р№Р» СЃРѕС…СЂР°РЅС‘РЅ: " + path);
 
         Directory.CreateDirectory(Path.GetDirectoryName(path));
         File.WriteAllText(path, json);
 
-        Debug.Log("Карта сохранена в " + path);
+        Debug.Log("РљР°СЂС‚Р° СЃРѕС…СЂР°РЅРµРЅР° РІ " + path);
 
-        // Опционально: выводим сводку после сохранения
+        // РћРїС†РёРѕРЅР°Р»СЊРЅРѕ: РІС‹РІРѕРґРёРј СЃРІРѕРґРєСѓ РїРѕСЃР»Рµ СЃРѕС…СЂР°РЅРµРЅРёСЏ
         int visitedCount = 0;
         foreach (var ch in CurrentChapters)
             foreach (var n in ch.nodes)
                 if (n.isVisited) visitedCount++;
-        Debug.Log($"[SAVE SUMMARY] Всего посещенных узлов в файле: {visitedCount}");
+        Debug.Log($"[SAVE SUMMARY] Р’СЃРµРіРѕ РїРѕСЃРµС‰РµРЅРЅС‹С… СѓР·Р»РѕРІ РІ С„Р°Р№Р»Рµ: {visitedCount}");
     }
 
-    bool HasSavedMap()
+    public bool HasSavedMap()
     {
         string path = GetSavePath();
         return File.Exists(path);
@@ -338,7 +338,7 @@ public class StoryMapManager : MonoBehaviour
         if (File.Exists(path))
         {
             File.Delete(path);
-            Debug.Log("Сохранённая карта удалена");
+            Debug.Log("РЎРѕС…СЂР°РЅС‘РЅРЅР°СЏ РєР°СЂС‚Р° СѓРґР°Р»РµРЅР°");
         }
     }
 
@@ -353,33 +353,33 @@ public class StoryMapManager : MonoBehaviour
 
     public void MarkNodeVisited(int chapterIndex, int nodeId)
     {
-        Debug.Log($"[SAVE] Вызван MarkNodeVisited для узла {nodeId}");
+        Debug.Log($"[SAVE] Р’С‹Р·РІР°РЅ MarkNodeVisited РґР»СЏ СѓР·Р»Р° {nodeId}");
         StoryNode node = GetNodeById(chapterIndex, nodeId);
 
         if (node != null)
         {
-            // 1. Меняем флаги в памяти
+            // 1. РњРµРЅСЏРµРј С„Р»Р°РіРё РІ РїР°РјСЏС‚Рё
             if (CurrentNode != null && CurrentNode.nodeId != nodeId)
             {
                 CurrentNode.isVisited = true;
-                Debug.Log($"[SAVE] Предыдущий узел {CurrentNode.nodeId} помечен как VISITED.");
+                Debug.Log($"[SAVE] РџСЂРµРґС‹РґСѓС‰РёР№ СѓР·РµР» {CurrentNode.nodeId} РїРѕРјРµС‡РµРЅ РєР°Рє VISITED.");
             }
 
             node.isVisited = true;
             CurrentNode = node;
-            Debug.Log($"[SAVE] Новый текущий узел {node.nodeId} помечен как VISITED.");
+            Debug.Log($"[SAVE] РќРѕРІС‹Р№ С‚РµРєСѓС‰РёР№ СѓР·РµР» {node.nodeId} РїРѕРјРµС‡РµРЅ РєР°Рє VISITED.");
 
             MarkSameLayerAsSkipped(chapterIndex, node.layer, nodeId);
             UnlockNextLayerNodes(node);
 
-            // 2. Просто сохраняем. SaveChapters() вызовется внутри автоматически.
-            Debug.Log("[SAVE] Вызов SaveMap...");
+            // 2. РџСЂРѕСЃС‚Рѕ СЃРѕС…СЂР°РЅСЏРµРј. SaveChapters() РІС‹Р·РѕРІРµС‚СЃСЏ РІРЅСѓС‚СЂРё Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё.
+            Debug.Log("[SAVE] Р’С‹Р·РѕРІ SaveMap...");
             SaveMap();
-            Debug.Log("[SAVE] Файл записан");
+            Debug.Log("[SAVE] Р¤Р°Р№Р» Р·Р°РїРёСЃР°РЅ");
         }
         else
         {
-            Debug.LogError($"[ERROR] Узел {nodeId} не найден!");
+            Debug.LogError($"[ERROR] РЈР·РµР» {nodeId} РЅРµ РЅР°Р№РґРµРЅ!");
         }
     }
 
@@ -415,9 +415,16 @@ public class StoryMapManager : MonoBehaviour
 
     public void StartNewGame()
     {
-        DeleteSave();
-        StoryContentLoader.ClearContent();
-        GenerateNewMap();
+        Debug.Log("[StoryMap] РќР°С‡Р°Р»Рѕ РЅРѕРІРѕР№ РёРіСЂС‹. РЈРґР°Р»РµРЅРёРµ СЃС‚Р°СЂС‹С… СЃРѕС…СЂР°РЅРµРЅРёР№...");
+        DeleteSave(); // РЈРґР°Р»СЏРµРј С„Р°Р№Р» storyMapSave.json
+
+        // РћРїС†РёРѕРЅР°Р»СЊРЅРѕ: РјРѕР¶РЅРѕ РїРµСЂРµРіРµРЅРµСЂРёСЂРѕРІР°С‚СЊ Р»Р°РЅРґС€Р°С„С‚, РµСЃР»Рё РѕРЅ С‚РѕР¶Рµ СЃРѕС…СЂР°РЅСЏРµС‚СЃСЏ РѕС‚РґРµР»СЊРЅРѕ
+        // MapGenerator3D.Instance?.DeleteSave(); 
+
+        StoryContentLoader.ClearContent(); // РћС‡РёС‰Р°РµРј РєСЌС€ РєРѕРЅС‚РµРЅС‚Р°, С‡С‚РѕР±С‹ РїРµСЂРµС‡РёС‚Р°С‚СЊ JSON (РµСЃР»Рё РѕРЅРё РјРµРЅСЏР»РёСЃСЊ)
+        StoryContentLoader.LoadAllContent(); // Р—Р°РіСЂСѓР¶Р°РµРј Р·Р°РЅРѕРІРѕ
+
+        GenerateNewMap(); // Р“РµРЅРµСЂРёСЂСѓРµРј РЅРѕРІСѓСЋ РєР°СЂС‚Сѓ
     }
 
     [ContextMenu("Regenerate Map")]

@@ -1,4 +1,4 @@
-using UnityEngine;
+п»їusing UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 
@@ -6,12 +6,12 @@ public static class TempData
 {
     public static EnemyData CurrentEnemy;
 
-    // ИСПРАВЛЕНИЕ ЗДЕСЬ: Убрали "Game." перед StoryEventData
+    // РРЎРџР РђР’Р›Р•РќРР• Р—Р”Р•РЎР¬: РЈР±СЂР°Р»Рё "Game." РїРµСЂРµРґ StoryEventData
     public static StoryEventData CurrentEvent;
 
     public static StoryNode CurrentNode;
     public static bool IsStoryMode { get; set; } = false;
 
-    // Поле для наград с карты
+    // РџРѕР»Рµ РґР»СЏ РЅР°РіСЂР°Рґ СЃ РєР°СЂС‚С‹
     public static List<string> RewardCards = new List<string>();
 }

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+п»їusing System.Collections.Generic;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "AISourceData", menuName = "AI/Source Data", order = 0)]
@@ -8,19 +8,19 @@ public class AISourceData : ScriptableObject
     public struct AbilityPower
     {
         public Card.AbilityType ability;
-        public float basePower;     // Базовое значение > 1
-        public float valuePower;    // Усиление на каждую единицу abilityValue
+        public float basePower;     // Р‘Р°Р·РѕРІРѕРµ Р·РЅР°С‡РµРЅРёРµ > 1
+        public float valuePower;    // РЈСЃРёР»РµРЅРёРµ РЅР° РєР°Р¶РґСѓСЋ РµРґРёРЅРёС†Сѓ abilityValue
     }
 
     [System.Serializable]
     public struct SpellPower
     {
         public SpellCard.SpellType spellType;
-        public float basePower;     // Базовая сила спелла > 1
-        public float valuePower;    // Усиление на каждую единицу spellValue
+        public float basePower;     // Р‘Р°Р·РѕРІР°СЏ СЃРёР»Р° СЃРїРµР»Р»Р° > 1
+        public float valuePower;    // РЈСЃРёР»РµРЅРёРµ РЅР° РєР°Р¶РґСѓСЋ РµРґРёРЅРёС†Сѓ spellValue
     }
 
-    [Header("Сила способностей")]
+    [Header("РЎРёР»Р° СЃРїРѕСЃРѕР±РЅРѕСЃС‚РµР№")]
     public List<AbilityPower> abilityPowers = new List<AbilityPower>()
     {
         new AbilityPower { ability = Card.AbilityType.INSTANT_ACTIVE,       basePower = 1.4f, valuePower = 0.2f },
@@ -31,7 +31,7 @@ public class AISourceData : ScriptableObject
         new AbilityPower { ability = Card.AbilityType.COUNTER_ATTACK,      basePower = 1.5f, valuePower = 0.4f }
     };
 
-    [Header("Сила спеллов")]
+    [Header("РЎРёР»Р° СЃРїРµР»Р»РѕРІ")]
     public List<SpellPower> spellPowers = new List<SpellPower>()
     {
         new SpellPower { spellType = SpellCard.SpellType.HEAL_ALLY_FIELD_CARDS,     basePower = 1.2f, valuePower = 0.2f },
@@ -67,11 +67,11 @@ public class AISourceData : ScriptableObject
 
 
     /// <summary>
-    /// Возвращает силу способности монстра
+    /// Р’РѕР·РІСЂР°С‰Р°РµС‚ СЃРёР»Сѓ СЃРїРѕСЃРѕР±РЅРѕСЃС‚Рё РјРѕРЅСЃС‚СЂР°
     /// </summary>
     public float GetAbilityPower(Card card)
     {
-        float totalPower = 1.0f; // Минимальная сила способности
+        float totalPower = 1.0f; // РњРёРЅРёРјР°Р»СЊРЅР°СЏ СЃРёР»Р° СЃРїРѕСЃРѕР±РЅРѕСЃС‚Рё
 
         foreach (var ability in card.Abilities)
         {
@@ -85,7 +85,7 @@ public class AISourceData : ScriptableObject
     }
 
     /// <summary>
-    /// Возвращает силу спелла
+    /// Р’РѕР·РІСЂР°С‰Р°РµС‚ СЃРёР»Сѓ СЃРїРµР»Р»Р°
     /// </summary>
     public float GetSpellPower(SpellCard spell)
     {
@@ -94,11 +94,11 @@ public class AISourceData : ScriptableObject
             return power.basePower + spell.SpellValue * power.valuePower;
         }
 
-        return 1.0f; // Минимум, если тип не найден
+        return 1.0f; // РњРёРЅРёРјСѓРј, РµСЃР»Рё С‚РёРї РЅРµ РЅР°Р№РґРµРЅ
     }
 
     /// <summary>
-    /// Возвращает общую силу карты (монстр или спелл)
+    /// Р’РѕР·РІСЂР°С‰Р°РµС‚ РѕР±С‰СѓСЋ СЃРёР»Сѓ РєР°СЂС‚С‹ (РјРѕРЅСЃС‚СЂ РёР»Рё СЃРїРµР»Р»)
     /// </summary>
     public float GetCardPower(Card card)
     {

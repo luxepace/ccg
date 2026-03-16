@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -37,7 +37,7 @@ public class RPSGame : EventInteractiveBase
 
         string enemyChoice = choices[UnityEngine.Random.Range(0, choices.Length)];
 
-        // Определяем победу
+        // РћРїСЂРµРґРµР»СЏРµРј РїРѕР±РµРґСѓ
         bool isVictory = false;
         bool isDraw = false;
 
@@ -52,13 +52,13 @@ public class RPSGame : EventInteractiveBase
             isVictory = true;
         }
 
-        string resultMessage = isDraw ? "Ничья!" : (isVictory ? "Победа!" : "Поражение!");
+        string resultMessage = isDraw ? "РќРёС‡СЊСЏ!" : (isVictory ? "РџРѕР±РµРґР°!" : "РџРѕСЂР°Р¶РµРЅРёРµ!");
 
         if (resultText)
-            resultText.text = $"Вы: {playerChoice}\nВраг: {enemyChoice}\n{resultMessage}";
+            resultText.text = $"Р’С‹: {playerChoice}\nР’СЂР°Рі: {enemyChoice}\n{resultMessage}";
 
-        // Запоминаем результат для кнопки продолжения
-        // Используем closure или временную переменную, но проще сохранить в поле класса
+        // Р—Р°РїРѕРјРёРЅР°РµРј СЂРµР·СѓР»СЊС‚Р°С‚ РґР»СЏ РєРЅРѕРїРєРё РїСЂРѕРґРѕР»Р¶РµРЅРёСЏ
+        // РСЃРїРѕР»СЊР·СѓРµРј closure РёР»Рё РІСЂРµРјРµРЅРЅСѓСЋ РїРµСЂРµРјРµРЅРЅСѓСЋ, РЅРѕ РїСЂРѕС‰Рµ СЃРѕС…СЂР°РЅРёС‚СЊ РІ РїРѕР»Рµ РєР»Р°СЃСЃР°
         lastRoundVictory = isVictory;
         lastRoundDraw = isDraw;
 
@@ -71,11 +71,11 @@ public class RPSGame : EventInteractiveBase
 
     private void FinishGame()
     {
-        // Передаем результат: награду даем только если победа (ничью можно считать как поражение или победу по желанию)
-        // Сейчас логика: Награда только за чистую победу.
+        // РџРµСЂРµРґР°РµРј СЂРµР·СѓР»СЊС‚Р°С‚: РЅР°РіСЂР°РґСѓ РґР°РµРј С‚РѕР»СЊРєРѕ РµСЃР»Рё РїРѕР±РµРґР° (РЅРёС‡СЊСЋ РјРѕР¶РЅРѕ СЃС‡РёС‚Р°С‚СЊ РєР°Рє РїРѕСЂР°Р¶РµРЅРёРµ РёР»Рё РїРѕР±РµРґСѓ РїРѕ Р¶РµР»Р°РЅРёСЋ)
+        // РЎРµР№С‡Р°СЃ Р»РѕРіРёРєР°: РќР°РіСЂР°РґР° С‚РѕР»СЊРєРѕ Р·Р° С‡РёСЃС‚СѓСЋ РїРѕР±РµРґСѓ.
         bool giveReward = lastRoundVictory;
 
-        Debug.Log($"[RPS] Игра окончена. Победа: {giveReward}");
+        Debug.Log($"[RPS] РРіСЂР° РѕРєРѕРЅС‡РµРЅР°. РџРѕР±РµРґР°: {giveReward}");
 
         FinishMinigame(giveReward);
     }

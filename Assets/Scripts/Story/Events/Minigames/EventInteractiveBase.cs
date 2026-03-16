@@ -1,15 +1,15 @@
-using System;
+п»їusing System;
 using UnityEngine;
 using System.Collections.Generic;
 
 public abstract class EventInteractiveBase : MonoBehaviour
 {
-    // Теперь событие передает bool (true = победа, false = поражение)
+    // РўРµРїРµСЂСЊ СЃРѕР±С‹С‚РёРµ РїРµСЂРµРґР°РµС‚ bool (true = РїРѕР±РµРґР°, false = РїРѕСЂР°Р¶РµРЅРёРµ)
     public event Action<bool> OnFinished;
 
     public abstract void Init(List<ParamPair> parameters);
 
-    // Метод для завершения игры с результатом
+    // РњРµС‚РѕРґ РґР»СЏ Р·Р°РІРµСЂС€РµРЅРёСЏ РёРіСЂС‹ СЃ СЂРµР·СѓР»СЊС‚Р°С‚РѕРј
     protected void FinishMinigame(bool isVictory)
     {
         OnFinished?.Invoke(isVictory);

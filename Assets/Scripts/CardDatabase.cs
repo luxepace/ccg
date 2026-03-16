@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
@@ -8,14 +8,14 @@ using UnityEngine;
 public class CardDatabase : ScriptableObject
 {
 
-    [Header("Карты на поле")]
+    [Header("РљР°СЂС‚С‹ РЅР° РїРѕР»Рµ")]
     public List<Card> fieldCards = new List<Card>();
 
-    [Header("Спеллы")]
+    [Header("РЎРїРµР»Р»С‹")]
     public List<SpellCard> spells = new List<SpellCard>();
 
     /// <summary>
-    /// Загружает карты из JSON-файла
+    /// Р—Р°РіСЂСѓР¶Р°РµС‚ РєР°СЂС‚С‹ РёР· JSON-С„Р°Р№Р»Р°
     /// </summary>
     public void LoadFromJSON(string fileName)
     {
@@ -23,7 +23,7 @@ public class CardDatabase : ScriptableObject
 
         if (!File.Exists(filePath))
         {
-            Debug.LogError($"Файл {filePath} не найден. Убедитесь, что он находится в папке StreamingAssets.");
+            Debug.LogError($"Р¤Р°Р№Р» {filePath} РЅРµ РЅР°Р№РґРµРЅ. РЈР±РµРґРёС‚РµСЃСЊ, С‡С‚Рѕ РѕРЅ РЅР°С…РѕРґРёС‚СЃСЏ РІ РїР°РїРєРµ StreamingAssets.");
             return;
         }
 
@@ -67,11 +67,11 @@ public class CardDatabase : ScriptableObject
         }
 
         EditorUtility.SetDirty(this);
-        Debug.Log($"Загружено {fieldCards.Count} карт и {spells.Count} спеллов");
+        Debug.Log($"Р—Р°РіСЂСѓР¶РµРЅРѕ {fieldCards.Count} РєР°СЂС‚ Рё {spells.Count} СЃРїРµР»Р»РѕРІ");
     }
 
     /// <summary>
-    /// Сохраняет текущие карты и спеллы в JSON-файл
+    /// РЎРѕС…СЂР°РЅСЏРµС‚ С‚РµРєСѓС‰РёРµ РєР°СЂС‚С‹ Рё СЃРїРµР»Р»С‹ РІ JSON-С„Р°Р№Р»
     /// </summary>
     public void SaveToJSON(string fileName)
     {
@@ -113,10 +113,10 @@ public class CardDatabase : ScriptableObject
 
         string json = JsonUtility.ToJson(databaseData, true);
         File.WriteAllText(filePath, json);
-        Debug.Log($"Карты сохранены в {filePath}");
+        Debug.Log($"РљР°СЂС‚С‹ СЃРѕС…СЂР°РЅРµРЅС‹ РІ {filePath}");
     }
 
-    // --- Вспомогательные методы ---
+    // --- Р’СЃРїРѕРјРѕРіР°С‚РµР»СЊРЅС‹Рµ РјРµС‚РѕРґС‹ ---
 
     private List<string> GetStringAbilities(List<Card.AbilityType> abilities)
     {
@@ -160,7 +160,7 @@ public class CardDatabase : ScriptableObject
     }
 }
 
-// --- Вспомогательные классы для JSON ---
+// --- Р’СЃРїРѕРјРѕРіР°С‚РµР»СЊРЅС‹Рµ РєР»Р°СЃСЃС‹ РґР»СЏ JSON ---
 [System.Serializable]
 public class CardDatabaseJSON
 {
