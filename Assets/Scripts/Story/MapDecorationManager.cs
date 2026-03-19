@@ -10,14 +10,17 @@ public class MapDecorationManager : MonoBehaviour
     public float generationStep = 4f;
 
     [Header("Настройки путей")]
-    public float pathWidth = 2.2f;       // Ширина тропы
-    public float pathCurveStrength = 4f; // Сила изгиба
-    public int pathSegments = 10;        // Количество точек изгиба (чем больше, тем плавнее, но медленнее)
-    public Color pathColor = new Color(0.3f, 0.18f, 0.08f); // Коричневый
+    // Толщина линии (сделал чуть тоньше для аккуратности, можно вернуть 2.5 если нужно)
+    public float pathWidth = 2.0f;
+    public Color pathColor = new Color(0.35f, 0.22f, 0.10f);
+
+    // Детализация: сколько точек просчета на единицу длины
+    [Range(1, 10)]
+    public int pathDetailPoints = 4;
 
     private string baseSaveFileName = "map_chapter_";
     private string decorSaveSuffix = "_decor.json";
-    private string pathTextureSuffix = "_pathTex.png"; // Суффикс для сохраненной текстуры
+    private string finalTextureSuffix = "_final.png";
 
     private List<MapDecoration> currentDecorations = new List<MapDecoration>();
     private GameObject decorContainer;
@@ -28,9 +31,26 @@ public class MapDecorationManager : MonoBehaviour
         else Destroy(gameObject);
     }
 
-    public void GenerateAndSaveDecorations(int chapterIndex, string themeId, List<FoldLine> folds)
+    public void GenerateBasePaperTexture(int chapterIndex, float[,] heights, List<FoldLine> folds)
     {
-        // Логика генерации декораций (без изменений, она быстрая)
+        Terrain terrain = FindObjectOfType<Terrain>();
+        if (terrain == null || terrain.terrainData == null) return;
+
+        Debug.Log($"[DecorMan] Генерация базовой текстуры (бумага) для главы {chapterIndex}...");
+
+        int resolution = terrain.terrainData.heightmapResolution;
+        float mapSize = terrain.terrainData.size.x;
+
+        Texture2D texture = GeneratePaperTextureWithFolds(heights, resolution, folds, mapSize);
+
+        SaveFinalTexture(texture, chapterIndex);
+        ApplyTextureToTerrain(terrain, texture);
+
+        Debug.Log($"[DecorMan] Базовая текстура главы {chapterIndex} сохранена.");
+    }
+
+    public void GenerateObjectDecorationsOnly(int chapterIndex, string themeId, List<FoldLine> folds)
+    {
         currentDecorations.Clear();
         if (StoryContentLoader.AllDecorations == null) return;
         Terrain terrain = FindObjectOfType<Terrain>();
@@ -40,11 +60,13 @@ public class MapDecorationManager : MonoBehaviour
         foreach (var cfg in StoryContentLoader.AllDecorations)
         {
             if (cfg.allowedThemes.Count > 0 && !cfg.allowedThemes.Contains(themeId)) continue;
+
             for (float x = 0; x < mapSize; x += generationStep)
             {
                 for (float z = 0; z < mapSize; z += generationStep)
                 {
                     if (Random.value > cfg.density * generationStep * generationStep) continue;
+
                     float h = MapGenerator3D.GetTerrainHeightAt(x, z);
                     if (h < cfg.minHeight || h > cfg.maxHeight) continue;
 
@@ -70,54 +92,46 @@ public class MapDecorationManager : MonoBehaviour
         }
         SaveDecorations(currentDecorations, GetDecorSavePath(chapterIndex));
         currentDecorations.Clear();
+        Debug.Log($"[DecorMan] Объекты декораций для главы {chapterIndex} сохранены.");
     }
 
-    /// <summary>
-    /// ГЛАВНЫЙ МЕТОД: Берет ГОТОВУЮ текстуру с террейна, рисует пути и сохраняет.
-    /// НЕ ПЕРЕРИСОВЫВАЕТ БУМАГУ И СКЛАДКИ.
-    /// </summary>
     public void DrawPathsOnTexture(List<PathData> paths, int chapterIndex)
     {
-        Terrain terrain = FindObjectOfType<Terrain>();
-        if (terrain == null || terrain.terrainData == null) return;
-
-        // 1. БЕРЕМ ТЕКУЩУЮ ТЕКСТУРУ С ТЕРРЕЙНА (там уже есть бумага и складки!)
-        Texture2D currentTex = terrain.materialTemplate.GetTexture("_MainTex") as Texture2D;
-
-        if (currentTex == null)
-        {
-            Debug.LogError("[DecorMan] На террейне нет текстуры! Сначала сгенерируйте ландшафт.");
-            return;
-        }
-
-        // 2. Читаем пиксели в память
-        int resolution = currentTex.width;
-        Color[] pixels = currentTex.GetPixels();
-
-        // 3. Рисуем пути прямо по этим пикселям
-        DrawCurvedPathsOnPixels(pixels, resolution, paths);
-
-        // 4. Применяем изменения обратно
-        currentTex.SetPixels(pixels);
-        currentTex.Apply();
-
-        // 5. СОХРАНЯЕМ ИТОГОВУЮ КАРТИНКУ В ФАЙЛ ДЛЯ МГНОВЕННОЙ ЗАГРУЗКИ
-        SavePathTexture(currentTex, chapterIndex);
-
-        Debug.Log($"[DecorMan] Пути нарисованы поверх готовой текстуры и сохранены (Глава {chapterIndex}).");
-    }
-
-    /// <summary>
-    /// МГНОВЕННАЯ ЗАГРУЗКА: Просто читает файл и ставит на террейн.
-    /// Никакой генерации!
-    /// </summary>
-    public void LoadAndApplySavedPaths(int chapterIndex)
-    {
-        string path = Path.Combine(Application.persistentDataPath, $"{baseSaveFileName}{chapterIndex}{pathTextureSuffix}");
+        string path = Path.Combine(Application.persistentDataPath, $"{baseSaveFileName}{chapterIndex}{finalTextureSuffix}");
 
         if (!File.Exists(path))
         {
-            Debug.LogWarning($"[DecorMan] Файл путей не найден: {path}.");
+            Debug.LogError($"[DecorMan] Базовая текстура не найдена для главы {chapterIndex}!");
+            return;
+        }
+
+        byte[] bytes = File.ReadAllBytes(path);
+        Texture2D tex = new Texture2D(2, 2);
+        if (!tex.LoadImage(bytes)) return;
+
+        int resolution = tex.width;
+        Color[] pixels = tex.GetPixels();
+
+        DrawWindingPathsOnPixels(pixels, resolution, paths);
+
+        tex.SetPixels(pixels);
+        tex.Apply();
+
+        SaveFinalTexture(tex, chapterIndex);
+
+        Terrain terrain = FindObjectOfType<Terrain>();
+        if (terrain != null) ApplyTextureToTerrain(terrain, tex);
+
+        Debug.Log($"[DecorMan] Извилистые пути нарисованы для главы {chapterIndex}.");
+    }
+
+    public void LoadAndApplySavedPaths(int chapterIndex)
+    {
+        string path = Path.Combine(Application.persistentDataPath, $"{baseSaveFileName}{chapterIndex}{finalTextureSuffix}");
+
+        if (!File.Exists(path))
+        {
+            Debug.LogWarning($"[DecorMan] Файл текстуры не найден: {path}.");
             return;
         }
 
@@ -131,100 +145,226 @@ public class MapDecorationManager : MonoBehaviour
             if (terrain != null)
             {
                 ApplyTextureToTerrain(terrain, tex);
-                Debug.Log("[DecorMan] Пути загружены из файла (МГНОВЕННО).");
+                Debug.Log("[DecorMan] Текстура загружена из файла (МГНОВЕННО).");
             }
         }
     }
 
-    // Рисование извилистых линий по массиву пикселей
-    void DrawCurvedPathsOnPixels(Color[] pixels, int resolution, List<PathData> paths)
+    // === ГЕНЕРАЦИЯ БУМАГИ (Без изменений) ===
+    Texture2D GeneratePaperTextureWithFolds(float[,] heightData, int resolution, List<FoldLine> folds, float mapSize)
+    {
+        Texture2D texture = new Texture2D(resolution, resolution, TextureFormat.RGB24, false);
+        texture.filterMode = FilterMode.Point;
+        texture.wrapMode = TextureWrapMode.Clamp;
+
+        Color[] pixels = new Color[resolution * resolution];
+
+        Color basePaperLight = new Color(0.75f, 0.65f, 0.45f);
+        Color basePaperDark = new Color(0.45f, 0.35f, 0.20f);
+        Color foldShadowColor = new Color(0.35f, 0.28f, 0.18f);
+        Color edgeBurnColor = new Color(0.25f, 0.20f, 0.12f);
+
+        int index = 0;
+        float centerX = resolution * 0.5f;
+        float centerY = resolution * 0.5f;
+        float maxDistSqr = centerX * centerX + centerY * centerY;
+
+        float fScaleX = 0.15f;
+        float fScaleY = 0.05f;
+        float fOffX = Random.value * 100f;
+        float fOffY = Random.value * 100f;
+
+        for (int y = 0; y < resolution; y++)
+        {
+            float worldZ = (float)y / (resolution - 1) * mapSize;
+            float dy = y - centerY;
+
+            for (int x = 0; x < resolution; x++)
+            {
+                float worldX = (float)x / (resolution - 1) * mapSize;
+
+                float h = heightData[y, x];
+                Color col = Color.Lerp(basePaperDark, basePaperLight, h * h * 0.9f + h * 0.1f);
+
+                if (folds != null && folds.Count > 0)
+                {
+                    float closestDist = 1000f;
+                    float nearestWidth = 0f;
+
+                    for (int i = 0; i < folds.Count; i++)
+                    {
+                        var fold = folds[i];
+                        float dist = GetDistanceToLineSegment(worldX, worldZ, fold.startX, fold.startZ, fold.endX, fold.endZ);
+                        float drawWidth = fold.width * 0.25f;
+                        if (dist < drawWidth && dist < closestDist)
+                        {
+                            closestDist = dist;
+                            nearestWidth = drawWidth;
+                        }
+                    }
+
+                    if (nearestWidth > 0f)
+                    {
+                        float t = closestDist / nearestWidth;
+                        float intensity = 1f - t;
+                        if (intensity > 0.01f)
+                        {
+                            float shadow = Mathf.Pow(intensity, 10.0f);
+                            float mix = shadow * 0.4f;
+                            if (mix > 0.001f)
+                            {
+                                col.r = Mathf.Lerp(col.r, foldShadowColor.r, mix);
+                                col.g = Mathf.Lerp(col.g, foldShadowColor.g, mix);
+                                col.b = Mathf.Lerp(col.b, foldShadowColor.b, mix);
+                            }
+                        }
+                    }
+                }
+
+                float fiber = Mathf.PerlinNoise(x * fScaleX + fOffX, y * fScaleY + fOffY);
+                if (fiber > 0.55f)
+                {
+                    float fVal = (fiber - 0.55f) * 0.06f;
+                    col.r += fVal; col.g += fVal * 0.9f; col.b += fVal * 0.8f;
+                }
+                else if (fiber < 0.45f)
+                {
+                    float fVal = (0.45f - fiber) * 0.06f;
+                    col.r -= fVal; col.g -= fVal * 0.9f; col.b -= fVal * 0.8f;
+                }
+
+                float dx = x - centerX;
+                float distSqr = dx * dx + dy * dy;
+                if (distSqr > 0.1f)
+                {
+                    float vignette = Mathf.Sqrt(distSqr / maxDistSqr);
+                    if (vignette < 1f)
+                    {
+                        float vFactor = Mathf.Pow(vignette, 5.0f);
+                        if (vFactor > 0.001f)
+                        {
+                            float vMix = vFactor * 0.3f;
+                            col.r = Mathf.Lerp(col.r, edgeBurnColor.r, vMix);
+                            col.g = Mathf.Lerp(col.g, edgeBurnColor.g, vMix);
+                            col.b = Mathf.Lerp(col.b, edgeBurnColor.b, vMix);
+                        }
+                    }
+                }
+
+                if (col.r > 1f) col.r = 1f; if (col.r < 0f) col.r = 0f;
+                if (col.g > 1f) col.g = 1f; if (col.g < 0f) col.g = 0f;
+                if (col.b > 1f) col.b = 1f; if (col.b < 0f) col.b = 0f;
+
+                pixels[index++] = col;
+            }
+        }
+
+        texture.SetPixels(pixels);
+        texture.Apply();
+        return texture;
+    }
+
+    // === НОВАЯ ЛОГИКА: ИЗВИЛИСТЫЕ ПУТИ С ГЛАДКИМИ КРАЯМИ ===
+    void DrawWindingPathsOnPixels(Color[] pixels, int resolution, List<PathData> paths)
     {
         float mapSize = MapGenerator3D.Instance.mapSize;
         float halfW = pathWidth * 0.5f;
 
         foreach (var path in paths)
         {
-            // Генерируем точки кривой ОДИН РАЗ для этого пути
-            List<Vector2> curvePoints = GenerateCurvedPathPoints(path.start, path.end);
+            float totalDist = Vector2.Distance(path.start, path.end);
+            // Количество шагов
+            int steps = Mathf.Max(30, Mathf.FloorToInt(totalDist * pathDetailPoints));
 
-            // Проходим по всем пикселям (можно оптимизировать через bounding box, но для старта пойдет)
-            // Чтобы было быстрее, проверяем расстояние до сегментов кривой
-            for (int i = 0; i < pixels.Length; i++)
+            Vector2 dir = (path.end - path.start).normalized;
+            Vector2 perp = new Vector2(-dir.y, dir.x);
+
+            // Параметры извилистости
+            float curveAmplitude = 4.0f;  // СИЛЬНОЕ отклонение (виляние)
+            float noiseFrequency = 0.08f; // НИЗКАЯ частота (плавные длинные изгибы)
+
+            for (int i = 0; i <= steps; i++)
             {
-                int x = i % resolution;
-                int y = i / resolution;
+                float t = (float)i / steps;
 
-                float worldX = (float)x / (resolution - 1) * mapSize;
-                float worldZ = (float)y / (resolution - 1) * mapSize;
+                // Базовая точка на прямой
+                Vector2 currentPos = Vector2.Lerp(path.start, path.end, t);
 
-                bool onPath = false;
-                // Проверяем расстояние до каждого сегмента кривой
-                for (int j = 0; j < curvePoints.Count - 1; j++)
+                // Вычисляем смещение используя Перлин-шум для плавности
+                // Используем координату вдоль пути как вход для шума
+                float noiseInput = t * totalDist * noiseFrequency + MapGenerator3D.Instance.offsetX;
+                float noiseValue = Mathf.PerlinNoise(noiseInput, 0f) * 2f - 1f; // От -1 до 1
+
+                // Применяем смещение перпендикулярно направлению
+                // Делаем затухание на самых концах (у нод), чтобы вход был ровным
+                float fade = 1f - Mathf.Abs(t - 0.5f) * 2f;
+                fade = Mathf.SmoothStep(0, 1, fade); // Плавное затухание
+
+                // На концах (первые и последние 10%) смещение почти нулевое
+                if (t < 0.1f || t > 0.9f) fade *= (t < 0.1f ? t * 10f : (1f - t) * 10f);
+
+                float offset = noiseValue * curveAmplitude * fade;
+
+                Vector2 windingPos = currentPos + perp * offset;
+
+                // Рисуем четкий круг в этой точке
+                DrawSolidCircleOnPixels(pixels, resolution, mapSize, windingPos, halfW);
+            }
+        }
+    }
+
+    // Рисует ТВЕРДЫЙ круг с мягким краем (антиалиасинг только по краю круга)
+    void DrawSolidCircleOnPixels(Color[] pixels, int resolution, float mapSize, Vector2 centerWorld, float radiusWorld)
+    {
+        float pixelsPerUnit = resolution / mapSize;
+        int cx = Mathf.FloorToInt(centerWorld.x * pixelsPerUnit);
+        int cy = Mathf.FloorToInt(centerWorld.y * pixelsPerUnit);
+        int r = Mathf.CeilToInt(radiusWorld * pixelsPerUnit);
+
+        int minX = Mathf.Max(0, cx - r);
+        int maxX = Mathf.Min(resolution - 1, cx + r);
+        int minY = Mathf.Max(0, cy - r);
+        int maxY = Mathf.Min(resolution - 1, cy + r);
+
+        float rSquared = r * r;
+
+        for (int y = minY; y <= maxY; y++)
+        {
+            for (int x = minX; x <= maxX; x++)
+            {
+                int dx = x - cx;
+                int dy = y - cy;
+                int distSq = dx * dx + dy * dy;
+
+                if (distSq <= rSquared)
                 {
-                    float dist = GetDistanceToLineSegment(worldX, worldZ, curvePoints[j].x, curvePoints[j].y, curvePoints[j + 1].x, curvePoints[j + 1].y);
+                    int idx = y * resolution + x;
 
-                    if (dist < halfW)
+                    // Вычисляем прозрачность ТОЛЬКО для края круга (для сглаживания)
+                    float dist = Mathf.Sqrt(distSq);
+                    float edgeT = dist / r;
+
+                    // Если пиксель глубоко внутри круга -> alpha = 1
+                    // Если на краю -> alpha плавно падает
+                    float alpha = 1f;
+                    if (edgeT > 0.8f)
                     {
-                        float t = dist / halfW;
-                        // Мягкий край
-                        float alpha = Mathf.Pow(1f - t, 0.5f);
-
-                        // Смешиваем цвет пути с текущим цветом пикселя (бумаги/складки)
-                        pixels[i] = Color.Lerp(pixels[i], pathColor, alpha * 0.9f);
-                        onPath = true;
-                        break; // Пиксель закрашен, переходим к следующему
+                        alpha = Mathf.Pow(1f - edgeT, 0.5f) * 1.25f; // Мягкий край
+                        if (alpha > 1f) alpha = 1f;
                     }
+
+                    // Смешиваем цвет пути с фоном
+                    pixels[idx] = Color.Lerp(pixels[idx], pathColor, alpha * 0.9f);
                 }
             }
         }
     }
 
-    /// <summary>
-    /// Генерирует точки для извилистой линии с ЧАСТЫМИ, но НЕБОЛЬШИМИ поворотами.
-    /// Гарантирует перекрытие сегментов за счет достаточного количества точек.
-    /// </summary>
-    List<Vector2> GenerateCurvedPathPoints(Vector2 start, Vector2 end)
+    // === ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ===
+
+    void SaveFinalTexture(Texture2D tex, int chapterIndex)
     {
-        List<Vector2> points = new List<Vector2>();
-
-        // Берем чуть больше сегментов для гарантии сплошности на резких поворотах
-        // Даже если в настройках стоит 30, здесь возьмем 50-60 для качества линии.
-        int segments = Mathf.Max(pathSegments, 20);
-
-        Vector2 dir = (end - start).normalized;
-        Vector2 perp = new Vector2(-dir.y, dir.x);
-
-        // === НАСТРОЙКИ ДЛЯ "ЧАСТОГО ВИЛЯНИЯ" ===
-        float curveStrength = 2.5f;      // УМЕНЬШИЛИ: было 8. Теперь отклонение небольшое (всего +/- 2.5 единицы)
-        float noiseFrequency = 0.25f;    // УВЕЛИЧИЛИ: было 0.15. Теперь шум меняется чаще, создавая частые зигзаги
-
-        for (int i = 0; i <= segments; i++)
-        {
-            float t = i / (float)segments;
-            Vector2 p = Vector2.Lerp(start, end, t);
-
-            // Шум только в центре, чтобы у нод вход был ровным
-            if (i > 4 && i < segments - 4)
-            {
-                // Частый шум дает много мелких поворотов
-                float noise = Mathf.PerlinNoise(p.x * noiseFrequency + MapGenerator3D.Instance.offsetX,
-                                                p.y * noiseFrequency + MapGenerator3D.Instance.offsetY) * 2f - 1f;
-
-                // Плавное затухание к краям
-                float fade = 1f - Mathf.Abs(t - 0.5f) * 2f;
-                fade = fade * fade;
-
-                // Небольшое, но частое смещение
-                p += perp * noise * curveStrength * fade;
-            }
-            points.Add(p);
-        }
-        return points;
-    }
-
-    void SavePathTexture(Texture2D tex, int chapterIndex)
-    {
-        string path = Path.Combine(Application.persistentDataPath, $"{baseSaveFileName}{chapterIndex}{pathTextureSuffix}");
+        string path = Path.Combine(Application.persistentDataPath, $"{baseSaveFileName}{chapterIndex}{finalTextureSuffix}");
         byte[] bytes = tex.EncodeToPNG();
         Directory.CreateDirectory(Path.GetDirectoryName(path));
         File.WriteAllBytes(path, bytes);
@@ -249,7 +389,6 @@ public class MapDecorationManager : MonoBehaviour
         if (r != null) r.material = mat;
     }
 
-    // --- Декорации (спавн объектов) ---
     public void LoadAndSpawnDecorations(int chapterIndex)
     {
         string path = GetDecorSavePath(chapterIndex);
@@ -285,6 +424,7 @@ public class MapDecorationManager : MonoBehaviour
     }
 
     string GetDecorSavePath(int i) => Path.Combine(Application.persistentDataPath, $"{baseSaveFileName}{i}{decorSaveSuffix}");
+
     void SaveDecorations(List<MapDecoration> list, string path)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path));

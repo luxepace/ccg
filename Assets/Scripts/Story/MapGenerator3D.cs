@@ -32,7 +32,6 @@ public class MapGenerator3D : MonoBehaviour
     private TerrainData terrainData;
     private bool isHeightsLoaded = false;
 
-    // Текущие складки для активной генерации
     public List<FoldLine> currentFolds = new List<FoldLine>();
 
     private void Awake()
@@ -66,7 +65,7 @@ public class MapGenerator3D : MonoBehaviour
     {
         if (chapters == null || chapters.Count == 0) return;
 
-        Debug.Log("[MapGen] Начало массовой генерации ландшафтов...");
+        Debug.Log("[MapGen] Начало массовой генерации ландшафтов (данные)...");
         offsetX = Random.Range(0f, 10000f);
         offsetY = Random.Range(0f, 10000f);
 
@@ -74,35 +73,39 @@ public class MapGenerator3D : MonoBehaviour
         {
             SetupThemeParameters(chapter.themeId);
 
+            // 1. Генерируем высоты и складки
             float[,] heights = GenerateHeights();
 
+            // 2. Сохраняем высоты (JSON)
             string heightFile = GetChapterSavePath(chapter.chapterIndex);
             SaveMap(heights, heightFile);
 
+            // 3. Сохраняем складки (JSON)
             string foldsFile = GetFoldsSavePath(chapter.chapterIndex);
             SaveFolds(currentFolds, foldsFile);
 
-            // === НОВОЕ: Генерация и сохранение декораций ===
+            // === ИСПРАВЛЕНИЕ: ГЕНЕРАЦИЯ БАЗОВОЙ ТЕКСТУРЫ (БУМАГА + СКЛАДКИ) ===
+            // Теперь мы явно создаем текстуру и сохраняем её, чтобы файл существовал до отрисовки путей
             if (MapDecorationManager.Instance != null)
             {
-                MapDecorationManager.Instance.GenerateAndSaveDecorations(
+                MapDecorationManager.Instance.GenerateBasePaperTexture(
+                    chapter.chapterIndex,
+                    heights,
+                    currentFolds
+                );
+
+                // Также генерируем объекты декораций (деревья/камни)
+                MapDecorationManager.Instance.GenerateObjectDecorationsOnly(
                     chapter.chapterIndex,
                     chapter.themeId,
-                    currentFolds // Передаем текущие складки, чтобы избегать их
+                    currentFolds
                 );
             }
-            // ==============================================
+            // ================================================================
 
-            Debug.Log($"[MapGen] Глава {chapter.chapterIndex}: сохранены высоты, складки и декорации.");
-            Debug.Log($"[MapGen] Глава {chapter.chapterIndex}: сохранены высоты и складки.");
+            Debug.Log($"[MapGen] Глава {chapter.chapterIndex}: данные, текстура бумаги и декорации сохранены.");
         }
-        Debug.Log("[MapGen] Все ландшафты созданы.");
-    }
-
-    // В конец класса MapGenerator3D добавить:
-    public List<FoldLine> GetCurrentFolds()
-    {
-        return currentFolds;
+        Debug.Log("[MapGen] Все данные ландшафтов созданы.");
     }
 
     public void ApplyThemeAndLoadChapter(int chapterIndex, string themeId)
@@ -113,7 +116,7 @@ public class MapGenerator3D : MonoBehaviour
 
         if (File.Exists(heightFile))
         {
-            Debug.Log($"[MapGen] Загрузка ландшафта главы {chapterIndex}");
+            Debug.Log($"[MapGen] Загрузка данных ландшафта главы {chapterIndex}");
 
             LoadMapFromFile(heightFile);
 
@@ -128,45 +131,30 @@ public class MapGenerator3D : MonoBehaviour
                 RegenerateFoldsRandomly();
             }
 
+            // Загрузка объектов декораций
             if (MapDecorationManager.Instance != null)
             {
-                string decorFile = Path.Combine(Application.persistentDataPath, $"{baseSaveFileName}{chapterIndex}_decor.json");
-
-                if (File.Exists(decorFile))
-                {
-                    // Менеджер сам загрузит и заспавнит
-                    MapDecorationManager.Instance.LoadAndSpawnDecorations(chapterIndex);
-                }
-                else
-                {
-                    Debug.LogWarning($"[MapGen] Файл декораций не найден. Генерируем новые прямо сейчас.");
-                    // Экстренная генерация
-                    MapDecorationManager.Instance.GenerateAndSaveDecorations(chapterIndex, themeId, currentFolds);
-                    // Теперь нужно загрузить то, что только что сгенерировалось (менеджер очистил список после сохранения)
-                    // Поэтому лучше вызвать спавн вручную или изменить менеджер, чтобы он возвращал список.
-                    // Простой хак: вызовем LoadAndSpawnDecorations снова, файл-то уже создан!
-                    MapDecorationManager.Instance.LoadAndSpawnDecorations(chapterIndex);
-                }
+                MapDecorationManager.Instance.LoadAndSpawnDecorations(chapterIndex);
             }
 
-            if (terrainData != null)
-            {
-                int res = terrainData.heightmapResolution;
-                float[,] loadedHeights = terrainData.GetHeights(0, 0, res, res);
-                ApplyPaperTextureToTerrain(loadedHeights, res);
-                Debug.Log("[MapGen] Текстура сгенерирована по загруженным складкам.");
-            }
+            isHeightsLoaded = true;
+            Debug.Log("[MapGen] Данные ландшафта загружены. Ожидание загрузки текстуры...");
         }
         else
         {
             Debug.LogWarning($"[MapGen] Файл высот не найден! Экстренная генерация...");
             float[,] heights = GenerateHeights();
-            SaveMap(heights, heightFile);
-            SaveFolds(currentFolds, foldsFile);
-        }
+            SaveMap(heights, GetChapterSavePath(chapterIndex));
+            SaveFolds(currentFolds, GetFoldsSavePath(chapterIndex));
 
-        isHeightsLoaded = true;
-        Debug.Log("[MapGen] Ландшафт загружен и готов.");
+            if (MapDecorationManager.Instance != null)
+            {
+                MapDecorationManager.Instance.GenerateBasePaperTexture(chapterIndex, heights, currentFolds);
+                MapDecorationManager.Instance.GenerateObjectDecorationsOnly(chapterIndex, "forest", currentFolds);
+            }
+
+            isHeightsLoaded = true;
+        }
     }
 
     void RegenerateFoldsRandomly()
@@ -178,24 +166,13 @@ public class MapGenerator3D : MonoBehaviour
         for (int i = 0; i < foldCount; i++)
         {
             FoldLine fold = new FoldLine();
-
-            // ИСПРАВЛЕНИЕ: Генерируем truly случайные линии
-            // 1. Случайный угол
             float angle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
-
-            // 2. Случайное смещение линии от центра (чтобы они не все проходили через центр!)
-            // Мы берем случайную точку на перпендикуляре к направлению линии
             float randomOffset = Random.Range(-mapSize * 0.7f, mapSize * 0.7f);
 
-            // Вектор направления линии
             Vector2 dir = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
-            // Вектор перпендикуляра (нормаль)
             Vector2 perp = new Vector2(-dir.y, dir.x);
-
-            // Центральная точка этой конкретной линии (смещена от центра карты)
             Vector2 centerPoint = new Vector2(mapSize / 2f, mapSize / 2f) + perp * randomOffset;
 
-            // Начало и конец линии далеко за картой относительно её собственной центральной точки
             fold.startX = centerPoint.x + dir.x * hugeLength;
             fold.startZ = centerPoint.y + dir.y * hugeLength;
             fold.endX = centerPoint.x - dir.x * hugeLength;
@@ -212,7 +189,6 @@ public class MapGenerator3D : MonoBehaviour
     void SetupThemeParameters(string themeId)
     {
         MapTheme config = StoryContentLoader.GetThemeById(themeId);
-
         if (config != null)
         {
             noiseScale = config.noiseScale;
@@ -239,7 +215,6 @@ public class MapGenerator3D : MonoBehaviour
         for (int i = 0; i < foldCount; i++)
         {
             FoldLine fold = new FoldLine();
-
             float angle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
             float randomOffset = Random.Range(-mapSize * 0.7f, mapSize * 0.7f);
 
@@ -267,23 +242,19 @@ public class MapGenerator3D : MonoBehaviour
         for (int y = 0; y < resolution; y++)
         {
             float worldZ = (float)y / (resolution - 1) * mapSize;
-
             for (int x = 0; x < resolution; x++)
             {
                 float worldX = (float)x / (resolution - 1) * mapSize;
                 float heightValue = 0.5f;
 
-                // 1. Базовый шум
                 float lx = worldX / largeNoiseScale + offsetX;
                 float lz = worldZ / largeNoiseScale + offsetY;
                 float largeNoise = Mathf.PerlinNoise(lx, lz) * 2f - 1f;
                 heightValue += largeNoise * largeNoiseStrength;
 
-                // 2. Прямые складки
                 foreach (var fold in currentFolds)
                 {
                     float dist = GetDistanceToLineSegment(worldX, worldZ, fold.startX, fold.startZ, fold.endX, fold.endZ);
-
                     if (dist < fold.width)
                     {
                         float t = dist / fold.width;
@@ -292,191 +263,23 @@ public class MapGenerator3D : MonoBehaviour
                     }
                 }
 
-                // 3. Мелкий шум
                 float nx = worldX / nScale + offsetX;
                 float nz = worldZ / nScale + offsetY;
                 float paperNoise = Mathf.PerlinNoise(nx, nz) * 2f - 1f;
                 heightValue += paperNoise * nStrength;
 
-                // Ограничение диапазона (плоский рельеф: 0.3 - 0.7)
                 heightValue = Mathf.Clamp(heightValue, 0.3f, 0.7f);
-
                 heights[y, x] = heightValue;
             }
         }
 
-        // Усиленное сглаживание
         int passes = Mathf.Max(smoothingPasses, 2);
         heights = SmoothHeightmap(heights, resolution, passes);
-
-        ApplyPaperTextureToTerrain(heights, resolution);
 
         return heights;
     }
 
-    void ApplyPaperTextureToTerrain(float[,] heightData, int resolution)
-    {
-        Texture2D paperTexture = GeneratePaperTexture(heightData, resolution);
-
-        if (terrain != null)
-        {
-            Shader targetShader = Shader.Find("Universal Render Pipeline/Lit");
-            if (targetShader == null) targetShader = Shader.Find("Standard");
-
-            if (targetShader == null)
-            {
-                Debug.LogError("[MapGen] Шейдер не найден!");
-                return;
-            }
-
-            if (terrain.materialTemplate == null || terrain.materialTemplate.shader != targetShader)
-            {
-                terrain.materialTemplate = new Material(targetShader);
-            }
-
-            Material mat = terrain.materialTemplate;
-            mat.SetTexture("_BaseMap", paperTexture);
-            mat.SetTexture("_MainTex", paperTexture);
-            mat.SetFloat("_Glossiness", 0.0f);
-            mat.SetFloat("_Smoothness", 0.05f);
-            mat.SetFloat("_Metallic", 0.0f);
-            mat.color = Color.white;
-
-            Renderer rend = terrain.GetComponent<Renderer>();
-            if (rend != null)
-            {
-                rend.material = mat;
-                rend.sharedMaterial = mat;
-            }
-        }
-    }
-
-    Texture2D GeneratePaperTexture(float[,] heightData, int resolution)
-    {
-        Texture2D texture = new Texture2D(resolution, resolution, TextureFormat.RGB24, false);
-        texture.filterMode = FilterMode.Point; // Четкость
-        texture.wrapMode = TextureWrapMode.Clamp;
-
-        Color[] pixels = new Color[resolution * resolution];
-
-        // Цвета: Темная бумага, Светлые линии
-        Color basePaperLight = new Color(0.75f, 0.65f, 0.45f);
-        Color basePaperDark = new Color(0.45f, 0.35f, 0.20f);
-        Color foldShadowColor = new Color(0.35f, 0.28f, 0.18f); // Светлый оттенок для линий
-        Color edgeBurnColor = new Color(0.25f, 0.20f, 0.12f);
-
-        int index = 0;
-        float centerX = resolution * 0.5f;
-        float centerY = resolution * 0.5f;
-        float maxDistSqr = centerX * centerX + centerY * centerY;
-
-        var folds = currentFolds;
-        int foldCount = folds.Count;
-
-        float fScaleX = 0.15f;
-        float fScaleY = 0.05f;
-        float fOffX = offsetX * 2f;
-        float fOffY = offsetY * 2f;
-
-        for (int y = 0; y < resolution; y++)
-        {
-            float worldZ = (float)y / (resolution - 1) * mapSize;
-            float dy = y - centerY;
-
-            for (int x = 0; x < resolution; x++)
-            {
-                float worldX = (float)x / (resolution - 1) * mapSize;
-
-                // 1. Базовый цвет от высоты
-                float h = heightData[y, x];
-                Color col = Color.Lerp(basePaperDark, basePaperLight, h * h * 0.9f + h * 0.1f);
-
-                // 2. Линии складок (Прямые)
-                if (foldCount > 0)
-                {
-                    float closestDist = 1000f;
-                    float nearestWidth = 0f;
-
-                    for (int i = 0; i < foldCount; i++)
-                    {
-                        var fold = folds[i];
-                        float dist = GetDistanceToLineSegment(worldX, worldZ, fold.startX, fold.startZ, fold.endX, fold.endZ);
-
-                        float drawWidth = fold.width * 0.25f; // Тонкие линии
-                        if (dist < drawWidth && dist < closestDist)
-                        {
-                            closestDist = dist;
-                            nearestWidth = drawWidth;
-                        }
-                    }
-
-                    if (nearestWidth > 0f)
-                    {
-                        float t = closestDist / nearestWidth;
-                        float intensity = 1f - t;
-
-                        if (intensity > 0.01f)
-                        {
-                            float shadow = Mathf.Pow(intensity, 10.0f); // Резкий переход
-                            float mix = shadow * 0.4f; // Светлое смешивание
-
-                            if (mix > 0.001f)
-                            {
-                                col.r = Mathf.Lerp(col.r, foldShadowColor.r, mix);
-                                col.g = Mathf.Lerp(col.g, foldShadowColor.g, mix);
-                                col.b = Mathf.Lerp(col.b, foldShadowColor.b, mix);
-                            }
-                        }
-                    }
-                }
-
-                // 3. Волокна бумаги
-                float fiber = Mathf.PerlinNoise(x * fScaleX + fOffX, y * fScaleY + fOffY);
-                if (fiber > 0.55f)
-                {
-                    float fVal = (fiber - 0.55f) * 0.06f;
-                    col.r += fVal; col.g += fVal * 0.9f; col.b += fVal * 0.8f;
-                }
-                else if (fiber < 0.45f)
-                {
-                    float fVal = (0.45f - fiber) * 0.06f;
-                    col.r -= fVal; col.g -= fVal * 0.9f; col.b -= fVal * 0.8f;
-                }
-
-                // 4. Виньетка
-                float dx = x - centerX;
-                float distSqr = dx * dx + dy * dy;
-                if (distSqr > 0.1f)
-                {
-                    float vignette = Mathf.Sqrt(distSqr / maxDistSqr);
-                    if (vignette < 1f)
-                    {
-                        float vFactor = Mathf.Pow(vignette, 5.0f);
-                        if (vFactor > 0.001f)
-                        {
-                            float vMix = vFactor * 0.3f;
-                            col.r = Mathf.Lerp(col.r, edgeBurnColor.r, vMix);
-                            col.g = Mathf.Lerp(col.g, edgeBurnColor.g, vMix);
-                            col.b = Mathf.Lerp(col.b, edgeBurnColor.b, vMix);
-                        }
-                    }
-                }
-
-                // Clamp
-                if (col.r > 1f) col.r = 1f; if (col.r < 0f) col.r = 0f;
-                if (col.g > 1f) col.g = 1f; if (col.g < 0f) col.g = 0f;
-                if (col.b > 1f) col.b = 1f; if (col.b < 0f) col.b = 0f;
-
-                pixels[index++] = col;
-            }
-        }
-
-        texture.SetPixels(pixels);
-        texture.Apply();
-        return texture;
-    }
-
-    // === МЕТОДЫ СОХРАНЕНИЯ/ЗАГРУЗКИ (Для прямых линий) ===
+    // === МЕТОДЫ СОХРАНЕНИЯ/ЗАГРУЗКИ ===
 
     string GetFoldsSavePath(int chapterIndex)
     {
@@ -540,14 +343,17 @@ public class MapGenerator3D : MonoBehaviour
         {
             string hPath = GetChapterSavePath(i);
             string fPath = GetFoldsSavePath(i);
+            string texPath = Path.Combine(Application.persistentDataPath, $"{baseSaveFileName}{i}_final.png");
+            string decorPath = Path.Combine(Application.persistentDataPath, $"{baseSaveFileName}{i}_decor.json");
 
             if (File.Exists(hPath)) File.Delete(hPath);
             if (File.Exists(fPath)) File.Delete(fPath);
+            if (File.Exists(texPath)) File.Delete(texPath);
+            if (File.Exists(decorPath)) File.Delete(decorPath);
         }
-        Debug.Log("[MapGen] Все файлы карт и складок удалены.");
+        Debug.Log("[MapGen] Все файлы карт удалены.");
     }
 
-    
     float GetDistanceToLineSegment(float px, float pz, float x1, float z1, float x2, float z2)
     {
         float A = px - x1;
@@ -579,7 +385,6 @@ public class MapGenerator3D : MonoBehaviour
             {
                 for (int x = 1; x < res - 1; x++)
                 {
-                    // Мягкое ядро сглаживания
                     float sum = source[y, x] * 2.0f;
                     sum += source[y - 1, x] * 1.5f;
                     sum += source[y + 1, x] * 1.5f;
@@ -651,40 +456,10 @@ public class MapGenerator3D : MonoBehaviour
         if (terrainData != null)
             terrainData.SetHeights(0, 0, heights);
     }
-
-    public void GenerateNewMap()
-    {
-        float[,] heights = GenerateHeights();
-        terrainData.SetHeights(0, 0, heights);
-        isHeightsLoaded = true;
-    }
-
-    public void DeleteSave()
-    {
-        string oldPath = Path.Combine(Application.persistentDataPath, "mapData.json");
-        if (File.Exists(oldPath)) File.Delete(oldPath);
-    }
 }
 
 [System.Serializable]
-public class ThemeConfigRoot { public List<MapThemeConfig> themes; }
-[System.Serializable]
-public class MapThemeConfig
-{
-    public string themeId;
-    public string themeName;
-    public string terrainTexture;
-    public string skyboxMaterial;
-    public float r, g, b, a;
-    public string[] decorationPrefabs;
-    public float noiseScale = 50f;
-    public float heightMultiplier = 25f;
-    public int octaves = 4;
-    public float persistence = 0.5f;
-    public float peakThreshold = 0.5f;
-    public float peakSharpness = 2.5f;
-    public int smoothingPasses = 1;
-}
+public class ThemeConfigRoot { public List<MapTheme> themes; }
 [System.Serializable]
 public class MapSaveData
 {
