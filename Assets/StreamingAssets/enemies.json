@@ -23,7 +23,7 @@
       "id": "boss_forest",
       "enemyName": "Вождь Стаи",
       "avatarPath": "Sprites/Cards/vojak",
-      "enemyHP": 30,
+      "enemyHP": 1,
       "enemyMaxHP": 30,
       "enemyDeck": [
         "Вожак волков",

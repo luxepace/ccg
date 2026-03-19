@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 578402338013619631}
   - component: {fileID: 1948465641206102287}
   - component: {fileID: 6823966025776889174}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Icon
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -85,7 +85,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6766197485692162577}
   - component: {fileID: 4217113421584907358}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Node_Base
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -145,6 +145,7 @@ MonoBehaviour:
   bossSprite: {fileID: 21300000, guid: 015feb8b4400fa349a3e54f960fd4067, type: 3}
   restSprite: {fileID: 21300000, guid: 6858d23c5441c7847ba9ceb890242b06, type: 3}
   lockedSprite: {fileID: 21300000, guid: beee318d3ff5c8045a315078b17189d3, type: 3}
+  chapterEndSprite: {fileID: 0}
   lockedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   availableColor: {r: 1, g: 1, b: 1, a: 1}
   visitedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
@@ -160,7 +161,7 @@ GameObject:
   - component: {fileID: 7130374567871333490}
   - component: {fileID: 4837099602094518779}
   - component: {fileID: 422915955982986191}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: ProgressMark
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -236,7 +237,7 @@ GameObject:
   - component: {fileID: 7551149679487946796}
   - component: {fileID: 1599919470720749182}
   - component: {fileID: 1865836036463106717}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Canvas
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -338,7 +339,7 @@ GameObject:
   - component: {fileID: 4802853008375039250}
   - component: {fileID: 6894273726781307856}
   - component: {fileID: 3354510949910051321}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: LockedIcon
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -411,7 +412,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2743225066708457348}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: IconContainer
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -451,7 +452,7 @@ GameObject:
   - component: {fileID: 2050655818487680664}
   - component: {fileID: 1398412619352610871}
   - component: {fileID: 8505458171052661363}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Text (TMP)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -585,7 +586,7 @@ GameObject:
   - component: {fileID: 8961427414297580823}
   - component: {fileID: 1022159545295061893}
   - component: {fileID: 5677474549211618022}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Tooltip
   m_TagString: Untagged
   m_Icon: {fileID: 0}

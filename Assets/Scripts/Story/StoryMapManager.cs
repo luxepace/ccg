@@ -1,7 +1,6 @@
 ﻿using UnityEngine;
 using System.IO;
 using System.Collections.Generic;
-using System.Collections; // Нужно для IEnumerator
 
 public class StoryMapManager : MonoBehaviour
 {
@@ -9,7 +8,6 @@ public class StoryMapManager : MonoBehaviour
 
     [Header("Настройки генерации")]
     public StoryMapGenerator.GenerationSettings generationSettings;
-
     [Header("Сохранение")]
     public string saveFileName = "storyMapSave.json";
 
@@ -21,34 +19,22 @@ public class StoryMapManager : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance == null)
-        {
-            Instance = this;
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
+        if (Instance == null) Instance = this;
+        else Destroy(gameObject);
     }
 
-    // ИСПОЛЬЗУЕМ OnEnable ЧТОБЫ РЕАГИРОВАТЬ НА КАЖДОЕ ВКЛЮЧЕНИЕ ОБЪЕКТА (В Т.Ч. ПРИ ЗАГРУЗКЕ СЦЕНЫ)
     void Start()
     {
-        Debug.Log("[Manager] Start вызван. Инициализация...");
-
         InitializeSettings();
         StoryContentLoader.LoadAllContent();
+        StartCoroutine(InitMapRoutine());
+    }
 
-        if (HasSavedMap())
-        {
-            Debug.Log("[Manager] Сохранение найдено. Загружаем...");
-            LoadMap();
-        }
-        else
-        {
-            Debug.Log("[Manager] Сохранения нет. Генерируем...");
-            GenerateNewMap();
-        }
+    private System.Collections.IEnumerator InitMapRoutine()
+    {
+        yield return null;
+        if (HasSavedMap()) LoadMap();
+        else StartNewGame();
     }
 
     void InitializeSettings()
@@ -58,9 +44,9 @@ public class StoryMapManager : MonoBehaviour
             generationSettings = new StoryMapGenerator.GenerationSettings
             {
                 nodeSpacingY = 3f,
-                nodeSpacingX = 4f,
                 nodeSpacingZ = 15f,
-                startZ = 10f,
+                startMinZ = 15f,  // Уменьшенная зона старта (ближе к экрану)
+                startMaxZ = 30f,  // Было 40, стало 30
                 minNodeDistance = 25f,
                 maxBranches = 3,
                 connectionChance = 0.7f,
@@ -70,367 +56,349 @@ public class StoryMapManager : MonoBehaviour
         }
     }
 
-    public void GenerateNewMap()
+    public void StartNewGame()
     {
-        Debug.Log("Генерация новой карты сюжета...");
-        CurrentChapters = StoryMapGenerator.GenerateFullMap(generationSettings);
-        SaveData = new StorySaveData();
+        Debug.Log("[StoryMap] Новая игра.");
+        DeleteSave();
+        if (MapGenerator3D.Instance != null) MapGenerator3D.Instance.DeleteAllChapterMaps();
 
+        StoryContentLoader.ClearContent();
+        StoryContentLoader.LoadAllContent();
+
+        // 1. Генерируем ландшафт всех глав
+        if (MapGenerator3D.Instance != null && StoryContentLoader.AllChapters != null)
+        {
+            MapGenerator3D.Instance.GenerateAndSaveAllChapterMaps(StoryContentLoader.AllChapters);
+        }
+
+        // 2. Применяем ландшафт первой главы
+        if (StoryContentLoader.AllChapters.Count > 0 && MapGenerator3D.Instance != null)
+        {
+            var ch = StoryContentLoader.AllChapters[0];
+            MapGenerator3D.Instance.ApplyThemeAndLoadChapter(ch.chapterIndex, ch.themeId);
+        }
+
+        // 3. Генерируем ноды
+        GenerateNewMapStructure();
+
+        // 4. РИСУЕМ ТРОПИНКИ (и сохраняем их в PNG)
+        DrawPathsAndDecorationsOnCurrentChapter();
+
+        // 5. Сохраняем и показываем
         SaveChapters();
         SaveMap();
 
         if (CurrentChapters.Count > 0)
         {
-            DrawCurrentChapter();
+            CurrentChapter = CurrentChapters[0];
+            DrawCurrentChapter(CurrentChapter);
         }
+    }
+
+    void GenerateNewMapStructure()
+    {
+        Debug.Log("Генерация структуры узлов...");
+        CurrentChapters = StoryMapGenerator.GenerateFullMap(generationSettings);
+        SaveData = new StorySaveData();
     }
 
     public void LoadMap()
     {
-        Debug.Log("=== [START] Загрузка сохранённой карты сюжета... ===");
-
+        Debug.Log("=== Загрузка карты ===");
         string path = GetSavePath();
 
         try
         {
-            if (!File.Exists(path))
-            {
-                Debug.LogError($"Файл сохранения сюжета не найден: {path}");
-                GenerateNewMap();
-                return;
-            }
+            if (!File.Exists(path)) { StartNewGame(); return; }
 
             string json = File.ReadAllText(path);
             SaveData = JsonUtility.FromJson<StorySaveData>(json);
-
-            if (SaveData == null || SaveData.chapters == null || SaveData.chapters.Count == 0)
-            {
-                Debug.LogError("Ошибка: Данные глав пусты или некорректны!");
-                GenerateNewMap();
-                return;
-            }
-
-            Debug.Log($"Успешно загружено глав: {SaveData.chapters.Count}");
+            if (SaveData == null || SaveData.chapters.Count == 0) { StartNewGame(); return; }
 
             RestoreChapters();
+            if (CurrentChapters.Count == 0) return;
 
-            if (CurrentChapters.Count == 0)
+            // Находим активную главу
+            StoryChapter chapterToDraw = null;
+            foreach (var ch in CurrentChapters)
             {
-                Debug.LogError("Не удалось восстановить главы в памяти!");
-                return;
+                if (ch.isUnlocked && !ch.isCompleted)
+                {
+                    if (chapterToDraw == null || ch.chapterIndex > chapterToDraw.chapterIndex)
+                        chapterToDraw = ch;
+                }
+            }
+            if (chapterToDraw == null) chapterToDraw = CurrentChapters[CurrentChapters.Count - 1];
+            CurrentChapter = chapterToDraw;
+
+            // ШАГ 1: Применяем ландшафт ЭТОЙ главы
+            if (MapGenerator3D.Instance != null && !string.IsNullOrEmpty(CurrentChapter.themeId))
+            {
+                Debug.Log($"[Load] Применение темы ландшафта: {CurrentChapter.themeId} ");
+                MapGenerator3D.Instance.ApplyThemeAndLoadChapter(CurrentChapter.chapterIndex, CurrentChapter.themeId);
             }
 
-            // Рисуем загруженную главу
-            DrawCurrentChapter();
+            // ШАГ 2: МГНОВЕННАЯ ЗАГРУЗКА ТРОПИНОК ИЗ ФАЙЛА
+            if (MapDecorationManager.Instance != null)
+            {
+                MapDecorationManager.Instance.LoadAndApplySavedPaths(CurrentChapter.chapterIndex);
+            }
 
-            Debug.Log("=== [END] Карта сюжета успешно загружена ===");
+            // ШАГ 3: КОРРЕКЦИЯ ПОЗИЦИЙ И ОТРИСОВКА
+            SnapNodesToTerrain(CurrentChapter);
+            DrawCurrentChapter(CurrentChapter);
+
+            Debug.Log("=== Загрузка завершена ===");
         }
         catch (System.Exception e)
         {
-            Debug.LogError("Критическая ошибка при загрузке сюжета: " + e.Message);
-            GenerateNewMap();
+            Debug.LogError("Ошибка загрузки: " + e.Message);
+            StartNewGame();
         }
     }
 
-    // Вспомогательный метод для отрисовки текущей главы
-    void DrawCurrentChapter()
+    void SnapNodesToTerrain(StoryChapter chapter)
     {
-        if (CurrentChapters.Count == 0) return;
-
-        StoryMapVisual visual = FindObjectOfType<StoryMapVisual>();
-        if (visual == null)
-        {
-            Debug.LogError("StoryMapVisual не найден на сцене! Узлы не будут отображены.");
-            return;
-        }
-
-        StoryChapter chapter = CurrentChapters[0];
-
-        Debug.Log($"Отрисовка главы: {chapter.chapterName}, узлов: {chapter.nodes.Count}");
-
-        visual.ClearVisuals();
-        visual.DisplayChapter(chapter);
-
-        // Восстанавливаем текущий узел (последний посещенный)
-        // НОВЫЙ КОД: Ищем узел с максимальным номером слоя среди посещенных
-        StoryNode lastVisited = null;
-        int maxLayer = -1;
+        if (MapGenerator3D.Instance == null) return;
+        MapTheme theme = StoryContentLoader.GetThemeById(chapter.themeId);
+        float waterLevel = (theme != null) ? theme.waterLevel : 5f;
 
         foreach (var node in chapter.nodes)
         {
-            if (node.isVisited)
-            {
-                // Если слой больше текущего максимума — запоминаем узел
-                if (node.layer > maxLayer)
-                {
-                    maxLayer = node.layer;
-                    lastVisited = node;
-                }
-                // Если слои равны, можно добавить дополнительную логику, но обычно достаточно номера слоя
-            }
+            float groundH = MapGenerator3D.GetTerrainHeightAt(node.position.x, node.position.z);
+            float targetY = (groundH < waterLevel) ? (waterLevel + 1.5f + 3.0f) : (groundH + 3.0f);
+            node.position = new Vector3(node.position.x, targetY, node.position.z);
         }
-
-        // Если ни один узел не посещен (совсем новая игра), берем стартовый
-        if (lastVisited == null)
-        {
-            lastVisited = chapter.nodes.Find(n => n.type == StoryNodeType.START);
-            Debug.LogWarning("Ни один узел не найден как посещенный. Сброс на старт.");
-        }
-
-        CurrentNode = lastVisited;
-        Debug.Log($"[Load] Восстановлен прогресс. Последний узел: {CurrentNode.nodeId} (Слой {CurrentNode.layer})");
-
-        if (lastVisited == null)
-        {
-            lastVisited = chapter.nodes.Find(n => n.type == StoryNodeType.START);
-        }
-
-        if (lastVisited != null)
-        {
-            CurrentNode = lastVisited;
-            UnlockNextLayerNodes(CurrentNode);
-            visual.RefreshAllNodeVisuals();
-            Debug.Log($"Текущий узел установлен: {CurrentNode.type} (Layer {CurrentNode.layer})");
-        }
-    }
-
-    void SaveChapters()
-    {
-        if (SaveData.chapters == null)
-            SaveData.chapters = new List<ChapterSaveData>();
-
-        SaveData.chapters.Clear();
-
-        foreach (var chapter in CurrentChapters)
-        {
-            ChapterSaveData chapterData = new ChapterSaveData
-            {
-                chapterIndex = chapter.chapterIndex,
-                isCompleted = chapter.isCompleted,
-                isUnlocked = chapter.isUnlocked,
-                nodes = new List<NodeSaveData>()
-            };
-
-            foreach (var node in chapter.nodes)
-            {
-                // Создаем объект сохранения
-                NodeSaveData nodeData = new NodeSaveData
-                {
-                    nodeId = node.nodeId,
-                    layer = node.layer,
-                    type = node.type,
-                    position = node.position,
-                    enemyId = node.enemyId,
-                    eventId = node.eventId,
-                    connectedNodeIds = new List<int>(node.connectedNodeIds),
-
-                    // Явно копируем флаги
-                    isVisited = node.isVisited,
-                    isUnlocked = node.isUnlocked,
-                    isSkipped = node.isSkipped
-                };
-
-                // === ОТЛАДКА: Печатаем состояние ПЕРЕД добавлением в список ===
-                if (node.isVisited)
-                {
-                    Debug.Log($"[SAVE DEBUG] Узел ID:{node.nodeId} (Слой {node.layer}) -> isVisited = TRUE");
-                }
-                else
-                {
-                    // Раскомментируйте, если хотите видеть и непосещенные
-                    // Debug.Log($"[SAVE DEBUG] Узел ID:{node.nodeId} -> isVisited = FALSE");
-                }
-
-                chapterData.nodes.Add(nodeData);
-            }
-            // В конец метода SaveChapters, после цикла foreach
-            int totalVisited = 0;
-            foreach (var ch in CurrentChapters)
-                foreach (var n in ch.nodes)
-                    if (n.isVisited) totalVisited++;
-
-            Debug.Log($"[SAVE SUMMARY] Всего посещенных узлов в списке CurrentChapters: {totalVisited}");
-            SaveData.chapters.Add(chapterData);
-        }
-
-        Debug.Log($"[SAVE DEBUG] Всего глав подготовлено к сохранению: {SaveData.chapters.Count}");
     }
 
     void RestoreChapters()
     {
         CurrentChapters = new List<StoryChapter>();
-
-        foreach (var chapterData in SaveData.chapters)
+        foreach (var chData in SaveData.chapters)
         {
-            StoryChapter chapter = new StoryChapter(chapterData.chapterIndex, $"Chapter {chapterData.chapterIndex + 1}")
+            string tid = string.IsNullOrEmpty(chData.themeId) ? "forest" : chData.themeId;
+            StoryChapter ch = new StoryChapter(chData.chapterIndex, $"Chapter {chData.chapterIndex + 1}")
             {
-                isCompleted = chapterData.isCompleted,
-                isUnlocked = chapterData.isUnlocked
+                isCompleted = chData.isCompleted,
+                isUnlocked = chData.isUnlocked,
+                themeId = tid
             };
-
-            foreach (var nodeData in chapterData.nodes)
+            foreach (var nData in chData.nodes)
             {
-                StoryNode node = new StoryNode(
-                    nodeData.nodeId,
-                    chapterData.chapterIndex,
-                    nodeData.layer,
-                    nodeData.type,
-                    nodeData.position
-                )
+                StoryNode n = new StoryNode(nData.nodeId, chData.chapterIndex, nData.layer, nData.type, nData.position)
                 {
-                    isVisited = nodeData.isVisited,
-                    isUnlocked = nodeData.isUnlocked,
-                    isSkipped = nodeData.isSkipped,
-                    enemyId = nodeData.enemyId,
-                    eventId = nodeData.eventId,
-                    connectedNodeIds = nodeData.connectedNodeIds
+                    isVisited = nData.isVisited,
+                    isUnlocked = nData.isUnlocked,
+                    isSkipped = nData.isSkipped,
+                    enemyId = nData.enemyId,
+                    eventId = nData.eventId,
+                    connectedNodeIds = nData.connectedNodeIds
                 };
-
-                chapter.nodes.Add(node);
+                ch.nodes.Add(n);
             }
+            CurrentChapters.Add(ch);
+        }
+    }
 
-            CurrentChapters.Add(chapter);
+    void DrawCurrentChapter(StoryChapter ch)
+    {
+        if (ch == null) return;
+        StoryMapVisual visual = FindObjectOfType<StoryMapVisual>();
+        if (visual == null) return;
+
+        visual.ClearVisuals();
+        visual.DisplayChapter(ch);
+
+        // Восстановление прогресса
+        StoryNode last = null;
+        int maxL = -1;
+        foreach (var n in ch.nodes)
+        {
+            if (n.isVisited && n.layer > maxL) { maxL = n.layer; last = n; }
+        }
+        if (last == null) last = ch.nodes.Find(n => n.type == StoryNodeType.START);
+
+        if (last != null)
+        {
+            CurrentNode = last;
+            UnlockNextLayerNodes(last);
+            visual.RefreshAllNodeVisuals();
+        }
+    }
+
+    void SaveChapters()
+    {
+        if (SaveData.chapters == null) SaveData.chapters = new List<ChapterSaveData>();
+        SaveData.chapters.Clear();
+        if (CurrentChapter != null) SaveData.currentChapter = CurrentChapter.chapterIndex;
+
+        foreach (var ch in CurrentChapters)
+        {
+            ChapterSaveData cd = new ChapterSaveData
+            {
+                chapterIndex = ch.chapterIndex,
+                isCompleted = ch.isCompleted,
+                isUnlocked = ch.isUnlocked,
+                nodes = new List<NodeSaveData>()
+            };
+            foreach (var n in ch.nodes)
+            {
+                cd.nodes.Add(new NodeSaveData
+                {
+                    nodeId = n.nodeId,
+                    layer = n.layer,
+                    type = n.type,
+                    position = n.position,
+                    enemyId = n.enemyId,
+                    eventId = n.eventId,
+                    connectedNodeIds = new List<int>(n.connectedNodeIds),
+                    isVisited = n.isVisited,
+                    isUnlocked = n.isUnlocked,
+                    isSkipped = n.isSkipped
+                });
+            }
+            SaveData.chapters.Add(cd);
         }
     }
 
     void SaveMap()
     {
-        // === КРИТИЧЕСКОЕ ИЗМЕНЕНИЕ ===
-        // Сначала обновляем данные в объекте SaveData из актуального списка CurrentChapters
         SaveChapters();
-        Debug.Log("[SAVE] Данные обновлены из CurrentChapters.");
-        // ==============================
-
-        Debug.Log("Сохранение данных карты...");
-
         string json = JsonUtility.ToJson(SaveData, true);
         string path = GetSavePath();
-
-        Debug.Log("Файл сохранён: " + path);
-
         Directory.CreateDirectory(Path.GetDirectoryName(path));
         File.WriteAllText(path, json);
-
-        Debug.Log("Карта сохранена в " + path);
-
-        // Опционально: выводим сводку после сохранения
-        int visitedCount = 0;
-        foreach (var ch in CurrentChapters)
-            foreach (var n in ch.nodes)
-                if (n.isVisited) visitedCount++;
-        Debug.Log($"[SAVE SUMMARY] Всего посещенных узлов в файле: {visitedCount}");
     }
 
-    public bool HasSavedMap()
-    {
-        string path = GetSavePath();
-        return File.Exists(path);
-    }
+    public bool HasSavedMap() => File.Exists(GetSavePath());
+    string GetSavePath() => Path.Combine(Application.persistentDataPath, saveFileName);
+    public void DeleteSave() { if (File.Exists(GetSavePath())) File.Delete(GetSavePath()); }
 
-    string GetSavePath()
+    public StoryNode GetNodeById(int chIdx, int nId)
     {
-        return Path.Combine(Application.persistentDataPath, saveFileName);
-    }
-
-    public void DeleteSave()
-    {
-        string path = GetSavePath();
-        if (File.Exists(path))
-        {
-            File.Delete(path);
-            Debug.Log("Сохранённая карта удалена");
-        }
-    }
-
-    public StoryNode GetNodeById(int chapterIndex, int nodeId)
-    {
-        if (chapterIndex >= 0 && chapterIndex < CurrentChapters.Count)
-        {
-            return CurrentChapters[chapterIndex].nodes.Find(n => n.nodeId == nodeId);
-        }
+        if (chIdx >= 0 && chIdx < CurrentChapters.Count)
+            return CurrentChapters[chIdx].nodes.Find(n => n.nodeId == nId);
         return null;
     }
 
-    public void MarkNodeVisited(int chapterIndex, int nodeId)
+    public void MarkNodeVisited(int chIdx, int nId)
     {
-        Debug.Log($"[SAVE] Вызван MarkNodeVisited для узла {nodeId}");
-        StoryNode node = GetNodeById(chapterIndex, nodeId);
-
+        StoryNode node = GetNodeById(chIdx, nId);
         if (node != null)
         {
-            // 1. Меняем флаги в памяти
-            if (CurrentNode != null && CurrentNode.nodeId != nodeId)
-            {
-                CurrentNode.isVisited = true;
-                Debug.Log($"[SAVE] Предыдущий узел {CurrentNode.nodeId} помечен как VISITED.");
-            }
-
+            if (CurrentNode != null && CurrentNode.nodeId != nId) CurrentNode.isVisited = true;
             node.isVisited = true;
             CurrentNode = node;
-            Debug.Log($"[SAVE] Новый текущий узел {node.nodeId} помечен как VISITED.");
 
-            MarkSameLayerAsSkipped(chapterIndex, node.layer, nodeId);
+            // Пропуск других на этом слое
+            StoryChapter ch = CurrentChapters[chIdx];
+            foreach (var n in ch.nodes)
+            {
+                if (n.layer == node.layer && n.nodeId != nId)
+                {
+                    n.isSkipped = true;
+                    n.isUnlocked = false;
+                }
+            }
+
             UnlockNextLayerNodes(node);
-
-            // 2. Просто сохраняем. SaveChapters() вызовется внутри автоматически.
-            Debug.Log("[SAVE] Вызов SaveMap...");
             SaveMap();
-            Debug.Log("[SAVE] Файл записан");
-        }
-        else
-        {
-            Debug.LogError($"[ERROR] Узел {nodeId} не найден!");
         }
     }
 
-    void MarkSameLayerAsSkipped(int chapterIndex, int layer, int visitedNodeId)
+    void UnlockNextLayerNodes(StoryNode cur)
     {
-        StoryChapter chapter = CurrentChapters[chapterIndex];
+        if (cur == null) return;
+        StoryChapter ch = CurrentChapters[cur.chapterIndex];
+        foreach (var n in ch.nodes)
+        {
+            if (n.layer == cur.layer + 1 && cur.connectedNodeIds.Contains(n.nodeId))
+                n.isUnlocked = true;
+        }
+    }
 
+    void DrawPathsAndDecorationsOnCurrentChapter()
+    {
+        if (MapDecorationManager.Instance == null || CurrentChapters == null || CurrentChapters.Count == 0) return;
+        if (MapGenerator3D.Instance == null) return;
+
+        StoryChapter chapter = CurrentChapters[0]; // Рисуем для первой главы
+
+        // 1. Собираем пути
+        List<PathData> paths = new List<PathData>();
         foreach (var node in chapter.nodes)
         {
-            if (node.layer == layer && node.nodeId != visitedNodeId)
+            foreach (int connectedId in node.connectedNodeIds)
             {
-                node.isSkipped = true;
-                node.isUnlocked = false;
+                StoryNode targetNode = chapter.nodes.Find(n => n.nodeId == connectedId);
+                if (targetNode != null)
+                {
+                    paths.Add(new PathData(new Vector2(node.position.x, node.position.z),
+                                            new Vector2(targetNode.position.x, targetNode.position.z)));
+                }
             }
         }
+
+        // 2. Получаем текущие складки (если нужно, но новый метод берет их сам из Instance)
+        // List<FoldLine> folds = MapGenerator3D.Instance.GetCurrentFolds();
+
+        // 3. === ИСПРАВЛЕНИЕ ЗДЕСЬ ===
+        // Передаем пути И индекс главы
+        MapDecorationManager.Instance.DrawPathsOnTexture(paths, chapter.chapterIndex);
+
+        Debug.Log($"[MapManager] Тропинки нарисованы для главы {chapter.chapterIndex}");
     }
 
-    void UnlockNextLayerNodes(StoryNode currentNode)
+    public void ProceedToNextChapter()
     {
-        if (currentNode == null) return;
+        if (CurrentChapter == null) return;
+        int nextIdx = CurrentChapter.chapterIndex + 1;
 
-        StoryChapter chapter = CurrentChapters[currentNode.chapterIndex];
-
-        foreach (var node in chapter.nodes)
+        if (nextIdx < CurrentChapters.Count)
         {
-            if (node.layer == currentNode.layer + 1 &&
-                currentNode.connectedNodeIds.Contains(node.nodeId))
+            CurrentChapter.isCompleted = true;
+            CurrentChapter.isActive = false;
+
+            StoryChapter nextCh = CurrentChapters[nextIdx];
+            nextCh.isUnlocked = true;
+            nextCh.isActive = true;
+            CurrentChapter = nextCh;
+
+            StoryNode start = nextCh.nodes.Find(n => n.type == StoryNodeType.START);
+            if (start != null)
             {
-                node.isUnlocked = true;
+                CurrentNode = start;
+                start.isUnlocked = true;
+                UnlockNextLayerNodes(start);
             }
+
+            SaveChapters();
+            SaveMap();
+
+            StoryMapVisual vis = FindObjectOfType<StoryMapVisual>();
+            if (vis != null)
+            {
+                vis.ClearVisuals();
+                vis.InitializeAndDisplay(CurrentChapter);
+            }
+
+            if (MapGenerator3D.Instance != null)
+            {
+                MapGenerator3D.Instance.ApplyThemeAndLoadChapter(CurrentChapter.chapterIndex, CurrentChapter.themeId);
+                // Для новой главы нужно тоже загрузить пути, если они уже сгенерированы
+                // Но так как мы генерируем все главы сразу при старте игры, текстура должна быть в файле.
+                MapDecorationManager.Instance.LoadAndApplySavedPaths(CurrentChapter.chapterIndex);
+            }
+
+            SnapNodesToTerrain(CurrentChapter);
         }
-    }
-
-    public void StartNewGame()
-    {
-        Debug.Log("[StoryMap] Начало новой игры. Удаление старых сохранений...");
-        DeleteSave(); // Удаляем файл storyMapSave.json
-
-        // Опционально: можно перегенерировать ландшафт, если он тоже сохраняется отдельно
-        // MapGenerator3D.Instance?.DeleteSave(); 
-
-        StoryContentLoader.ClearContent(); // Очищаем кэш контента, чтобы перечитать JSON (если они менялись)
-        StoryContentLoader.LoadAllContent(); // Загружаем заново
-
-        GenerateNewMap(); // Генерируем новую карту
     }
 
     [ContextMenu("Regenerate Map")]
     public void RegenerateMap()
     {
         DeleteSave();
-        GenerateNewMap();
+        if (MapGenerator3D.Instance != null) MapGenerator3D.Instance.DeleteAllChapterMaps();
+        StartNewGame();
     }
 }

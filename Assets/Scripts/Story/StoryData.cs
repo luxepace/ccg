@@ -7,7 +7,8 @@ public enum StoryNodeType
     ENEMY,
     EVENT,
     BOSS,
-    REST
+    REST,
+    CHAPTER_END
 }
 
 public enum EnemyConditionType
@@ -86,6 +87,7 @@ public class StoryChapter
 
     public bool isCompleted;
     public bool isUnlocked;
+    public bool isActive;
 
     public StoryChapter(int index, string name)
     {
@@ -94,6 +96,7 @@ public class StoryChapter
         nodes = new List<StoryNode>();
         isCompleted = false;
         isUnlocked = (index == 0);
+        isActive = (index == 0);
     }
 }
 
@@ -118,6 +121,7 @@ public class ChapterConfig
     public float enemyNodeChance;
     public float eventNodeChance;
     public float restNodeChance;
+    public string themeId;
 }
 
 [System.Serializable]
@@ -129,6 +133,20 @@ public class MapTheme
     public string skyboxMaterial;
     public Color ambientColor;
     public string[] decorationPrefabs;
+
+    // Основные параметры шума
+    public float noiseScale = 50f;
+    public float heightMultiplier = 25f;
+
+    // === НОВЫЕ ПОЛЯ (Добавь их обязательно!) ===
+    public int octaves = 4;
+    public float persistence = 0.5f;
+
+    // Параметры формы рельефа
+    public float peakThreshold = 0.5f;
+    public float peakSharpness = 2.5f;
+    public int smoothingPasses = 1;
+    public float waterLevel = 5f;
 }
 
 [System.Serializable]
@@ -161,6 +179,7 @@ public class ChapterSaveData
     public List<NodeSaveData> nodes;
     public bool isCompleted;
     public bool isUnlocked;
+    public bool isActive;
 }
 
 [System.Serializable]
@@ -176,4 +195,72 @@ public class NodeSaveData
     public string enemyId;
     public string eventId;
     public List<int> connectedNodeIds;
+}
+
+[System.Serializable]
+public class MapDecoration
+{
+    public string prefabId;
+    public Vector3 position;
+    public Quaternion rotation;
+    public Vector3 scale;
+}
+
+[System.Serializable]
+public class DecorationConfig
+{
+    public string prefabId;
+    public string prefabPath; // Путь в Resources
+    public float minScale;
+    public float maxScale;
+    public float density;
+    public List<string> allowedThemes;
+    public bool avoidPaths;
+    public float minHeight;
+    public float maxHeight;
+}
+
+[System.Serializable]
+public class DecorationConfigWrapper
+{
+    public List<DecorationConfig> decorations;
+}
+
+// Класс складки, доступный всем скриптам
+[System.Serializable]
+public class FoldLine
+{
+    public float startX, startZ;
+    public float endX, endZ;
+    public int type; // 1 или -1
+    public float width;
+    public float strength;
+}
+
+// Классы для сохранения (нужны для JsonUtility)
+[System.Serializable]
+public class FoldSaveData
+{
+    public List<FoldLineSave> folds;
+}
+
+[System.Serializable]
+public class FoldLineSave
+{
+    public float startX, startZ, endX, endZ;
+    public int type;
+    public float width, strength;
+}
+
+[System.Serializable]
+public struct PathData
+{
+    public Vector2 start;
+    public Vector2 end;
+
+    public PathData(Vector2 s, Vector2 e)
+    {
+        start = s;
+        end = e;
+    }
 }

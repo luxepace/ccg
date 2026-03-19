@@ -1,17 +1,40 @@
 {
-    "themes": [
-        {
-            "themeId": "river",
-            "themeName": "Речная долина",
-            "terrainTexture": "",
-            "skyboxMaterial": "",
-            "ambientColor": {
-                "r": 0.6000000238418579,
-                "g": 0.699999988079071,
-                "b": 0.800000011920929,
-                "a": 1.0
-            },
-            "decorationPrefabs": []
-        }
-    ]
+ "themes": [
+  {
+   "themeId": "forest",
+   "themeName": "Лес",
+   "noiseScale": 10,       
+   "heightMultiplier": 20,  
+   "octaves": 4,
+   "persistence": 0.5,
+   "peakThreshold": 0.5,
+   "peakSharpness": 3.0,
+   "smoothingPasses": 1,
+   "waterLevel": 8.0
+  },
+  {
+   "themeId": "swamp",
+   "themeName": "Болото",
+   "noiseScale": 15,
+   "heightMultiplier": 20, 
+   "octaves": 3,
+   "persistence": 0.4,
+   "peakThreshold": 0.5,
+   "peakSharpness": 3.0,
+   "smoothingPasses": 1,
+   "waterLevel": 3.0
+  },
+  {
+   "themeId": "mountains",
+   "themeName": "Горы",
+   "noiseScale": 12,
+   "heightMultiplier": 20, 
+   "octaves": 5,
+   "persistence": 0.6,
+   "peakThreshold": 0.5,
+   "peakSharpness": 3.5,
+   "smoothingPasses": 1,
+   "waterLevel": 4.0
+  }
+ ]
 }

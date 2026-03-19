@@ -16,6 +16,9 @@ public static class StoryContentLoader
     public static List<EventPool> AllEventPools { get; private set; }
     public static List<MapTheme> AllThemes { get; private set; }
 
+    public static List<DecorationConfig> AllDecorations { get; private set; }
+
+    public static List<StoryEventData> AllChapterEndEvents { get; private set; }
     public static bool IsLoaded { get; private set; } = false;
 
     public static void LoadAllContent()
@@ -58,11 +61,58 @@ public static class StoryContentLoader
         var themesWrapper = LoadJSONFile<MapThemeWrapper>("mapThemes.json");
         AllThemes = themesWrapper?.themes ?? new List<MapTheme>();
 
+        var chapterEndWrapper = LoadJSONFile<StoryEventDataWrapper>("chapter_end_events.json");
+        AllChapterEndEvents = chapterEndWrapper?.events ?? new List<StoryEventData>();
+        Debug.Log($"Загружено событий конца глав: {AllChapterEndEvents.Count}");
+
+        var decorWrapper = LoadJSONFile<DecorationConfigWrapper>("decorations.json");
+        AllDecorations = decorWrapper?.decorations ?? new List<DecorationConfig>();
+        Debug.Log($"Загружено конфигураций декораций: {AllDecorations.Count}");
+
         IsLoaded = true;
         Debug.Log("Загрузка контента завершена!");
+        foreach (var ch in AllChapters)
+        {
+            Debug.Log($"Загружена глава: {ch.chapterName}, Тема: {ch.themeId}");
+        }
     }
 
     // --- Методы поиска ---
+
+    public static StoryEventData GetChapterEndEvent(int chapterIndex)
+    {
+        if (!IsLoaded) LoadAllContent();
+
+        if (AllChapterEndEvents == null || AllChapterEndEvents.Count == 0)
+        {
+            Debug.LogWarning("[StoryContentLoader] Список событий конца глав пуст!");
+            return null;
+        }
+
+        // Формируем ожидаемый ID, например: "reward_chapter_1" для главы 0? 
+        // Или ты нумеруешь их как "reward_chapter_1", "reward_chapter_2"?
+        // В твоем JSON: chapterIndex 0 -> eventId "reward_chapter_1"
+
+        string targetId = $"reward_chapter_{chapterIndex + 1}";
+
+        // Ищем событие по ID
+        StoryEventData eventData = AllChapterEndEvents.Find(e => e.id == targetId);
+
+        if (eventData != null)
+        {
+            return eventData;
+        }
+
+        // Фоллбэк: если не нашли по ID, пробуем взять по индексу списка (если порядок совпадает)
+        if (chapterIndex >= 0 && chapterIndex < AllChapterEndEvents.Count)
+        {
+            Debug.Log($"[StoryContentLoader] Событие '{targetId}' не найдено по ID, используем индекс {chapterIndex}.");
+            return AllChapterEndEvents[chapterIndex];
+        }
+
+        Debug.LogError($"[StoryContentLoader] Не найдено событие конца главы для индекса {chapterIndex} (ID: {targetId})");
+        return null;
+    }
 
     public static EnemyData GetEnemyById(string enemyId)
     {
@@ -189,11 +239,13 @@ public static class StoryContentLoader
     {
         AllEnemies = null;
         AllEvents = null;
-        AllRestEvents = null; // Очистка привалов
+        AllRestEvents = null;
+        AllChapterEndEvents = null;
         AllChapters = null;
         AllEnemyPools = null;
         AllEventPools = null;
         AllThemes = null;
+        AllDecorations = null;
         IsLoaded = false;
     }
 }
@@ -241,4 +293,10 @@ public class EventPoolWrapper
 public class MapThemeWrapper
 {
     public List<MapTheme> themes;
+}
+
+[System.Serializable]
+public class ChapterEndEventDataWrapper
+{
+    public List<StoryEventData> events;
 }

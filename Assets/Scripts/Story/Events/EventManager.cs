@@ -2,6 +2,7 @@
 using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
+using System;
 
 public class EventManager : MonoBehaviour
 {
@@ -32,7 +33,7 @@ public class EventManager : MonoBehaviour
     private int currentStepIndex = 0;
     private StoryNode sourceNode;
     private bool isProcessingMinigame = false;
-
+    private Action onCustomFinishCallback;
     // Метод инициализации, который вызывается сразу после создания префаба
     public void Init(StoryNode node)
     {
@@ -53,6 +54,47 @@ public class EventManager : MonoBehaviour
 
         // Запускаем событие
         StartEventInternal(node);
+    }
+
+    public void InitWithData(StoryEventData data, Action onFinishCallback)
+    {
+        if (data == null || data.steps == null || data.steps.Count == 0)
+        {
+            Debug.LogError("Переданы пустые данные события в InitWithData!");
+            if (onFinishCallback != null) onFinishCallback();
+            Destroy(gameObject);
+            return;
+        }
+
+        // Скрываем панель при старте (на случай если в префабе забыли выключить)
+        if (eventPanel != null) eventPanel.SetActive(false);
+
+        // Настраиваем кнопки
+        if (nextButton != null)
+        {
+            nextButton.onClick.RemoveAllListeners();
+            nextButton.onClick.AddListener(NextStep);
+        }
+        if (closeButton != null)
+        {
+            closeButton.onClick.RemoveAllListeners();
+            closeButton.onClick.AddListener(CloseEvent);
+        }
+
+        sourceNode = null; // Узла нет, это глобальное событие
+        currentSteps = data.steps;
+        currentStepIndex = 0;
+        isProcessingMinigame = false;
+
+        // Сохраняем коллбэк
+        onCustomFinishCallback = onFinishCallback;
+
+        Time.timeScale = 0f;
+        if (eventPanel != null) eventPanel.SetActive(true);
+
+        ProcessStep();
+
+        Debug.Log($"[EventManager] Инициализировано кастомное событие: {data.title}");
     }
 
     private void StartEventInternal(StoryNode node)
@@ -475,6 +517,24 @@ public class EventManager : MonoBehaviour
 
         Time.timeScale = 1f;
 
+        // === ПРОВЕРКА: ЕСТЬ ЛИ КАСТОМНЫЙ КОЛЛБЭК? ===
+        if (onCustomFinishCallback != null)
+        {
+            Debug.Log("[EventManager] Вызов кастомного коллбэка завершения (событие главы).");
+
+            // Вызываем коллбэк (который запустит переход к следующей главе)
+            onCustomFinishCallback.Invoke();
+
+            // Очищаем коллбэк
+            onCustomFinishCallback = null;
+
+            // Уничтожаем окно события
+            Destroy(gameObject);
+            return; // ВАЖНО: выходим, не выполняя стандартную логику сохранения узла!
+        }
+        // ==============================================
+
+        // Стандартная логика для обычных узлов карты
         if (success && sourceNode != null)
         {
             StoryMapManager.Instance.MarkNodeVisited(sourceNode.chapterIndex, sourceNode.nodeId);
@@ -483,8 +543,6 @@ public class EventManager : MonoBehaviour
         }
 
         TempData.CurrentEvent = null;
-
-        // УНИЧТОЖАЕМ ПРЕФАБ ПОСЛЕ ЗАВЕРШЕНИЯ СОБЫТИЯ
         Destroy(gameObject);
     }
 

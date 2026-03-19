@@ -441,7 +441,7 @@ public class GameManager : MonoBehaviour
 
             // 2. Определяем, была ли победа (враг мертв)
             bool isVictory = isEnemyDead;
-
+            TempData.BossDefeated = isEnemyDead;
             // 3. Получаем имя врага (если есть данные, иначе "Unknown")
             string enemyName = "Unknown";
             if (TempData.CurrentEnemy != null && !string.IsNullOrEmpty(TempData.CurrentEnemy.enemyName))

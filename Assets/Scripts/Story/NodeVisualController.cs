@@ -24,6 +24,7 @@ public class NodeVisualController : MonoBehaviour, IPointerEnterHandler, IPointe
     public Sprite bossSprite;
     public Sprite restSprite;
     public Sprite lockedSprite;
+    public Sprite chapterEndSprite;
 
     [Header("Colors")]
     public Color lockedColor = Color.gray;
@@ -70,6 +71,10 @@ public class NodeVisualController : MonoBehaviour, IPointerEnterHandler, IPointe
                 break;
             case StoryNodeType.REST:
                 sprite = restSprite;
+                break;
+            case StoryNodeType.CHAPTER_END:
+                sprite = chapterEndSprite;
+                iconImage.transform.localScale = Vector3.one * 1.2f; 
                 break;
         }
 
@@ -196,6 +201,9 @@ public class NodeVisualController : MonoBehaviour, IPointerEnterHandler, IPointe
                 break;
             case StoryNodeType.REST:
                 text = "Отдых";
+                break;
+            case StoryNodeType.CHAPTER_END:
+                text = "Награда за главу";
                 break;
         }
 
