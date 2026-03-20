@@ -539,6 +539,10 @@ MonoBehaviour:
   pathWidth: 2
   pathColor: {r: 0.35, g: 0.22, b: 0.1, a: 1}
   pathDetailPoints: 4
+  nodeAvoidRadius: 8
+  pathAvoidMargin: 2
+  bridgeColor: {r: 0.55, g: 0.55, b: 0.55, a: 1}
+  bridgeWidthMargin: 0.5
 --- !u!1 &433193756
 GameObject:
   m_ObjectHideFlags: 0

@@ -3,13 +3,19 @@
     {
       "prefabId": "tree_pine",
       "prefabPath": "Decorations/TreePine",
-      "minScale": 0.8,
-      "maxScale": 1.2,
-      "density": 0.005,
+      "minScale": 3,
+      "maxScale": 5,
+      "density": 0.1,
       "allowedThemes": ["forest", "mountains"],
       "avoidPaths": true,
-      "minHeight": 6.0,
-      "maxHeight": 100.0
+      "minHeight": -1.0,
+      "maxHeight": 100.0,
+      "isClustered": true,
+      "clusterCount": 15,
+      "objectsPerCluster": 10,
+      "clusterRadius": 25.0,
+      "heightOffset": 7,
+      "isPainted": false
     },
     {
       "prefabId": "rock_small",
@@ -18,20 +24,72 @@
       "maxScale": 1.5,
       "density": 0.01,
       "allowedThemes": ["mountains", "swamp", "forest"],
-      "avoidPaths": false,
-      "minHeight": 4.0,
-      "maxHeight": 100.0
+      "avoidPaths": true,
+      "minHeight": -1.0,
+      "maxHeight": 100.0,
+      "isClustered": false,
+      "heightOffset": 0.3,
+      "isPainted": false
     },
     {
       "prefabId": "bush",
       "prefabPath": "Decorations/Bush",
-      "minScale": 0.7,
-      "maxScale": 1.0,
-      "density": 0.008,
-      "allowedThemes": ["forest"],
+      "minScale": 0.5,
+      "maxScale": 1.5,
+      "density": 0.01,
+      "allowedThemes": ["mountains", "forest"],
       "avoidPaths": true,
-      "minHeight": 5.0,
-      "maxHeight": 50.0
-    }
+      "minHeight": -1.0,
+      "maxHeight": 100.0,
+      "isClustered": false,
+      "heightOffset": 0.3,
+      "isPainted": false
+    },
+    {
+      "prefabId": "mountain_peak",
+      "allowedThemes": ["mountains"],
+      "paintColor": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 },
+      "secondaryColor": { "r": 0.4, "g": 0.4, "b": 0.4, "a": 1.0 },
+      "minSize": 40.0,
+      "maxSize": 60.0,
+      "count": 6,
+      "shape": "mountain",
+      "avoidNodes": true,
+      "isPainted": true
+    },
+    {
+      "prefabId": "swamp_large",
+      "allowedThemes": ["swamp"],
+      "paintColor": { "r": 0.15, "g": 0.25, "b": 0.15, "a": 1.0 },
+      "minSize": 40.0,
+      "maxSize": 60.0,
+      "count": 4,
+      "shape": "blob",
+      "avoidNodes": true,
+      "isPainted": true
+    },
+    {
+      "prefabId": "lake_forest",
+      "allowedThemes": ["forest"],
+      "paintColor": { "r": 0.1, "g": 0.3, "b": 0.5, "a": 1.0 },
+      "minSize": 30.0,
+      "maxSize": 50.0,
+      "count": 5,
+      "shape": "blob",
+      "avoidNodes": true,
+      "isPainted": true
+    },
+    {
+	   "prefabId": "river_mountain",
+	   "allowedThemes": ["mountains", "forest"],
+	   "paintColor": { "r": 0.1, "g": 0.3, "b": 0.5, "a": 1.0 },
+	   "minSize": 4.0, 
+	   "maxSize": 8.0,
+	   "length": 300.0, 
+	   "count": 2,
+	   "shape": "line",
+	   "avoidNodes": true,
+	   "isPainted": true
+	}
   ]
 }

@@ -65,9 +65,24 @@ public static class StoryContentLoader
         AllChapterEndEvents = chapterEndWrapper?.events ?? new List<StoryEventData>();
         Debug.Log($"Загружено событий конца глав: {AllChapterEndEvents.Count}");
 
-        var decorWrapper = LoadJSONFile<DecorationConfigWrapper>("decorations.json");
-        AllDecorations = decorWrapper?.decorations ?? new List<DecorationConfig>();
-        Debug.Log($"Загружено конфигураций декораций: {AllDecorations.Count}");
+
+        var decorWrapper = LoadJSONFile<DecorationDataWrapper>("decorations.json");
+
+        if (decorWrapper == null)
+        {
+            Debug.LogError("[StoryContentLoader] ОШИБКА: Не удалось прочитать decorations.json!");
+            AllDecorations = new List<DecorationConfig>();
+        }
+        else if (decorWrapper.decorations == null || decorWrapper.decorations.Count == 0) // Убедитесь, что тут .decorations
+        {
+            Debug.LogError($"[StoryContentLoader] ОШИБКА: Файл прочитан, но список пуст! Элементов: {decorWrapper.decorations?.Count ?? 0}");
+            AllDecorations = new List<DecorationConfig>();
+        }
+        else
+        {
+            AllDecorations = decorWrapper.decorations; // И тут .decorations
+            Debug.Log($"[StoryContentLoader] Успешно загружено {AllDecorations.Count} конфигураций.");
+        }
 
         IsLoaded = true;
         Debug.Log("Загрузка контента завершена!");
@@ -223,6 +238,8 @@ public static class StoryContentLoader
     static T LoadJSONFile<T>(string fileName) where T : class
     {
         string path = Path.Combine(Application.streamingAssetsPath, fileName);
+        Debug.Log($"[DEBUG] Пытаюсь загрузить: {path}"); // <--- ДОБАВЬ ЭТО
+        Debug.Log($"[DEBUG] Файл существует? {File.Exists(path)}"); // <--- И ЭТО
 
         if (!File.Exists(path))
         {
@@ -305,4 +322,10 @@ public class MapThemeWrapper
 public class ChapterEndEventDataWrapper
 {
     public List<StoryEventData> events;
+}
+
+[System.Serializable]
+public class DecorationDataWrapper
+{
+    public List<DecorationConfig> decorations; // Теперь совпадает с JSON!
 }

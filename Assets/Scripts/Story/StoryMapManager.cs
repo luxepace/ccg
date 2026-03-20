@@ -189,12 +189,33 @@ public class StoryMapManager : MonoBehaviour
                 if (targetNode != null)
                 {
                     paths.Add(new PathData(new Vector2(node.position.x, node.position.z),
-                                             new Vector2(targetNode.position.x, targetNode.position.z)));
+                                              new Vector2(targetNode.position.x, targetNode.position.z)));
                 }
             }
         }
 
-        MapDecorationManager.Instance.DrawPathsOnTexture(paths, chapter.chapterIndex);
+        // 1. Сначала рисуем воду (органические кляксы)
+        MapDecorationManager.Instance.GenerateAndDrawPaintedDecorations(
+            chapter.chapterIndex,
+            chapter.themeId,
+            chapter.nodes
+        );
+
+        // 2. Затем рисуем мосты и пути поверх воды
+        MapDecorationManager.Instance.DrawPathsOnTextureWithBridges(paths, chapter.chapterIndex);
+
+        // 3. Генерируем 3D объекты (деревья, камни), которые теперь избегают воду
+        List<FoldLine> folds = MapGenerator3D.Instance != null ? MapGenerator3D.Instance.currentFolds : null;
+
+        MapDecorationManager.Instance.GenerateObjectDecorationsOnly(
+            chapter.chapterIndex,
+            chapter.themeId,
+            folds,
+            paths,
+            chapter.nodes
+        );
+
+        Debug.Log($"[StoryMap] Глава {chapter.chapterIndex}: Вода, Мосты, Пути и Декорации сгенерированы.");
     }
 
     public void LoadMap()
@@ -229,6 +250,8 @@ public class StoryMapManager : MonoBehaviour
             StartNewGame();
         }
     }
+
+
 
     void ReloadCurrentChapterVisuals()
     {

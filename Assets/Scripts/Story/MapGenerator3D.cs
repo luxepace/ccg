@@ -99,7 +99,7 @@ public class MapGenerator3D : MonoBehaviour
             MapDecorationManager.Instance.GenerateBasePaperTexture(chapterIndex, heights, currentFolds);
 
             // Генерируем объекты декораций (деревья/камни) и сохраняем JSON
-            MapDecorationManager.Instance.GenerateObjectDecorationsOnly(chapterIndex, themeId, currentFolds);
+            //MapDecorationManager.Instance.GenerateObjectDecorationsOnly(chapterIndex, themeId, currentFolds);
         }
 
         Debug.Log($"[MapGen] Глава {chapterIndex}: Ландшафт, текстура и декорации сохранены.");
@@ -157,7 +157,7 @@ public class MapGenerator3D : MonoBehaviour
             if (MapDecorationManager.Instance != null)
             {
                 MapDecorationManager.Instance.GenerateBasePaperTexture(chapterIndex, heights, currentFolds);
-                MapDecorationManager.Instance.GenerateObjectDecorationsOnly(chapterIndex, themeId, currentFolds);
+                //MapDecorationManager.Instance.GenerateObjectDecorationsOnly(chapterIndex, themeId, currentFolds);
             }
             isHeightsLoaded = true;
         }

@@ -223,26 +223,40 @@ public class NodeSaveData
 }
 
 [System.Serializable]
-public class MapDecoration
-{
-    public string prefabId;
-    public Vector3 position;
-    public Quaternion rotation;
-    public Vector3 scale;
-}
-
-[System.Serializable]
 public class DecorationConfig
 {
     public string prefabId;
-    public string prefabPath; // Путь в Resources
+    public string prefabPath;
+
+    // Для 3D объектов
     public float minScale;
     public float maxScale;
     public float density;
-    public List<string> allowedThemes;
-    public bool avoidPaths;
+    public bool isClustered;
+    public int clusterCount;
+    public int objectsPerCluster;
+    public float clusterRadius;
+    public float heightOffset;
     public float minHeight;
     public float maxHeight;
+
+    // Для рисованных объектов (вода, горы)
+    public Color paintColor;
+
+    // === ДОБАВЬТЕ ЭТУ СТРОКУ ===
+    public Color secondaryColor;
+    // ===========================
+
+    public float minSize;
+    public float maxSize;
+    public float length; // Для рек
+    public int count;
+    public string shape; // "circle", "blob", "line", "mountain"
+
+    public List<string> allowedThemes;
+    public bool avoidPaths;
+    public bool avoidNodes;
+    public bool isPainted;
 }
 
 [System.Serializable]
@@ -277,15 +291,63 @@ public class FoldLineSave
     public float width, strength;
 }
 
+
 [System.Serializable]
-public struct PathData
+public class PaintedDecorationConfig : DecorationConfigBase
+{
+    public Color paintColor;
+    public float minSize;
+    public float maxSize;
+    public float length; // Для рек
+    public int count;
+    public string shape; // "circle" или "line"
+    public bool avoidNodes;
+    public bool isPainted = true;
+}
+
+// Базовый класс для общих полей (если у вас его нет, создайте или используйте существующий MapDecoration)
+[System.Serializable]
+public class DecorationConfigBase
+{
+    public string prefabId;
+    public List<string> allowedThemes;
+    // Остальные поля могут быть опциональными для разных типов
+}
+
+[System.Serializable]
+public class PaintedWaterObject
+{
+    public string shape;        // "blob", "circle", "line"
+    public Vector2 center;      // Центр объекта
+    public Vector2 endPoint;    // Для линий (конец)
+    public float radius;        // Радиус для blob/circle или половина ширины для line
+    public float width;         // Полная ширина для линии
+    public Color color;
+
+    // Критически важные поля для шума (форма озера)
+    public float noiseOffsetX;
+    public float noiseOffsetY;
+}
+
+[System.Serializable]
+public class MapDecoration
+{
+    public string prefabId;
+    public Vector3 position;
+    public Quaternion rotation;
+    public Vector3 scale;
+}
+
+[System.Serializable]
+public class MapDecorationListWrapper
+{
+    public List<MapDecoration> items;
+}
+
+[System.Serializable]
+public class PathData
 {
     public Vector2 start;
     public Vector2 end;
-
-    public PathData(Vector2 s, Vector2 e)
-    {
-        start = s;
-        end = e;
-    }
+    public PathData(Vector2 s, Vector2 e) { start = s; end = e; }
 }
