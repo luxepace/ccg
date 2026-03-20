@@ -23,6 +23,8 @@ public class StoryMapManager : MonoBehaviour
     public GameObject victoryPanelPrefab; // Сюда перетащить префаб в Инспекторе
     private GameObject activeVictoryPanel;
 
+    [Header("UI Загрузки")]
+    public GameObject loadingPanel;
     private void Awake()
     {
         if (Instance == null) Instance = this;
@@ -38,9 +40,15 @@ public class StoryMapManager : MonoBehaviour
 
     private System.Collections.IEnumerator InitMapRoutine()
     {
+
+        
         yield return null;
         if (HasSavedMap()) LoadMap();
-        else StartNewGame();
+        else
+        {
+            StartNewGame();
+        }
+        
     }
 
     void InitializeSettings()
@@ -164,6 +172,8 @@ public class StoryMapManager : MonoBehaviour
         }
 
         Debug.Log("[StoryMap] Новая игра готова.");
+        loadingPanel.SetActive(false);
+
     }
 
     void DrawPathsForChapter(StoryChapter chapter)
@@ -211,6 +221,7 @@ public class StoryMapManager : MonoBehaviour
             ReloadCurrentChapterVisuals();
 
             Debug.Log("=== Загрузка завершена ===");
+            loadingPanel.SetActive(false);
         }
         catch (System.Exception e)
         {
@@ -435,6 +446,7 @@ public class StoryMapManager : MonoBehaviour
 
         if (currentIndex >= 0 && currentIndex < CurrentChapters.Count - 1)
         {
+            loadingPanel.SetActive(true);
             Debug.Log($"[StoryMap] Переход к главе: {CurrentChapters[currentIndex + 1].chapterName}");
 
             // 1. Подготавливаем данные следующей главы
@@ -492,6 +504,7 @@ public class StoryMapManager : MonoBehaviour
             }
 
             Debug.Log("[StoryMap] Глава обновлена. Ноды должны стоять на поверхности.");
+            loadingPanel.SetActive(false);
         }
         else
         {
