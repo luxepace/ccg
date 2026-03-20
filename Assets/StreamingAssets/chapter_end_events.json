@@ -75,6 +75,44 @@
      "choices": []
     }
    ]
+  },
+  {
+   "chapterIndex": 1,
+   "eventId": "reward_chapter_3",
+   "title": "Тайна Болота",
+   "steps": [
+    {
+     "type": 0,
+     "speaker": "Дух Трясины",
+     "text": "Болото поглощено твоим светом. За победу над древним злом прими мой дар.",
+     "backgroundSpriteName": "swamp",
+     "frameSpriteName": "cursed_frame",
+     "portraitSpriteName": "",
+     "choices": [
+      { "choiceText": "Золото и лечение", "nextStepIndex": 1 },
+      { "choiceText": "Удалить проклятую карту", "nextStepIndex": 2 }
+     ]
+    },
+    {
+     "type": 1,
+     "text": "Получено 50 золота и полное лечение!",
+     "reward": { "gold": 50, "healAmount": 999, "cardNames": [], "bonusTypes": [] },
+     "choices": [{ "choiceText": "Благодарю!", "nextStepIndex": 3 }]
+    },
+    {
+     "type": 1,
+     "text": "Одна случайная карта покинула вашу колоду.",
+     "reward": { "gold": 0, "healAmount": 0, "cardNames": [], "bonusTypes": ["REMOVE_RANDOM_CARD"] },
+     "choices": [{ "choiceText": "Идем дальше", "nextStepIndex": 3 }]
+    },
+    {
+     "type": 0,
+     "text": "Горы ждут тебя впереди...",
+     "buttonText": "К третьей главе",
+     "isFinal": true,
+     "choices": []
+    }
+   ]
   }
  ]
 }

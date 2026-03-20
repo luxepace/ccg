@@ -402,6 +402,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   generationStep: 4
+  pathWidth: 2
+  pathColor: {r: 0.35, g: 0.22, b: 0.1, a: 1}
+  pathDetailPoints: 4
 --- !u!1 &433193756
 GameObject:
   m_ObjectHideFlags: 0
@@ -749,6 +752,8 @@ MonoBehaviour:
     enemyId: 
     eventId: 
     nodeVisual: {fileID: 0}
+  victoryPanelPrefab: {fileID: 3897205692839244135, guid: 2f76e7c228571ee42b9c25fd971e5742,
+    type: 3}
 --- !u!224 &724827668 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 4980562649471343894, guid: dd0bced91a272fd4d891e65b71aacc9c,
@@ -788,12 +793,6 @@ MonoBehaviour:
     type: 3}
   nodesContainer: {fileID: 185937676}
   linesContainer: {fileID: 2020787248}
-  pathMaterial: {fileID: 2100000, guid: 7bb3268eacdbafb448ac81704fd2c8a2, type: 2}
-  pathWidth: 1.5
-  pathSegments: 160
-  pathNoiseStrength: 4
-  linePrefab: {fileID: 4554992642230701239, guid: 5b45bd714b82dea4c9fafb16ad555d8f,
-    type: 3}
 --- !u!4 &1011476633
 Transform:
   m_ObjectHideFlags: 0
@@ -1084,7 +1083,7 @@ Transform:
   m_GameObject: {fileID: 1509668882}
   serializedVersion: 2
   m_LocalRotation: {x: 0.5788904, y: -0, z: -0, w: 0.8154054}
-  m_LocalPosition: {x: 98.6, y: 153.1, z: 22.8}
+  m_LocalPosition: {x: 98.6, y: 175.1, z: 23.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

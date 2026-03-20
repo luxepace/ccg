@@ -61,51 +61,62 @@ public class MapGenerator3D : MonoBehaviour
         return terrainData != null && isHeightsLoaded;
     }
 
+    // === НОВЫЙ МЕТОД: Генерация одной главы изолированно ===
+    // Используется в цикле StartNewGame: Генерируем ландшафт -> Применяем -> Генерируем ноды
+    public void GenerateAndSaveSingleChapterData(int chapterIndex, string themeId)
+    {
+        SetupThemeParameters(themeId);
+
+        // Фиксируем смещение шума для этой главы
+        if (chapterIndex == 0)
+        {
+            offsetX = Random.Range(0f, 10000f);
+            offsetY = Random.Range(0f, 10000f);
+        }
+        else
+        {
+            // Для последующих глав можно немного сдвигать оффсет или генерировать новый
+            offsetX += Random.Range(1000f, 5000f);
+            offsetY += Random.Range(1000f, 5000f);
+        }
+
+        Debug.Log($"[MapGen] Генерация ландшафта для главы {chapterIndex} (Тема: {themeId})...");
+
+        // 1. Генерируем высоты и складки
+        float[,] heights = GenerateHeights();
+
+        // 2. Сохраняем высоты (JSON)
+        string heightFile = GetChapterSavePath(chapterIndex);
+        SaveMap(heights, heightFile);
+
+        // 3. Сохраняем складки (JSON)
+        string foldsFile = GetFoldsSavePath(chapterIndex);
+        SaveFolds(currentFolds, foldsFile);
+
+        // 4. Генерируем базовую текстуру (Бумага + Складки) и сохраняем PNG
+        if (MapDecorationManager.Instance != null)
+        {
+            MapDecorationManager.Instance.GenerateBasePaperTexture(chapterIndex, heights, currentFolds);
+
+            // Генерируем объекты декораций (деревья/камни) и сохраняем JSON
+            MapDecorationManager.Instance.GenerateObjectDecorationsOnly(chapterIndex, themeId, currentFolds);
+        }
+
+        Debug.Log($"[MapGen] Глава {chapterIndex}: Ландшафт, текстура и декорации сохранены.");
+    }
+
     public void GenerateAndSaveAllChapterMaps(List<ChapterConfig> chapters)
     {
         if (chapters == null || chapters.Count == 0) return;
+        Debug.Log("[MapGen] Массовая генерация (устаревший метод, используется только для тестов).");
 
-        Debug.Log("[MapGen] Начало массовой генерации ландшафтов (данные)...");
         offsetX = Random.Range(0f, 10000f);
         offsetY = Random.Range(0f, 10000f);
 
         foreach (var chapter in chapters)
         {
-            SetupThemeParameters(chapter.themeId);
-
-            // 1. Генерируем высоты и складки
-            float[,] heights = GenerateHeights();
-
-            // 2. Сохраняем высоты (JSON)
-            string heightFile = GetChapterSavePath(chapter.chapterIndex);
-            SaveMap(heights, heightFile);
-
-            // 3. Сохраняем складки (JSON)
-            string foldsFile = GetFoldsSavePath(chapter.chapterIndex);
-            SaveFolds(currentFolds, foldsFile);
-
-            // === ИСПРАВЛЕНИЕ: ГЕНЕРАЦИЯ БАЗОВОЙ ТЕКСТУРЫ (БУМАГА + СКЛАДКИ) ===
-            // Теперь мы явно создаем текстуру и сохраняем её, чтобы файл существовал до отрисовки путей
-            if (MapDecorationManager.Instance != null)
-            {
-                MapDecorationManager.Instance.GenerateBasePaperTexture(
-                    chapter.chapterIndex,
-                    heights,
-                    currentFolds
-                );
-
-                // Также генерируем объекты декораций (деревья/камни)
-                MapDecorationManager.Instance.GenerateObjectDecorationsOnly(
-                    chapter.chapterIndex,
-                    chapter.themeId,
-                    currentFolds
-                );
-            }
-            // ================================================================
-
-            Debug.Log($"[MapGen] Глава {chapter.chapterIndex}: данные, текстура бумаги и декорации сохранены.");
+            GenerateAndSaveSingleChapterData(chapter.chapterIndex, chapter.themeId);
         }
-        Debug.Log("[MapGen] Все данные ландшафтов созданы.");
     }
 
     public void ApplyThemeAndLoadChapter(int chapterIndex, string themeId)
@@ -117,28 +128,24 @@ public class MapGenerator3D : MonoBehaviour
         if (File.Exists(heightFile))
         {
             Debug.Log($"[MapGen] Загрузка данных ландшафта главы {chapterIndex}");
-
             LoadMapFromFile(heightFile);
 
             if (File.Exists(foldsFile))
             {
                 currentFolds = LoadFolds(foldsFile);
-                Debug.Log($"[MapGen] Загружено {currentFolds.Count} складок из файла.");
+                Debug.Log($"[MapGen] Загружено {currentFolds.Count} складок.");
             }
             else
             {
-                Debug.LogWarning($"[MapGen] Файл складок не найден: {foldsFile}. Генерируем новые.");
                 RegenerateFoldsRandomly();
             }
 
-            // Загрузка объектов декораций
             if (MapDecorationManager.Instance != null)
             {
                 MapDecorationManager.Instance.LoadAndSpawnDecorations(chapterIndex);
             }
 
             isHeightsLoaded = true;
-            Debug.Log("[MapGen] Данные ландшафта загружены. Ожидание загрузки текстуры...");
         }
         else
         {
@@ -150,9 +157,8 @@ public class MapGenerator3D : MonoBehaviour
             if (MapDecorationManager.Instance != null)
             {
                 MapDecorationManager.Instance.GenerateBasePaperTexture(chapterIndex, heights, currentFolds);
-                MapDecorationManager.Instance.GenerateObjectDecorationsOnly(chapterIndex, "forest", currentFolds);
+                MapDecorationManager.Instance.GenerateObjectDecorationsOnly(chapterIndex, themeId, currentFolds);
             }
-
             isHeightsLoaded = true;
         }
     }
@@ -196,10 +202,6 @@ public class MapGenerator3D : MonoBehaviour
             octaves = config.octaves;
             persistence = config.persistence;
             smoothingPasses = config.smoothingPasses;
-        }
-        else
-        {
-            Debug.LogWarning($"[MapGen] Тема '{themeId}' не найдена. Используются значения по умолчанию.");
         }
     }
 
@@ -279,8 +281,6 @@ public class MapGenerator3D : MonoBehaviour
         return heights;
     }
 
-    // === МЕТОДЫ СОХРАНЕНИЯ/ЗАГРУЗКИ ===
-
     string GetFoldsSavePath(int chapterIndex)
     {
         return Path.Combine(Application.persistentDataPath, $"{baseSaveFileName}{chapterIndex}{foldsSaveSuffix}");
@@ -290,7 +290,6 @@ public class MapGenerator3D : MonoBehaviour
     {
         FoldSaveData data = new FoldSaveData();
         data.folds = new List<FoldLineSave>(folds.Count);
-
         foreach (var f in folds)
         {
             data.folds.Add(new FoldLineSave
@@ -304,7 +303,6 @@ public class MapGenerator3D : MonoBehaviour
                 strength = f.strength
             });
         }
-
         string json = JsonUtility.ToJson(data, true);
         Directory.CreateDirectory(Path.GetDirectoryName(path));
         File.WriteAllText(path, json);
@@ -313,10 +311,8 @@ public class MapGenerator3D : MonoBehaviour
     List<FoldLine> LoadFolds(string path)
     {
         if (!File.Exists(path)) return new List<FoldLine>();
-
         string json = File.ReadAllText(path);
         FoldSaveData data = JsonUtility.FromJson<FoldSaveData>(json);
-
         List<FoldLine> folds = new List<FoldLine>();
         if (data != null && data.folds != null)
         {
@@ -356,55 +352,40 @@ public class MapGenerator3D : MonoBehaviour
 
     float GetDistanceToLineSegment(float px, float pz, float x1, float z1, float x2, float z2)
     {
-        float A = px - x1;
-        float B = pz - z1;
-        float C = x2 - x1;
-        float D = z2 - z1;
+        float A = px - x1; float B = pz - z1; float C = x2 - x1; float D = z2 - z1;
         float dot = A * C + B * D;
         float lenSq = C * C + D * D;
-        float param = -1f;
-        if (lenSq != 0f) param = dot / lenSq;
+        float param = lenSq != 0f ? dot / lenSq : -1f;
         float xx, yy;
         if (param < 0f) { xx = x1; yy = z1; }
         else if (param > 1f) { xx = x2; yy = z2; }
         else { xx = x1 + param * C; yy = z1 + param * D; }
-        float dx = px - xx;
-        float dy = pz - yy;
+        float dx = px - xx; float dy = pz - yy;
         return Mathf.Sqrt(dx * dx + dy * dy);
     }
 
     float[,] SmoothHeightmap(float[,] input, int res, int passes)
     {
         float[,] output = new float[res, res];
-
         for (int p = 0; p < passes; p++)
         {
             float[,] source = (p == 0) ? input : output;
-
             for (int y = 1; y < res - 1; y++)
             {
                 for (int x = 1; x < res - 1; x++)
                 {
                     float sum = source[y, x] * 2.0f;
-                    sum += source[y - 1, x] * 1.5f;
-                    sum += source[y + 1, x] * 1.5f;
-                    sum += source[y, x - 1] * 1.5f;
-                    sum += source[y, x + 1] * 1.5f;
-                    sum += source[y - 1, x - 1] * 0.5f;
-                    sum += source[y + 1, x - 1] * 0.5f;
-                    sum += source[y - 1, x + 1] * 0.5f;
-                    sum += source[y + 1, x + 1] * 0.5f;
-
+                    sum += source[y - 1, x] * 1.5f + source[y + 1, x] * 1.5f;
+                    sum += source[y, x - 1] * 1.5f + source[y, x + 1] * 1.5f;
+                    sum += source[y - 1, x - 1] * 0.5f + source[y + 1, x - 1] * 0.5f;
+                    sum += source[y - 1, x + 1] * 0.5f + source[y + 1, x + 1] * 0.5f;
                     output[y, x] = sum / 9.0f;
                 }
             }
-
             for (int i = 0; i < res; i++)
             {
-                output[0, i] = source[0, i];
-                output[res - 1, i] = source[res - 1, i];
-                output[i, 0] = source[i, 0];
-                output[i, res - 1] = source[i, res - 1];
+                output[0, i] = source[0, i]; output[res - 1, i] = source[res - 1, i];
+                output[i, 0] = source[i, 0]; output[i, res - 1] = source[i, res - 1];
             }
         }
         return output;
@@ -426,6 +407,7 @@ public class MapGenerator3D : MonoBehaviour
         for (int y = 0; y < width; y++)
             for (int x = 0; x < height; x++)
                 saveData.heights[y * height + x] = heights[y, x];
+
         string json = JsonUtility.ToJson(saveData);
         Directory.CreateDirectory(Path.GetDirectoryName(specificPath));
         File.WriteAllText(specificPath, json);
@@ -447,12 +429,14 @@ public class MapGenerator3D : MonoBehaviour
         string json = File.ReadAllText(specificPath);
         MapSaveData saveData = JsonUtility.FromJson<MapSaveData>(json);
         if (saveData == null || saveData.heights == null) return;
+
         int width = saveData.width;
         int height = saveData.height;
         float[,] heights = new float[width, height];
         for (int y = 0; y < width; y++)
             for (int x = 0; x < height; x++)
                 heights[y, x] = saveData.heights[y * height + x];
+
         if (terrainData != null)
             terrainData.SetHeights(0, 0, heights);
     }
@@ -460,6 +444,7 @@ public class MapGenerator3D : MonoBehaviour
 
 [System.Serializable]
 public class ThemeConfigRoot { public List<MapTheme> themes; }
+
 [System.Serializable]
 public class MapSaveData
 {

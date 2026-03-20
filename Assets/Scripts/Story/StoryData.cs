@@ -115,9 +115,13 @@ public class ChapterConfig
     public string chapterName;
     public int minNodes;
     public int maxNodes;
+
+    // ОСТАВЛЯЕМ ТОЛЬКО ОДНО ПОЛЕ ДЛЯ ПУЛА
     public string enemyPoolId;
     public string eventPoolId;
-    public string bossPoolId;
+
+    // bossPoolId УДАЛЕН
+
     public float enemyNodeChance;
     public float eventNodeChance;
     public float restNodeChance;
@@ -174,8 +178,15 @@ public class StorySaveData
 public class ChapterSaveData
 {
     public int chapterIndex;
-    public string bossId;
-    public string themeId;
+
+    // НОВЫЕ ПОЛЯ: Храним конфигурацию прямо в сохранении
+    public string chapterName;      // Чтобы отображать правильное название (например, "Густая чаща")
+    public string enemyPoolId;      // Чтобы знать, каких врагов спавнить
+    public string eventPoolId;      // Для событий
+    public string bossPoolId;       // Для босса (теперь это то же самое, что enemyPoolId, но оставим для совместимости)
+    public string themeId;          // Тема ландшафта
+
+    // Статистика и структура
     public List<NodeSaveData> nodes;
     public bool isCompleted;
     public bool isUnlocked;
@@ -188,10 +199,24 @@ public class NodeSaveData
     public int nodeId;
     public int layer;
     public StoryNodeType type;
+
+    // Сохраняем только X и Z. Y будет вычислен при загрузке.
+    public float posX;
+    public float posZ;
+
+    // Оставляем поле position для совместимости, но при сохранении игнорируем Y,
+    // а при загрузке восстанавливаем Y через Terrain.
+    [System.NonSerialized] public float tempY;
+
     public bool isVisited;
     public bool isUnlocked;
     public bool isSkipped;
+
+    // Можно вообще убрать Vector3 position и использовать отдельные поля, 
+    // но чтобы не ломать остальной код парсинга, проще оставить Vector3, 
+    // но понимать, что Y в файле - это "мусор", который будет перезаписан.
     public Vector3 position;
+
     public string enemyId;
     public string eventId;
     public List<int> connectedNodeIds;

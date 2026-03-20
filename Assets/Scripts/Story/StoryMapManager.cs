@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.IO;
 using System.Collections.Generic;
+using System.Linq;
 
 public class StoryMapManager : MonoBehaviour
 {
@@ -8,6 +9,7 @@ public class StoryMapManager : MonoBehaviour
 
     [Header("Настройки генерации")]
     public StoryMapGenerator.GenerationSettings generationSettings;
+
     [Header("Сохранение")]
     public string saveFileName = "storyMapSave.json";
 
@@ -16,6 +18,10 @@ public class StoryMapManager : MonoBehaviour
     public StorySaveData SaveData;
     public StoryChapter CurrentChapter;
     public StoryNode CurrentNode;
+
+    [Header("UI Победы")]
+    public GameObject victoryPanelPrefab; // Сюда перетащить префаб в Инспекторе
+    private GameObject activeVictoryPanel;
 
     private void Awake()
     {
@@ -45,8 +51,8 @@ public class StoryMapManager : MonoBehaviour
             {
                 nodeSpacingY = 3f,
                 nodeSpacingZ = 15f,
-                startMinZ = 15f,  // Уменьшенная зона старта (ближе к экрану)
-                startMaxZ = 30f,  // Было 40, стало 30
+                startMinZ = 15f,
+                startMaxZ = 30f,
                 minNodeDistance = 25f,
                 maxBranches = 3,
                 connectionChance = 0.7f,
@@ -58,48 +64,127 @@ public class StoryMapManager : MonoBehaviour
 
     public void StartNewGame()
     {
-        Debug.Log("[StoryMap] Новая игра.");
+        Debug.Log("[StoryMap] Начало новой игры. Выбор случайных вариантов глав...");
+
         DeleteSave();
-        if (MapGenerator3D.Instance != null) MapGenerator3D.Instance.DeleteAllChapterMaps();
+        if (MapGenerator3D.Instance != null)
+            MapGenerator3D.Instance.DeleteAllChapterMaps();
 
         StoryContentLoader.ClearContent();
         StoryContentLoader.LoadAllContent();
 
-        // 1. Генерируем ландшафт всех глав
-        if (MapGenerator3D.Instance != null && StoryContentLoader.AllChapters != null)
+        if (StoryContentLoader.AllChapters == null || StoryContentLoader.AllChapters.Count == 0)
         {
-            MapGenerator3D.Instance.GenerateAndSaveAllChapterMaps(StoryContentLoader.AllChapters);
+            Debug.LogError("[StoryMap] Нет конфигурации глав!");
+            return;
         }
 
-        // 2. Применяем ландшафт первой главы
-        if (StoryContentLoader.AllChapters.Count > 0 && MapGenerator3D.Instance != null)
+        // === ШАГ 1: ВЫБОР СЛУЧАЙНЫХ ВАРИАНТОВ ДЛЯ КАЖДОГО УРОВНЯ ===
+
+        var chaptersByLevel = new Dictionary<int, List<ChapterConfig>>();
+
+        foreach (var config in StoryContentLoader.AllChapters)
         {
-            var ch = StoryContentLoader.AllChapters[0];
-            MapGenerator3D.Instance.ApplyThemeAndLoadChapter(ch.chapterIndex, ch.themeId);
+            if (!chaptersByLevel.ContainsKey(config.chapterIndex))
+            {
+                chaptersByLevel[config.chapterIndex] = new List<ChapterConfig>();
+            }
+            chaptersByLevel[config.chapterIndex].Add(config);
         }
 
-        // 3. Генерируем ноды
-        GenerateNewMapStructure();
+        List<ChapterConfig> selectedConfigs = new List<ChapterConfig>();
+        int maxLevel = chaptersByLevel.Keys.Count > 0 ? chaptersByLevel.Keys.Max() : 0;
 
-        // 4. РИСУЕМ ТРОПИНКИ (и сохраняем их в PNG)
-        DrawPathsAndDecorationsOnCurrentChapter();
+        for (int i = 0; i <= maxLevel; i++)
+        {
+            if (chaptersByLevel.ContainsKey(i) && chaptersByLevel[i].Count > 0)
+            {
+                ChapterConfig chosenConfig = chaptersByLevel[i][Random.Range(0, chaptersByLevel[i].Count)];
+                selectedConfigs.Add(chosenConfig);
+                Debug.Log($"[StoryMap] Уровень {i}: Выбран вариант '{chosenConfig.chapterName}' (Тема: {chosenConfig.themeId})");
+            }
+            else
+            {
+                Debug.LogWarning($"[StoryMap] Не найдено конфигов для уровня {i}!");
+            }
+        }
 
-        // 5. Сохраняем и показываем
+        if (selectedConfigs.Count == 0) return;
+
+        // === ШАГ 2: ГЕНЕРАЦИЯ КАРТЫ ТОЛЬКО ДЛЯ ВЫБРАННЫХ ГЛАВ ===
+
+        CurrentChapters = new List<StoryChapter>();
+        SaveData = new StorySaveData();
+        int globalNodeIdCounter = 0;
+        int previousBossNodeId = -1;
+
+        foreach (var config in selectedConfigs)
+        {
+            Debug.Log($"[StoryMap] Генерация выбранной главы: {config.chapterName} (Индекс: {config.chapterIndex})");
+
+            // 1. Генерация и загрузка ландшафта ЭТОЙ главы в Unity
+            if (MapGenerator3D.Instance != null)
+            {
+                MapGenerator3D.Instance.GenerateAndSaveSingleChapterData(config.chapterIndex, config.themeId);
+                MapGenerator3D.Instance.ApplyThemeAndLoadChapter(config.chapterIndex, config.themeId);
+            }
+
+            // 2. Генерация нодов
+            StoryChapter chapter = StoryMapGenerator.GenerateSingleChapter(config, generationSettings, ref globalNodeIdCounter, previousBossNodeId);
+
+            if (chapter != null)
+            {
+                chapter.themeId = config.themeId;
+
+                StoryNode bossNode = chapter.nodes.Find(n => n.type == StoryNodeType.BOSS);
+                if (bossNode != null) previousBossNodeId = bossNode.nodeId;
+
+                CurrentChapters.Add(chapter);
+
+                // 3. Отрисовка путей сразу же
+                DrawPathsForChapter(chapter);
+
+                Debug.Log($"[StoryMap] Глава {config.chapterIndex} полностью сгенерирована.");
+            }
+            else
+            {
+                Debug.LogError($"[StoryMap] Ошибка генерации главы {config.chapterIndex}");
+            }
+        }
+
+        Debug.Log("[StoryMap] Все главы сгенерированы. Сохранение структуры...");
         SaveChapters();
         SaveMap();
 
+        // === ШАГ 3: ИНИЦИАЛИЗАЦИЯ ПЕРВОЙ ГЛАВЫ ===
         if (CurrentChapters.Count > 0)
         {
             CurrentChapter = CurrentChapters[0];
-            DrawCurrentChapter(CurrentChapter);
+            ReloadCurrentChapterVisuals();
         }
+
+        Debug.Log("[StoryMap] Новая игра готова.");
     }
 
-    void GenerateNewMapStructure()
+    void DrawPathsForChapter(StoryChapter chapter)
     {
-        Debug.Log("Генерация структуры узлов...");
-        CurrentChapters = StoryMapGenerator.GenerateFullMap(generationSettings);
-        SaveData = new StorySaveData();
+        if (MapDecorationManager.Instance == null) return;
+
+        List<PathData> paths = new List<PathData>();
+        foreach (var node in chapter.nodes)
+        {
+            foreach (int connectedId in node.connectedNodeIds)
+            {
+                StoryNode targetNode = chapter.nodes.Find(n => n.nodeId == connectedId);
+                if (targetNode != null)
+                {
+                    paths.Add(new PathData(new Vector2(node.position.x, node.position.z),
+                                             new Vector2(targetNode.position.x, targetNode.position.z)));
+                }
+            }
+        }
+
+        MapDecorationManager.Instance.DrawPathsOnTexture(paths, chapter.chapterIndex);
     }
 
     public void LoadMap()
@@ -118,35 +203,12 @@ public class StoryMapManager : MonoBehaviour
             RestoreChapters();
             if (CurrentChapters.Count == 0) return;
 
-            // Находим активную главу
-            StoryChapter chapterToDraw = null;
-            foreach (var ch in CurrentChapters)
-            {
-                if (ch.isUnlocked && !ch.isCompleted)
-                {
-                    if (chapterToDraw == null || ch.chapterIndex > chapterToDraw.chapterIndex)
-                        chapterToDraw = ch;
-                }
-            }
-            if (chapterToDraw == null) chapterToDraw = CurrentChapters[CurrentChapters.Count - 1];
+            StoryChapter chapterToDraw = CurrentChapters.FirstOrDefault(ch => ch.isUnlocked && !ch.isCompleted);
+            if (chapterToDraw == null)
+                chapterToDraw = CurrentChapters.FirstOrDefault(ch => ch.chapterIndex == SaveData.currentChapter) ?? CurrentChapters.Last();
+
             CurrentChapter = chapterToDraw;
-
-            // ШАГ 1: Применяем ландшафт ЭТОЙ главы
-            if (MapGenerator3D.Instance != null && !string.IsNullOrEmpty(CurrentChapter.themeId))
-            {
-                Debug.Log($"[Load] Применение темы ландшафта: {CurrentChapter.themeId} ");
-                MapGenerator3D.Instance.ApplyThemeAndLoadChapter(CurrentChapter.chapterIndex, CurrentChapter.themeId);
-            }
-
-            // ШАГ 2: МГНОВЕННАЯ ЗАГРУЗКА ТРОПИНОК ИЗ ФАЙЛА
-            if (MapDecorationManager.Instance != null)
-            {
-                MapDecorationManager.Instance.LoadAndApplySavedPaths(CurrentChapter.chapterIndex);
-            }
-
-            // ШАГ 3: КОРРЕКЦИЯ ПОЗИЦИЙ И ОТРИСОВКА
-            SnapNodesToTerrain(CurrentChapter);
-            DrawCurrentChapter(CurrentChapter);
+            ReloadCurrentChapterVisuals();
 
             Debug.Log("=== Загрузка завершена ===");
         }
@@ -155,6 +217,26 @@ public class StoryMapManager : MonoBehaviour
             Debug.LogError("Ошибка загрузки: " + e.Message);
             StartNewGame();
         }
+    }
+
+    void ReloadCurrentChapterVisuals()
+    {
+        if (CurrentChapter == null) return;
+
+        if (MapGenerator3D.Instance != null)
+        {
+            MapGenerator3D.Instance.ApplyThemeAndLoadChapter(CurrentChapter.chapterIndex, CurrentChapter.themeId);
+        }
+
+        SnapNodesToTerrain(CurrentChapter);
+
+        if (MapDecorationManager.Instance != null)
+        {
+            MapDecorationManager.Instance.LoadAndApplySavedPaths(CurrentChapter.chapterIndex);
+            MapDecorationManager.Instance.LoadAndSpawnDecorations(CurrentChapter.chapterIndex);
+        }
+
+        DrawCurrentChapter(CurrentChapter);
     }
 
     void SnapNodesToTerrain(StoryChapter chapter)
@@ -177,12 +259,19 @@ public class StoryMapManager : MonoBehaviour
         foreach (var chData in SaveData.chapters)
         {
             string tid = string.IsNullOrEmpty(chData.themeId) ? "forest" : chData.themeId;
-            StoryChapter ch = new StoryChapter(chData.chapterIndex, $"Chapter {chData.chapterIndex + 1}")
+            string name = string.IsNullOrEmpty(chData.chapterName) ? $"Глава {chData.chapterIndex + 1}" : chData.chapterName;
+
+            StoryChapter ch = new StoryChapter(chData.chapterIndex, name)
             {
                 isCompleted = chData.isCompleted,
                 isUnlocked = chData.isUnlocked,
-                themeId = tid
+                isActive = chData.isActive,
+                themeId = tid,
+                enemyPoolId = chData.enemyPoolId,
+                eventPoolId = chData.eventPoolId,
+                bossPoolId = chData.bossPoolId
             };
+
             foreach (var nData in chData.nodes)
             {
                 StoryNode n = new StoryNode(nData.nodeId, chData.chapterIndex, nData.layer, nData.type, nData.position)
@@ -209,7 +298,6 @@ public class StoryMapManager : MonoBehaviour
         visual.ClearVisuals();
         visual.DisplayChapter(ch);
 
-        // Восстановление прогресса
         StoryNode last = null;
         int maxL = -1;
         foreach (var n in ch.nodes)
@@ -230,17 +318,26 @@ public class StoryMapManager : MonoBehaviour
     {
         if (SaveData.chapters == null) SaveData.chapters = new List<ChapterSaveData>();
         SaveData.chapters.Clear();
-        if (CurrentChapter != null) SaveData.currentChapter = CurrentChapter.chapterIndex;
+
+        if (CurrentChapter != null)
+            SaveData.currentChapter = CurrentChapter.chapterIndex;
 
         foreach (var ch in CurrentChapters)
         {
             ChapterSaveData cd = new ChapterSaveData
             {
                 chapterIndex = ch.chapterIndex,
+                chapterName = ch.chapterName,
+                enemyPoolId = ch.enemyPoolId,
+                eventPoolId = ch.eventPoolId,
+                bossPoolId = ch.bossPoolId,
+                themeId = ch.themeId,
                 isCompleted = ch.isCompleted,
                 isUnlocked = ch.isUnlocked,
+                isActive = ch.isActive,
                 nodes = new List<NodeSaveData>()
             };
+
             foreach (var n in ch.nodes)
             {
                 cd.nodes.Add(new NodeSaveData
@@ -290,7 +387,6 @@ public class StoryMapManager : MonoBehaviour
             node.isVisited = true;
             CurrentNode = node;
 
-            // Пропуск других на этом слое
             StoryChapter ch = CurrentChapters[chIdx];
             foreach (var n in ch.nodes)
             {
@@ -309,61 +405,48 @@ public class StoryMapManager : MonoBehaviour
     void UnlockNextLayerNodes(StoryNode cur)
     {
         if (cur == null) return;
+
+        // Если это финал главы, не пытаемся ничего разблокировать (ошибки не будет)
+        if (cur.type == StoryNodeType.CHAPTER_END) return;
+
         StoryChapter ch = CurrentChapters[cur.chapterIndex];
+        int unlockedCount = 0;
+
         foreach (var n in ch.nodes)
         {
             if (n.layer == cur.layer + 1 && cur.connectedNodeIds.Contains(n.nodeId))
-                n.isUnlocked = true;
-        }
-    }
-
-    void DrawPathsAndDecorationsOnCurrentChapter()
-    {
-        if (MapDecorationManager.Instance == null || CurrentChapters == null || CurrentChapters.Count == 0) return;
-        if (MapGenerator3D.Instance == null) return;
-
-        StoryChapter chapter = CurrentChapters[0]; // Рисуем для первой главы
-
-        // 1. Собираем пути
-        List<PathData> paths = new List<PathData>();
-        foreach (var node in chapter.nodes)
-        {
-            foreach (int connectedId in node.connectedNodeIds)
             {
-                StoryNode targetNode = chapter.nodes.Find(n => n.nodeId == connectedId);
-                if (targetNode != null)
-                {
-                    paths.Add(new PathData(new Vector2(node.position.x, node.position.z),
-                                            new Vector2(targetNode.position.x, targetNode.position.z)));
-                }
+                n.isUnlocked = true;
+                unlockedCount++;
             }
         }
 
-        // 2. Получаем текущие складки (если нужно, но новый метод берет их сам из Instance)
-        // List<FoldLine> folds = MapGenerator3D.Instance.GetCurrentFolds();
-
-        // 3. === ИСПРАВЛЕНИЕ ЗДЕСЬ ===
-        // Передаем пути И индекс главы
-        MapDecorationManager.Instance.DrawPathsOnTexture(paths, chapter.chapterIndex);
-
-        Debug.Log($"[MapManager] Тропинки нарисованы для главы {chapter.chapterIndex}");
+        if (unlockedCount == 0)
+        {
+            Debug.LogWarning($"[Unlock] Не найдено соединений для узла {cur.nodeId}.");
+        }
     }
 
     public void ProceedToNextChapter()
     {
         if (CurrentChapter == null) return;
-        int nextIdx = CurrentChapter.chapterIndex + 1;
 
-        if (nextIdx < CurrentChapters.Count)
+        int currentIndex = CurrentChapters.IndexOf(CurrentChapter);
+
+        if (currentIndex >= 0 && currentIndex < CurrentChapters.Count - 1)
         {
+            Debug.Log($"[StoryMap] Переход к главе: {CurrentChapters[currentIndex + 1].chapterName}");
+
+            // 1. Подготавливаем данные следующей главы
             CurrentChapter.isCompleted = true;
             CurrentChapter.isActive = false;
 
-            StoryChapter nextCh = CurrentChapters[nextIdx];
+            StoryChapter nextCh = CurrentChapters[currentIndex + 1];
             nextCh.isUnlocked = true;
             nextCh.isActive = true;
             CurrentChapter = nextCh;
 
+            // 2. Находим старт и разблокируем его
             StoryNode start = nextCh.nodes.Find(n => n.type == StoryNodeType.START);
             if (start != null)
             {
@@ -375,23 +458,124 @@ public class StoryMapManager : MonoBehaviour
             SaveChapters();
             SaveMap();
 
+            // === КРИТИЧЕСКИ ВАЖНЫЙ ПОРЯДОК ДЛЯ ВИЗУАЛА ===
+
+            // А. Сначала очищаем старые визуальные ноды
             StoryMapVisual vis = FindObjectOfType<StoryMapVisual>();
             if (vis != null)
             {
                 vis.ClearVisuals();
-                vis.InitializeAndDisplay(CurrentChapter);
             }
 
+            // Б. ЗАГРУЖАЕМ НОВЫЙ ЛАНДШАФТ (Высоты меняются здесь)
             if (MapGenerator3D.Instance != null)
             {
                 MapGenerator3D.Instance.ApplyThemeAndLoadChapter(CurrentChapter.chapterIndex, CurrentChapter.themeId);
-                // Для новой главы нужно тоже загрузить пути, если они уже сгенерированы
-                // Но так как мы генерируем все главы сразу при старте игры, текстура должна быть в файле.
-                MapDecorationManager.Instance.LoadAndApplySavedPaths(CurrentChapter.chapterIndex);
             }
 
+            // В. СРАЗУ ЖЕ ПЕРЕСЧИТЫВАЕМ ВЫСОТЫ НОД в памяти под новый ландшафт
+            // Это гарантирует, что координаты верны ДО создания префабов
             SnapNodesToTerrain(CurrentChapter);
+
+            // Г. Только теперь создаем новые визуальные ноды на основе исправленных координат
+            if (vis != null)
+            {
+                vis.InitializeAndDisplay(CurrentChapter);
+                vis.RefreshAllNodeVisuals();
+            }
+
+            // Д. Загружаем текстуру с путями поверх нового ландшафта
+            if (MapDecorationManager.Instance != null)
+            {
+                MapDecorationManager.Instance.LoadAndApplySavedPaths(CurrentChapter.chapterIndex);
+                MapDecorationManager.Instance.LoadAndSpawnDecorations(CurrentChapter.chapterIndex);
+            }
+
+            Debug.Log("[StoryMap] Глава обновлена. Ноды должны стоять на поверхности.");
         }
+        else
+        {
+            Debug.Log("[StoryMap] Это была последняя глава. Игра пройдена!");
+            FinishGame();
+        }
+    }
+
+    // === НОВЫЙ МЕТОД: ФИНАЛ ИГРЫ ===
+    // === МЕТОД: ФИНАЛ ИГРЫ С ОЧИСТКОЙ СОХРАНЕНИЙ ===
+    public void FinishGame()
+    {
+        Debug.Log("==================================================");
+        Debug.Log("=== ПОЗДРАВЛЯЕМ! ВЫ ПРОШЛИ ИГРУ ДО КОНЦА! ===");
+        Debug.Log("==================================================");
+        Debug.Log("[FinishGame] Очистка сохранений для нового прохождения...");
+
+        // 1. Очищаем прогресс игрока (HP, Gold, Колода)
+        if (PlayerProgressionManager.Instance != null)
+        {
+            PlayerProgressionManager.Instance.DeleteSave();
+            Debug.Log("[FinishGame] Данные игрока сброшены.");
+        }
+
+        // 2. Очищаем сохранение структуры карты (storyMapSave.json)
+        DeleteSave();
+        Debug.Log("[FinishGame] Файл storyMapSave.json удален.");
+
+        // 3. Очищаем файлы ландшафтов и текстур глав (map_chapter_X.json, .png)
+        if (MapGenerator3D.Instance != null)
+        {
+            MapGenerator3D.Instance.DeleteAllChapterMaps();
+            Debug.Log("[FinishGame] Файлы ландшафтов и текстур удалены.");
+        }
+
+        Debug.Log("[FinishGame] Все сохранения очищены. Игра готова к новому запуску.");
+
+        // 4. Показываем экран победы
+        ShowVictoryScreen();
+    }
+
+    // === НОВЫЙ МЕТОД: ПОКАЗ ЭКРАНА ПОБЕДЫ ===
+    void ShowVictoryScreen()
+    {
+        if (victoryPanelPrefab == null)
+        {
+            Debug.LogError("[Victory] Префаб экрана победы не назначен в инспекторе StoryMapManager!");
+            return;
+        }
+
+        // Находим Canvas (MainCanvas)
+        GameObject canvasObj = GameObject.Find("UI_HUD_Canvas");
+        if (canvasObj == null)
+        {
+            Debug.LogError("[Victory] Не найден объект MainCanvas на сцене!");
+            return;
+        }
+
+        // Создаем экземпляр префаба внутри Canvas
+        activeVictoryPanel = Instantiate(victoryPanelPrefab, canvasObj.transform);
+
+        // Убеждаемся, что он активен
+        if (!activeVictoryPanel.activeSelf)
+            activeVictoryPanel.SetActive(true);
+
+        // Растягиваем на весь экран
+        RectTransform rt = activeVictoryPanel.GetComponent<RectTransform>();
+        if (rt != null)
+        {
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            rt.SetAsLastSibling(); // Поверх всего
+        }
+
+        Debug.Log("[Victory] Экран победы показан!");
+    }
+
+    // Метод для кнопки "В меню" (если добавите кнопку на панель)
+    public void ReturnToMainMenu()
+    {
+        Debug.Log("Возврат в главное меню...");
+        // UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
     }
 
     [ContextMenu("Regenerate Map")]

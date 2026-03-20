@@ -5,7 +5,7 @@
       "enemyName": "Гоблин-разведчик",
       "avatarPath": "Sprites/Cards/osk",
       "enemyHP": 1,
-      "enemyMaxHP": 15,
+      "enemyMaxHP": 1,
       "enemyDeck": [
         "Охотник с копьём",
         "Охотник с копьём",
@@ -17,28 +17,378 @@
       "rewardCardId": "",
       "isBoss": false,
       "themeId": "forest",
-      "quotes": ["Я первый удар нанесу!"]
+      "quotes": [
+        "Я первый удар нанесу!"
+      ]
     },
     {
-      "id": "boss_forest",
-      "enemyName": "Вождь Стаи",
+      "id": "forest_wolf",
+      "enemyName": "Лесной волк",
+      "avatarPath": "Sprites/Cards/volk",
+      "enemyHP": 1,
+      "enemyMaxHP": 1,
+      "enemyDeck": [
+        "Волк-одиночка",
+        "Волк-одиночка",
+        "Охотник с копьём",
+        "Урон герою противника"
+      ],
+      "condition": "NONE",
+      "rewardGold": 8,
+      "rewardCardId": "",
+      "isBoss": false,
+      "themeId": "forest",
+      "quotes": [
+        "Рррр! Берегись клыков!"
+      ]
+    },
+    {
+      "id": "bandit_rogue",
+      "enemyName": "Лесной разбойник",
+      "avatarPath": "Sprites/Cards/osk",
+      "enemyHP": 1,
+      "enemyMaxHP": 1,
+      "enemyDeck": [
+        "Охотник с копьём",
+        "Монстр с двойной атакой",
+        "Урон герою противника",
+        "Щит союзнику"
+      ],
+      "condition": "NONE",
+      "rewardGold": 15,
+      "rewardCardId": "",
+      "isBoss": false,
+      "themeId": "forest",
+      "quotes": [
+        "Кошелек или жизнь!"
+      ]
+    },
+    {
+      "id": "giant_spider",
+      "enemyName": "Гигантский паук",
+      "avatarPath": "Sprites/Cards/provocation",
+      "enemyHP": 1,
+      "enemyMaxHP": 1,
+      "enemyDeck": [
+        "Монстр с провокацией",
+        "Охотник с копьём",
+        "Монстр со щитом",
+        "Урон врагу"
+      ],
+      "condition": "NONE",
+      "rewardGold": 12,
+      "rewardCardId": "",
+      "isBoss": false,
+      "themeId": "forest",
+      "quotes": [
+        "Попался в мою паутину..."
+      ]
+    },
+    {
+      "id": "forest_troll",
+      "enemyName": "Лесной тролль",
       "avatarPath": "Sprites/Cards/vojak",
       "enemyHP": 1,
-      "enemyMaxHP": 30,
+      "enemyMaxHP": 1,
       "enemyDeck": [
         "Вожак волков",
-        "Вожак волков",
-        "Монстр с провокацией",
         "Монстр с регенерацией",
+        "Шкай",
         "Лечение всех союзников",
-        "Шкай"
+        "Монстр со щитом"
       ],
       "condition": "NONE",
       "rewardGold": 50,
       "rewardCardId": "",
       "isBoss": true,
       "themeId": "forest",
-      "quotes": ["Ты не пройдешь дальше!", "Моя стая сильна!"]
+      "quotes": [
+        "Тролль не пустит!",
+        "Моя кожа крепче камня!"
+      ]
+    },
+    {
+      "id": "dryad_queen",
+      "enemyName": "Королева Дриад",
+      "avatarPath": "Sprites/Cards/paksyava",
+      "enemyHP": 1,
+      "enemyMaxHP": 1,
+      "enemyDeck": [
+        "Паксява",
+        "Монстр с регенерацией",
+        "Лечение всех союзников",
+        "Исцеление союзника",
+        "Усиление урона союзника"
+      ],
+      "condition": "NONE",
+      "rewardGold": 50,
+      "rewardCardId": "",
+      "isBoss": true,
+      "themeId": "forest",
+      "quotes": [
+        "Лес защищает меня!",
+        "Природа мстительна."
+      ]
+    },
+    {
+      "id": "swamp_slime",
+      "enemyName": "Болотный сгустень",
+      "avatarPath": "Sprites/Cards/regen",
+      "enemyHP": 1,
+      "enemyMaxHP": 1,
+      "enemyDeck": [
+        "Монстр с регенерацией",
+        "Охотник с копьём",
+        "Урон всем врагам",
+        "Исцеление героя"
+      ],
+      "condition": "NONE",
+      "rewardGold": 9,
+      "rewardCardId": "",
+      "isBoss": false,
+      "themeId": "swamp",
+      "quotes": [
+        "Бульк... хлюп..."
+      ]
+    },
+    {
+      "id": "crocodile",
+      "enemyName": "Болотный крокодил",
+      "avatarPath": "Sprites/Cards/doubleAttack",
+      "enemyHP": 1,
+      "enemyMaxHP": 1,
+      "enemyDeck": [
+        "Монстр с двойной атакой",
+        "Волк-одиночка",
+        "Урон врагу",
+        "Провокация союзнику"
+      ],
+      "condition": "NONE",
+      "rewardGold": 14,
+      "rewardCardId": "",
+      "isBoss": false,
+      "themeId": "swamp",
+      "quotes": [
+        "Хрусть!"
+      ]
+    },
+    {
+      "id": "will_o_wisp",
+      "enemyName": "Блуждающий огонь",
+      "avatarPath": "Sprites/Cards/instantActive",
+      "enemyHP": 1,
+      "enemyMaxHP": 1,
+      "enemyDeck": [
+        "Готовый к атаке монстр",
+        "Урон герою противника",
+        "Снижение урона врага",
+        "Исцеление героя"
+      ],
+      "condition": "NONE",
+      "rewardGold": 11,
+      "rewardCardId": "",
+      "isBoss": false,
+      "themeId": "swamp",
+      "quotes": [
+        "Следуй за светом..."
+      ]
+    },
+    {
+      "id": "poison_frog",
+      "enemyName": "Ядовитая лягушка",
+      "avatarPath": "Sprites/Cards/counterAttack",
+      "enemyHP": 1,
+      "enemyMaxHP": 1,
+      "enemyDeck": [
+        "Контратакующий монстр",
+        "Охотник с копьём",
+        "Урон всем врагам",
+        "Снижение урона врага"
+      ],
+      "condition": "NONE",
+      "rewardGold": 10,
+      "rewardCardId": "",
+      "isBoss": false,
+      "themeId": "swamp",
+      "quotes": [
+        "Ква-а-а!"
+      ]
+    },
+    {
+      "id": "swamp_hag",
+      "enemyName": "Болотная ведьма",
+      "avatarPath": "Sprites/Cards/shaitan",
+      "enemyHP": 1,
+      "enemyMaxHP": 1,
+      "enemyDeck": [
+        "Шайтан",
+        "Монстр с регенерацией",
+        "Урон всем врагам",
+        "Снижение урона врага",
+        "Исцеление героя"
+      ],
+      "condition": "NONE",
+      "rewardGold": 50,
+      "rewardCardId": "",
+      "isBoss": true,
+      "themeId": "swamp",
+      "quotes": [
+        "Твое тело станет удобрением!",
+        "Болото заберет тебя."
+      ]
+    },
+    {
+      "id": "hydra_whelp",
+      "enemyName": "Детеныш Гидры",
+      "avatarPath": "Sprites/Cards/shkay",
+      "enemyHP": 1,
+      "enemyMaxHP": 1,
+      "enemyDeck": [
+        "Шкай",
+        "Монстр с двойной атакой",
+        "Монстр с регенерацией",
+        "Лечение всех союзников",
+        "Урон всем врагам"
+      ],
+      "condition": "NONE",
+      "rewardGold": 50,
+      "rewardCardId": "",
+      "isBoss": true,
+      "themeId": "swamp",
+      "quotes": [
+        "Отрубишь одну голову — вырастут две!",
+        "Шипение гидры..."
+      ]
+    },
+    {
+      "id": "mountain_goatman",
+      "enemyName": "Горный козлоног",
+      "avatarPath": "Sprites/Cards/osk",
+      "enemyHP": 1,
+      "enemyMaxHP": 1,
+      "enemyDeck": [
+        "Охотник с копьём",
+        "Готовый к атаке монстр",
+        "Урон врагу",
+        "Щит союзнику"
+      ],
+      "condition": "NONE",
+      "rewardGold": 13,
+      "rewardCardId": "",
+      "isBoss": false,
+      "themeId": "mountains",
+      "quotes": [
+        "Здесь не пройти!"
+      ]
+    },
+    {
+      "id": "rock_golem",
+      "enemyName": "Каменный голем",
+      "avatarPath": "Sprites/Cards/shield",
+      "enemyHP": 1,
+      "enemyMaxHP": 1,
+      "enemyDeck": [
+        "Монстр со щитом",
+        "Охотник с копьём",
+        "Урон всем врагам",
+        "Исцеление героя"
+      ],
+      "condition": "NONE",
+      "rewardGold": 16,
+      "rewardCardId": "",
+      "isBoss": false,
+      "themeId": "mountains",
+      "quotes": [
+        "Камень не чувствует боли."
+      ]
+    },
+    {
+      "id": "harpy",
+      "enemyName": "Гарпия",
+      "avatarPath": "Sprites/Cards/instantActive",
+      "enemyHP": 1,
+      "enemyMaxHP": 1,
+      "enemyDeck": [
+        "Готовый к атаке монстр",
+        "Волк-одиночка",
+        "Урон герою противника",
+        "Снижение урона врага"
+      ],
+      "condition": "NONE",
+      "rewardGold": 12,
+      "rewardCardId": "",
+      "isBoss": false,
+      "themeId": "mountains",
+      "quotes": [
+        "Ветер несет мою смерть!"
+      ]
+    },
+    {
+      "id": "cave_bear",
+      "enemyName": "Пещерный медведь",
+      "avatarPath": "Sprites/Cards/vojak",
+      "enemyHP": 1,
+      "enemyMaxHP": 1,
+      "enemyDeck": [
+        "Вожак волков",
+        "Монстр с провокацией",
+        "Урон всем врагам",
+        "Лечение всех союзников"
+      ],
+      "condition": "NONE",
+      "rewardGold": 18,
+      "rewardCardId": "",
+      "isBoss": false,
+      "themeId": "mountains",
+      "quotes": [
+        "Рёв эхом разносится по горам!"
+      ]
+    },
+    {
+      "id": "storm_giant",
+      "enemyName": "Грозовой великан",
+      "avatarPath": "Sprites/Cards/shkay",
+      "enemyHP": 1,
+      "enemyMaxHP": 1,
+      "enemyDeck": [
+        "Шкай",
+        "Монстр с двойной атакой",
+        "Урон всем врагам",
+        "Монстр со щитом",
+        "Усиление урона союзника"
+      ],
+      "condition": "NONE",
+      "rewardGold": 50,
+      "rewardCardId": "",
+      "isBoss": true,
+      "themeId": "mountains",
+      "quotes": [
+        "Я — сама буря!",
+        "Гром гремит под моими ногами!"
+      ]
+    },
+    {
+      "id": "young_dragon",
+      "enemyName": "Молодой дракон",
+      "avatarPath": "Sprites/Cards/shaitan",
+      "enemyHP": 1,
+      "enemyMaxHP": 1,
+      "enemyDeck": [
+        "Шайтан",
+        "Шкай",
+        "Монстр с регенерацией",
+        "Урон всем врагам",
+        "Лечение всех союзников"
+      ],
+      "condition": "NONE",
+      "rewardGold": 50,
+      "rewardCardId": "",
+      "isBoss": true,
+      "themeId": "mountains",
+      "quotes": [
+        "Огонь очистит эти земли!",
+        "Драконье пламя не знает пощады."
+      ]
     }
   ]
 }

@@ -1,9 +1,52 @@
 {
   "pools": [
     {
+      "poolId": "pool_forest",
+      "enemyIds": [
+        "goblin_scout",
+        "forest_wolf",
+        "bandit_rogue",
+        "giant_spider"
+      ],
+      "bossIds": [
+        "forest_troll",
+        "dryad_queen"
+      ]
+    },
+    {
+      "poolId": "pool_swamp",
+      "enemyIds": [
+        "swamp_slime",
+        "crocodile",
+        "will_o_wisp",
+        "poison_frog"
+      ],
+      "bossIds": [
+        "swamp_hag",
+        "hydra_whelp"
+      ]
+    },
+    {
+      "poolId": "pool_mountain",
+      "enemyIds": [
+        "mountain_goatman",
+        "rock_golem",
+        "harpy",
+        "cave_bear"
+      ],
+      "bossIds": [
+        "storm_giant",
+        "young_dragon"
+      ]
+    },
+    {
       "poolId": "pool_test",
-      "enemyIds": ["goblin_scout"],
-      "bossIds": ["boss_forest"]
+      "enemyIds": [
+        "goblin_scout"
+      ],
+      "bossIds": [
+        "boss_forest"
+      ]
     }
   ]
 }

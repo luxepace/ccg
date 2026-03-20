@@ -171,11 +171,17 @@ public static class StoryContentLoader
         return eventData;
     }
 
-    public static EnemyData GetRandomBoss(string bossPoolId)
+    public static EnemyData GetRandomBoss(string poolId)
     {
         if (!IsLoaded) LoadAllContent();
-        var pool = AllEnemyPools?.Find(p => p.poolId == bossPoolId);
-        if (pool == null || pool.bossIds.Count == 0) return null;
+
+        var pool = AllEnemyPools?.Find(p => p.poolId == poolId);
+        if (pool == null || pool.bossIds.Count == 0)
+        {
+            Debug.LogError($"[StoryContentLoader] Пул '{poolId}' не найден или пуст на боссов!");
+            return null;
+        }
+
         string bossId = pool.bossIds[Random.Range(0, pool.bossIds.Count)];
         return GetEnemyById(bossId);
     }

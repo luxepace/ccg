@@ -1,43 +1,76 @@
 {
- "chapters": [
-  {
-   "chapterIndex": 0,
-   "chapterName": "Глава 1: Лесная тропа",
-   "minNodes": 5,
-   "maxNodes": 7,
-   "enemyPoolId": "pool_test",
-   "eventPoolId": "pool_test",
-   "bossPoolId": "pool_test",
-   "themeId": "forest",
-   "enemyNodeChance": 0.4,
-   "eventNodeChance": 0.5,
-   "restNodeChance": 0.1
-  },
-  {
-   "chapterIndex": 1,
-   "chapterName": "Глава 2: Трясина",
-   "minNodes": 6,
-   "maxNodes": 8,
-   "enemyPoolId": "pool_test",
-   "eventPoolId": "pool_test",
-   "bossPoolId": "pool_test",
-   "themeId": "swamp",
-   "enemyNodeChance": 0.5,
-   "eventNodeChance": 0.3,
-   "restNodeChance": 0.2
-  },
-  {
-   "chapterIndex": 2,
-   "chapterName": "Глава 3: Пик Бури",
-   "minNodes": 7,
-   "maxNodes": 9,
-   "enemyPoolId": "pool_test",
-   "eventPoolId": "pool_test",
-   "bossPoolId": "pool_test",
-   "themeId": "mountains",
-   "enemyNodeChance": 0.6,
-   "eventNodeChance": 0.2,
-   "restNodeChance": 0.2
-  }
- ]
+  "chapters": [
+    {
+      "chapterIndex": 0,
+      "chapterName": "Лесная тропа (Короткий путь)",
+      "minNodes": 5,
+      "maxNodes": 7,
+      "enemyPoolId": "pool_forest",
+      "eventPoolId": "pool_test",
+      "themeId": "forest",
+      "enemyNodeChance": 0.5,
+      "eventNodeChance": 0.3,
+      "restNodeChance": 0.2
+    },
+    {
+      "chapterIndex": 0,
+      "chapterName": "Густая чаща (Длинный путь)",
+      "minNodes": 6,
+      "maxNodes": 8,
+      "enemyPoolId": "pool_forest",
+      "eventPoolId": "pool_test",
+      "themeId": "forest",
+      "enemyNodeChance": 0.6,
+      "eventNodeChance": 0.2,
+      "restNodeChance": 0.2
+    },
+    {
+      "chapterIndex": 1,
+      "chapterName": "Зыбучие топи",
+      "minNodes": 6,
+      "maxNodes": 8,
+      "enemyPoolId": "pool_swamp",
+      "eventPoolId": "pool_test",
+      "themeId": "swamp",
+      "enemyNodeChance": 0.5,
+      "eventNodeChance": 0.3,
+      "restNodeChance": 0.2
+    },
+    {
+      "chapterIndex": 1,
+      "chapterName": "Мертвое болото",
+      "minNodes": 7,
+      "maxNodes": 9,
+      "enemyPoolId": "pool_swamp",
+      "eventPoolId": "pool_test",
+      "themeId": "swamp",
+      "enemyNodeChance": 0.6,
+      "eventNodeChance": 0.2,
+      "restNodeChance": 0.2
+    },
+    {
+      "chapterIndex": 2,
+      "chapterName": "Пик Бури",
+      "minNodes": 7,
+      "maxNodes": 9,
+      "enemyPoolId": "pool_mountain",
+      "eventPoolId": "pool_test",
+      "themeId": "mountains",
+      "enemyNodeChance": 0.6,
+      "eventNodeChance": 0.2,
+      "restNodeChance": 0.2
+    },
+    {
+      "chapterIndex": 2,
+      "chapterName": "Ледяные вершины",
+      "minNodes": 8,
+      "maxNodes": 10,
+      "enemyPoolId": "pool_mountain",
+      "eventPoolId": "pool_test",
+      "themeId": "mountains",
+      "enemyNodeChance": 0.7,
+      "eventNodeChance": 0.1,
+      "restNodeChance": 0.2
+    }
+  ]
 }
