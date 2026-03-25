@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.IO;
 using System.Collections.Generic;
+using System.Linq;
 
 public static class StoryContentLoader
 {
@@ -19,15 +20,21 @@ public static class StoryContentLoader
     public static List<DecorationConfig> AllDecorations { get; private set; }
 
     public static List<StoryEventData> AllChapterEndEvents { get; private set; }
+
+    private static List<CardData> allCards = new List<CardData>();
     public static bool IsLoaded { get; private set; } = false;
+
+    public static List<CardData> GetAllCards()
+    {
+        if (allCards == null || allCards.Count == 0)
+            LoadAllContent();
+
+        return allCards?.ToList() ?? new List<CardData>();
+    }
 
     public static void LoadAllContent()
     {
-        if (IsLoaded)
-        {
-            Debug.Log("Контент уже загружен");
-            return;
-        }
+      
 
         Debug.Log("Загрузка контента сюжета...");
 
@@ -92,7 +99,21 @@ public static class StoryContentLoader
         }
     }
 
-    // --- Методы поиска ---
+    
+
+    static string GetAbilityDescription(string abilityType)
+    {
+        switch (abilityType)
+        {
+            case "REGENERATION_EACH_TURN": return "Восстанавливает здоровье каждый ход";
+            case "PROVOCATION": return "Обязывает атаковать себя";
+            case "DOUBLE_ATTACK": return "Атакует дважды за ход";
+            case "SHIELD": return "Щит защищает от первой атаки";
+            case "COUNTER_ATTACK": return "Атакует в ответ";
+            case "INSTANT_ACTIVE": return "Может атаковать сразу";
+            default: return "";
+        }
+    }
 
     public static StoryEventData GetChapterEndEvent(int chapterIndex)
     {

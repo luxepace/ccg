@@ -189,22 +189,23 @@ public class StoryMapManager : MonoBehaviour
                 if (targetNode != null)
                 {
                     paths.Add(new PathData(new Vector2(node.position.x, node.position.z),
-                                              new Vector2(targetNode.position.x, targetNode.position.z)));
+                                                new Vector2(targetNode.position.x, targetNode.position.z)));
                 }
             }
         }
 
-        // 1. Сначала рисуем воду (органические кляксы)
+        // 1. Сначала рисуем воду и траву
         MapDecorationManager.Instance.GenerateAndDrawPaintedDecorations(
             chapter.chapterIndex,
             chapter.themeId,
-            chapter.nodes
+            chapter.nodes,
+            paths
         );
 
-        // 2. Затем рисуем мосты и пути поверх воды
+        // 2. Затем рисуем мосты и пути
         MapDecorationManager.Instance.DrawPathsOnTextureWithBridges(paths, chapter.chapterIndex);
 
-        // 3. Генерируем 3D объекты (деревья, камни), которые теперь избегают воду
+        // 3. Генерируем 3D объекты (деревья)
         List<FoldLine> folds = MapGenerator3D.Instance != null ? MapGenerator3D.Instance.currentFolds : null;
 
         MapDecorationManager.Instance.GenerateObjectDecorationsOnly(
@@ -215,7 +216,14 @@ public class StoryMapManager : MonoBehaviour
             chapter.nodes
         );
 
-        Debug.Log($"[StoryMap] Глава {chapter.chapterIndex}: Вода, Мосты, Пути и Декорации сгенерированы.");
+        // === НОВОЕ: Рисуем траву под деревьями ===
+        MapDecorationManager.Instance.DrawGrassUnderSavedDecorations(chapter.chapterIndex, chapter.themeId);
+
+        // === НОВОЕ: РИСУЕМ ПУТИ ЕЩЕ РАЗ ПОВЕРХ ВСЕГО ===
+        // Это перекроет любую траву которая залезла на тропинки
+        MapDecorationManager.Instance.DrawPathsOnTextureWithBridges(paths, chapter.chapterIndex);
+
+        Debug.Log($"[StoryMap] Глава {chapter.chapterIndex}: Вода, Мосты, Пути, Трава и Декорации сгенерированы.");
     }
 
     public void LoadMap()

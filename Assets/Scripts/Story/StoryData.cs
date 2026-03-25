@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public enum StoryNodeType
@@ -227,7 +228,6 @@ public class DecorationConfig
 {
     public string prefabId;
     public string prefabPath;
-
     // Для 3D объектов
     public float minScale;
     public float maxScale;
@@ -242,16 +242,20 @@ public class DecorationConfig
 
     // Для рисованных объектов (вода, горы)
     public Color paintColor;
-
-    // === ДОБАВЬТЕ ЭТУ СТРОКУ ===
     public Color secondaryColor;
-    // ===========================
+
+    // === НОВЫЕ ПОЛЯ: Цвета базовой текстуры темы ===
+    public Color basePaperLight;
+    public Color basePaperDark;
+    public Color foldShadowColor;
+    public Color edgeBurnColor;
+    // ================================================
 
     public float minSize;
     public float maxSize;
-    public float length; // Для рек
+    public float length;
     public int count;
-    public string shape; // "circle", "blob", "line", "mountain"
+    public string shape;
 
     public List<string> allowedThemes;
     public bool avoidPaths;
@@ -350,4 +354,20 @@ public class PathData
     public Vector2 start;
     public Vector2 end;
     public PathData(Vector2 s, Vector2 e) { start = s; end = e; }
+}
+
+[Serializable]
+public class CardData
+{
+    public string id;
+    public string cardName;
+    public string cardImageName;
+    public int attackValue;
+    public int defenseValue;
+    public int manaCost;
+    public int abilityValue;
+    public List<string> abilities = new List<string>();
+    public string shortDescription;
+    public string fullDescription;
+    public string abilityDescription;
 }

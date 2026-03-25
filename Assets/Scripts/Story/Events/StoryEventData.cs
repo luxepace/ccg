@@ -64,7 +64,8 @@ public enum StepType
     REWARD,
     PUZZLE_SLIDER,
     CARD_CHOICE,
-    RPS
+    RPS,
+    CARD_SHOP
 }
 
 [Serializable]

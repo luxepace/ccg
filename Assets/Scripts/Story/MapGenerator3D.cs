@@ -65,6 +65,7 @@ public class MapGenerator3D : MonoBehaviour
     // Используется в цикле StartNewGame: Генерируем ландшафт -> Применяем -> Генерируем ноды
     public void GenerateAndSaveSingleChapterData(int chapterIndex, string themeId)
     {
+        Debug.Log($"[MapGen] Генерация ландшафта для главы {chapterIndex} (Тема: {themeId})...");
         SetupThemeParameters(themeId);
 
         // Фиксируем смещение шума для этой главы
@@ -96,7 +97,7 @@ public class MapGenerator3D : MonoBehaviour
         // 4. Генерируем базовую текстуру (Бумага + Складки) и сохраняем PNG
         if (MapDecorationManager.Instance != null)
         {
-            MapDecorationManager.Instance.GenerateBasePaperTexture(chapterIndex, heights, currentFolds);
+            MapDecorationManager.Instance.GenerateBasePaperTexture(chapterIndex, heights, currentFolds, themeId);
 
             // Генерируем объекты декораций (деревья/камни) и сохраняем JSON
             //MapDecorationManager.Instance.GenerateObjectDecorationsOnly(chapterIndex, themeId, currentFolds);

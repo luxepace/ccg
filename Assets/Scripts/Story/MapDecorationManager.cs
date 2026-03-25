@@ -9,6 +9,7 @@ public class MapDecorationManager : MonoBehaviour
 
     [Header("Настройки")]
     public float generationStep = 4f;
+    public string currentTheme = "";
 
     [Header("Настройки путей")]
     public float pathWidth = 2.0f;
@@ -18,11 +19,12 @@ public class MapDecorationManager : MonoBehaviour
 
     [Header("Зоны отчуждения (Avoidance)")]
     public float nodeAvoidRadius = 8f;
-    public float pathAvoidMargin = 2f;
+    public float pathAvoidMargin = 15f;
+    public float waterNodeAvoidRadius = 30f; // === НОВОЕ: Увеличенный радиус для воды ===
 
     [Header("Настройки мостов")]
     public Color bridgeColor = new Color(0.55f, 0.55f, 0.55f, 1.0f);
-    public float bridgeWidthMargin = 0.5f;
+    public float bridgeWidthMargin = 0.7f; // === БЫЛО 0.5f, СТАЛО 1.2f ===
 
     private string baseSaveFileName = "map_chapter_";
     private string decorSaveSuffix = "_decor.json";
@@ -42,17 +44,18 @@ public class MapDecorationManager : MonoBehaviour
         else Destroy(gameObject);
     }
 
-    public void GenerateBasePaperTexture(int chapterIndex, float[,] heights, List<FoldLine> folds)
+    public void GenerateBasePaperTexture(int chapterIndex, float[,] heights, List<FoldLine> folds, string theme = "")
     {
         Terrain terrain = FindObjectOfType<Terrain>();
         if (terrain == null || terrain.terrainData == null) return;
 
-        Debug.Log($"[DecorMan] Генерация базовой текстуры (бумага) для главы {chapterIndex}...");
+        currentTheme = theme;
+        Debug.Log($"[DecorMan] Генерация базовой текстуры для главы {chapterIndex}, тема: {theme}");
 
         int resolution = terrain.terrainData.heightmapResolution;
         float mapSize = terrain.terrainData.size.x;
 
-        Texture2D texture = GeneratePaperTextureWithFolds(heights, resolution, folds, mapSize);
+        Texture2D texture = GeneratePaperTextureWithFolds(heights, resolution, folds, mapSize, theme);
 
         SaveFinalTexture(texture, chapterIndex);
         ApplyTextureToTerrain(terrain, texture);
@@ -60,7 +63,6 @@ public class MapDecorationManager : MonoBehaviour
         Debug.Log($"[DecorMan] Базовая текстура главы {chapterIndex} сохранена.");
     }
 
-    // === ГЕНЕРАЦИЯ 3D ОБЪЕКТОВ (ДЕРЕВЬЯ, КАМНИ) ===
     public void GenerateObjectDecorationsOnly(int chapterIndex, string themeId, List<FoldLine> folds, List<PathData> paths, List<StoryNode> nodes)
     {
         currentDecorations.Clear();
@@ -74,8 +76,6 @@ public class MapDecorationManager : MonoBehaviour
         if (terrain == null) return;
 
         float mapSize = terrain.terrainData.size.x;
-
-        // Отступ от края карты
         float mapBorderMargin = 10.0f;
         float minValidX = mapBorderMargin;
         float maxValidX = mapSize - mapBorderMargin;
@@ -88,7 +88,6 @@ public class MapDecorationManager : MonoBehaviour
 
         foreach (var cfg in StoryContentLoader.AllDecorations)
         {
-            // Пропускаем рисованные декорации (вода, горы) в этом методе
             if (cfg.isPainted) continue;
 
             bool themeAllowed = false;
@@ -259,14 +258,18 @@ public class MapDecorationManager : MonoBehaviour
         }
 
         Debug.Log($"[DecorMan] Всего сгенерировано объектов: {totalSpawned}. Сохранение...");
+
+        // Сначала сохраняем координаты объектов
         SaveDecorations(currentDecorations, GetDecorSavePath(chapterIndex));
+
+        // === НОВОЕ: Рисуем траву на текстуре, используя только что сохраненный файл ===
+        DrawGrassUnderSavedDecorations(chapterIndex, themeId);
+
         currentDecorations.Clear();
     }
 
-    // === ПРОВЕРКА КОЛЛИЗИЙ (ПУТИ, НОДЫ, ВОДА, ГОРЫ) ===
     private bool IsPositionBlocked(Vector2 pos, List<StoryNode> nodes, List<PathData> paths, bool checkPaths)
     {
-        // 1. Ноды
         if (nodes != null)
         {
             foreach (var node in nodes)
@@ -276,7 +279,6 @@ public class MapDecorationManager : MonoBehaviour
             }
         }
 
-        // 2. Пути
         if (checkPaths && paths != null)
         {
             float requiredClearance = (this.pathWidth * 0.5f) + this.pathAvoidMargin;
@@ -287,7 +289,6 @@ public class MapDecorationManager : MonoBehaviour
             }
         }
 
-        // 3. ВОДА И ГОРЫ (МАТЕМАТИЧЕСКАЯ ПРОВЕРКА)
         if (IsPositionOnWaterOrMountain(pos)) return true;
 
         return false;
@@ -299,7 +300,7 @@ public class MapDecorationManager : MonoBehaviour
         {
             if (waterObj.shape == "circle" || waterObj.shape == "blob" || waterObj.shape == "mountain")
             {
-                float safetyBuffer = 4.0f; // Буфер для камней/деревьев вокруг воды и гор
+                float safetyBuffer = waterNodeAvoidRadius * 0.5f; // === УВЕЛИЧЕНО ===
                 float effectiveRadius = waterObj.radius + safetyBuffer;
 
                 if (IsPointInsideBlob(pos, waterObj.center, effectiveRadius, waterObj.noiseOffsetX, waterObj.noiseOffsetY))
@@ -309,8 +310,7 @@ public class MapDecorationManager : MonoBehaviour
             }
             else if (waterObj.shape == "line")
             {
-                // Проверка расстояния до реки
-                float safetyBuffer = 3.0f; // Буфер берега
+                float safetyBuffer = waterNodeAvoidRadius * 0.3f; // === УВЕЛИЧЕНО ===
                 float dist = GetDistanceToLineSegment(pos.x, pos.y, waterObj.center.x, waterObj.center.y, waterObj.endPoint.x, waterObj.endPoint.y);
                 if (dist < (waterObj.width * 0.5f) + safetyBuffer) return true;
             }
@@ -355,9 +355,7 @@ public class MapDecorationManager : MonoBehaviour
 
     public void GenerateAndDrawPaintedDecorations(int chapterIndex, string themeId, List<StoryNode> nodes, List<PathData> paths = null)
     {
-        // === КРИТИЧЕСКИ ВАЖНО: Очищаем старые данные о воде перед новой генерацией ===
         generatedWaterObjects.Clear();
-        // =========================================================================
 
         string path = Path.Combine(Application.persistentDataPath, $"{baseSaveFileName}{chapterIndex}{finalTextureSuffix}");
         if (!File.Exists(path))
@@ -379,14 +377,72 @@ public class MapDecorationManager : MonoBehaviour
         List<Vector2> spawnedWaterCenters = new List<Vector2>();
         List<float> spawnedWaterRadii = new List<float>();
 
+        // === ШАГ 1: СНАЧАЛА РИСУЕМ ФОН ТЕМЫ ===
         foreach (var cfg in StoryContentLoader.AllDecorations)
         {
             if (!cfg.isPainted) continue;
+            if (cfg.shape != "theme_background") continue;
 
             bool themeAllowed = (cfg.allowedThemes == null || cfg.allowedThemes.Count == 0) ||
                                 cfg.allowedThemes.Any(t => !string.IsNullOrEmpty(t) && !string.IsNullOrEmpty(themeId) && t.Trim().ToLower() == themeId.Trim().ToLower());
 
             if (!themeAllowed) continue;
+
+            Debug.Log($"[DecorMan] Рисуем фон темы: {cfg.prefabId}");
+            DrawMountainThemeBackground(pixels, resolution, mapSize, cfg.paintColor, cfg.secondaryColor);
+        }
+
+        // === ШАГ 2: РИСУЕМ ТРАВУ (ПЕРЕД ВОДОЙ!) ===
+        foreach (var cfg in StoryContentLoader.AllDecorations)
+        {
+            if (!cfg.isPainted) continue;
+            if (cfg.shape != "grass") continue;
+
+            bool themeAllowed = (cfg.allowedThemes == null || cfg.allowedThemes.Count == 0) ||
+                                cfg.allowedThemes.Any(t => !string.IsNullOrEmpty(t) && !string.IsNullOrEmpty(themeId) && t.Trim().ToLower() == themeId.Trim().ToLower());
+
+            if (!themeAllowed) continue;
+
+            int baseCount = cfg.count;
+            int actualCount = Random.Range(Mathf.Max(1, baseCount - 1), baseCount + 2);
+
+            Debug.Log($"[DecorMan] Рисуем траву: {actualCount} пятен (ПЕРЕД водой)");
+
+            for (int i = 0; i < actualCount; i++)
+            {
+                Vector2 finalPos = new Vector2(Random.Range(0f, mapSize), Random.Range(0f, mapSize));
+                float finalSize = Random.Range(cfg.minSize, cfg.maxSize) * 0.5f;
+
+                if (IsPositionBlockedByNodes(finalPos, nodes)) continue;
+
+                float noiseOffX = Random.Range(0f, 1000f);
+                float noiseOffY = Random.Range(0f, 1000f);
+
+                generatedWaterObjects.Add(new PaintedWaterObject
+                {
+                    shape = "grass",
+                    center = finalPos,
+                    radius = finalSize,
+                    color = cfg.paintColor,
+                    noiseOffsetX = noiseOffX,
+                    noiseOffsetY = noiseOffY
+                });
+
+                DrawGrassPatch(pixels, resolution, mapSize, finalPos, finalSize, cfg.paintColor, noiseOffX, noiseOffY);
+            }
+        }
+
+        // === ШАГ 3: ТЕПЕРЬ РИСУЕМ ВОДУ, РЕКИ И ГОРЫ (ПОВЕРХ ТРАВЫ) ===
+        foreach (var cfg in StoryContentLoader.AllDecorations)
+        {
+            if (!cfg.isPainted) continue;
+            if (cfg.shape == "theme_background" || cfg.shape == "grass") continue;
+
+            bool themeAllowed = (cfg.allowedThemes == null || cfg.allowedThemes.Count == 0) ||
+                                cfg.allowedThemes.Any(t => !string.IsNullOrEmpty(t) && !string.IsNullOrEmpty(themeId) && t.Trim().ToLower() == themeId.Trim().ToLower());
+
+            if (!themeAllowed) continue;
+                   
 
             int baseCount = cfg.count;
             int minCount = Mathf.Max(1, baseCount - 1);
@@ -430,9 +486,42 @@ public class MapDecorationManager : MonoBehaviour
                         proposedRadius = Random.Range(minSize, maxSize) * 0.5f;
                     }
 
-                    if (cfg.avoidNodes && IsPositionBlockedByNodes(proposedPos, nodes))
+                    if (cfg.avoidNodes && IsPositionBlockedByNodes(proposedPos, nodes, waterNodeAvoidRadius))
                     {
                         continue;
+                    }
+
+                    // === НОВОЕ: Дополнительная проверка для рек ===
+                    if (shape == "line" && nodes != null)
+                    {
+                        // Проверяем весь путь реки на пересечение с нодами
+                        List<Vector2> testPath = GenerateRiverPath(proposedPos, proposedRadius, mapSize, nodes);
+                        if (testPath == null)
+                        {
+                            continue; // Река пересекает ноды - пропускаем
+                        }
+                    }
+
+                    // === НОВОЕ: ГОРЫ ИЗБЕГАЮТ ПУТЕЙ ===
+                    if (shape == "mountain" && paths != null && paths.Count > 0)
+                    {
+                        float mountainPathAvoidMargin = 20f; // Ещё больше отступ для гор
+                        float requiredClearance = (this.pathWidth * 0.5f) + mountainPathAvoidMargin;
+
+                        bool tooCloseToPath = false;
+                        foreach (var texPath in paths)
+                        {
+                            float dist = GetDistanceToLineSegment(proposedPos.x, proposedPos.y,
+                                                                   texPath.start.x, texPath.start.y,
+                                                                   texPath.end.x, texPath.end.y);
+                            if (dist < requiredClearance)
+                            {
+                                tooCloseToPath = true;
+                                break;
+                            }
+                        }
+
+                        if (tooCloseToPath) continue;
                     }
 
                     bool overlaps = false;
@@ -455,7 +544,6 @@ public class MapDecorationManager : MonoBehaviour
                         finalPos = proposedPos;
                         finalSize = proposedRadius;
 
-                        // Если это река, сразу генерируем её путь
                         if (shape == "line")
                         {
                             List<Vector2> tempPath = GenerateRiverPath(finalPos, finalSize, mapSize, nodes);
@@ -504,14 +592,9 @@ public class MapDecorationManager : MonoBehaviour
                     List<Vector2> riverPath = riverPathCache;
                     float riverWidth = finalSize * 2f;
 
-                    // === ИЗМЕНЕНИЕ ЗДЕСЬ: Отрисовка реки органическими сегментами ===
-
-                    // Генерируем ЕДИНЫЙ шум для всей длины этой реки, чтобы берега были согласованными
                     float riverNoiseOffX = Random.Range(0f, 1000f);
                     float riverNoiseOffY = Random.Range(0f, 1000f);
 
-                    // Рисуем реку как цепочку перекрывающихся органических пятен
-                    // Шаг меньше ширины реки, чтобы не было дыр и края сливались
                     float stepSize = riverWidth * 0.6f;
 
                     for (int j = 0; j < riverPath.Count - 1; j++)
@@ -520,7 +603,6 @@ public class MapDecorationManager : MonoBehaviour
                         Vector2 p2 = riverPath[j + 1];
                         float dist = Vector2.Distance(p1, p2);
 
-                        // Если точки слишком далеко (редко при сглаживании), интерполируем
                         if (dist > stepSize)
                         {
                             int subSteps = Mathf.CeilToInt(dist / stepSize);
@@ -528,19 +610,16 @@ public class MapDecorationManager : MonoBehaviour
                             {
                                 float t = (float)s / subSteps;
                                 Vector2 interpPos = Vector2.Lerp(p1, p2, t);
-                                // Рисуем пятно. Радиус пятна чуть больше половины ширины для перекрытия
                                 DrawOrganicRiverSegment(pixels, resolution, mapSize, interpPos, riverWidth * 0.65f, col, riverNoiseOffX, riverNoiseOffY, j * 0.1f);
                             }
                         }
                         else
                         {
-                            // Рисуем пятно в середине сегмента
                             Vector2 midPos = (p1 + p2) * 0.5f;
                             DrawOrganicRiverSegment(pixels, resolution, mapSize, midPos, riverWidth * 0.65f, col, riverNoiseOffX, riverNoiseOffY, j * 0.1f);
                         }
                     }
 
-                    // Сохранение данных для мостов и коллизий (разбиваем на крупные сегменты для производительности)
                     for (int j = 0; j < riverPath.Count - 1; j += 5)
                     {
                         generatedWaterObjects.Add(new PaintedWaterObject
@@ -580,6 +659,7 @@ public class MapDecorationManager : MonoBehaviour
                 }
             }
         }
+        
 
         tex.SetPixels(pixels);
         tex.Apply();
@@ -588,18 +668,46 @@ public class MapDecorationManager : MonoBehaviour
         Terrain terrain = FindObjectOfType<Terrain>();
         if (terrain != null) ApplyTextureToTerrain(terrain, tex);
 
-        Debug.Log("[DecorMan] Рисованные декорации нанесены (реки с размытыми краями).");
+        Debug.Log("[DecorMan] Рисованные декорации нанесены.");
+    }
+  
+
+    // === ОТРИСОВКА ФОНА ГОРНОЙ ТЕМЫ (ТЕМНЕЕ) ===
+    void DrawMountainThemeBackground(Color[] pixels, int resolution, float mapSize, Color peakColor, Color baseColor)
+    {
+        float pixelsPerUnit = resolution / mapSize;
+        float noiseScale = 0.02f;
+        float noiseOffsetX = Random.Range(0f, 1000f);
+        float noiseOffsetY = Random.Range(0f, 1000f);
+
+        for (int y = 0; y < resolution; y++)
+        {
+            for (int x = 0; x < resolution; x++)
+            {
+                float worldX = x / pixelsPerUnit;
+                float worldY = y / pixelsPerUnit;
+
+                float noiseVal = Mathf.PerlinNoise((worldX * noiseScale) + noiseOffsetX, (worldY * noiseScale) + noiseOffsetY);
+
+                // Градиент от тёмно-серого к светло-серому для имитации гор
+                float mountainIntensity = noiseVal;
+                Color mountainColor = Color.Lerp(baseColor, peakColor, Mathf.Pow(mountainIntensity, 0.7f));
+
+                int idx = y * resolution + x;
+
+                // Смешиваем с текущим пикселем (базовая текстура бумаги)
+                pixels[idx] = Color.Lerp(pixels[idx], mountainColor, 0.6f);
+            }
+        }
     }
 
-    // === НОВЫЙ МЕТОД: Рисование одного органического сегмента реки ===
-    // Использует ту же логику шума, что и озеро, но со смещением координат для создания непрерывности
+    // === ОТРИСОВКА РЕКИ (ИСПРАВЛЕНО - СВЕТЛЕЕ) ===
     void DrawOrganicRiverSegment(Color[] pixels, int resolution, float mapSize, Vector2 centerWorld, float radius, Color col, float globalNoiseX, float globalNoiseY, float localOffset)
     {
         float pixelsPerUnit = resolution / mapSize;
         int cx = Mathf.FloorToInt(centerWorld.x * pixelsPerUnit);
         int cy = Mathf.FloorToInt(centerWorld.y * pixelsPerUnit);
 
-        // Запас радиуса с учетом шума
         int maxR = Mathf.CeilToInt(radius * 2.2f * pixelsPerUnit);
 
         int minX = Mathf.Max(0, cx - maxR);
@@ -607,14 +715,12 @@ public class MapDecorationManager : MonoBehaviour
         int minY = Mathf.Max(0, cy - maxR);
         int maxY = Mathf.Min(resolution - 1, cy + maxR);
 
-        // Настройки шума (идентичны озеру)
         float noiseFrequencyMain = 0.10f;
         float noiseFrequencyDetail = 0.25f;
         float noiseAmplitudeMain = 0.7f;
         float noiseAmplitudeDetail = 0.15f;
         float asymmetryOffset = 200f;
 
-        // Добавляем локальное смещение на основе позиции сегмента, чтобы шум "тек" вдоль реки
         float seedX = globalNoiseX + localOffset * 100f;
         float seedY = globalNoiseY + localOffset * 50f;
 
@@ -633,7 +739,6 @@ public class MapDecorationManager : MonoBehaviour
 
                 float angle = Mathf.Atan2(dy, dx);
 
-                // Вычисляем шум с учетом глобальных и локальных сидов
                 float noiseVal1 = Mathf.PerlinNoise(
                     (Mathf.Cos(angle) * 2.0f + seedX) * noiseFrequencyMain,
                     (Mathf.Sin(angle) * 2.0f + seedY) * noiseFrequencyMain
@@ -656,179 +761,21 @@ public class MapDecorationManager : MonoBehaviour
                     float edgeDist = currentFinalDist - dist;
                     float alpha = 1f;
 
-                    // Размытие края (антиалиасинг)
-                    if (edgeDist < 3.5f) // Чуть шире зона размытия для мягкости
+                    if (edgeDist < 3.5f)
                     {
                         alpha = Mathf.Clamp01(edgeDist / 3.5f);
                     }
 
                     if (alpha > 0.01f)
                     {
-                        // Смешиваем с текущим пикселем. 
-                        // Важно: если тут уже есть вода от соседнего сегмента, мы просто усиливаем цвет или оставляем как есть.
-                        // Lerp обеспечит плавное наложение.
-                        pixels[idx] = Color.Lerp(pixels[idx], col, alpha);
+                        // ИСПРАВЛЕНО: используем более сильное смешивание, чтобы вода была ярче
+                        pixels[idx] = Color.Lerp(pixels[idx], col, alpha * 0.9f);
                     }
                 }
             }
         }
     }
 
-    // ... (Остальные методы: GenerateRiverPath, DrawOrganicBlob, DrawMountainPeakWithRidges и т.д. остаются без изменений) ...
-
-    // Убедитесь, что метод GenerateRiverPath (который генерирует список точек riverPath) остался таким, каким он был в предыдущем ответе 
-    // (с обходом гор и нод), так как он нужен для расчета траектории перед отрисовкой.
-
-    // === НОВЫЙ МЕТОД ГЕНЕРАЦИИ РЕКИ С КОРРЕКЦИЕЙ УГЛОВ ===
-    private List<Vector2> GenerateRiverPathWithAngleCorrection(Vector2 seedPos, float halfWidth, float mapSize, List<StoryNode> nodes, List<Vector2> existingDirections)
-    {
-        // 1. Генерируем случайное направление (не только вертикальное/горизонтальное)
-        float randomAngle = Random.Range(0f, Mathf.PI * 2);
-        Vector2 direction = new Vector2(Mathf.Cos(randomAngle), Mathf.Sin(randomAngle));
-
-        float margin = mapSize * 0.6f; // Большой запас, чтобы река точно вышла за карту
-        Vector2 riverStart = seedPos - direction * margin;
-        Vector2 riverEnd = seedPos + direction * margin;
-
-        // Параметры шума
-        float windingStrength = halfWidth * 2.5f * 2.0f;
-        float noiseScale = 0.015f;
-        float seedOffset = Random.Range(0f, 1000f);
-
-        List<Vector2> riverPath = new List<Vector2>();
-        float totalDist = Vector2.Distance(riverStart, riverEnd);
-        int steps = Mathf.CeilToInt(totalDist * 1.5f);
-        Vector2 perp = new Vector2(-direction.y, direction.x);
-
-        // Генерация базового пути
-        for (int j = 0; j <= steps; j++)
-        {
-            float t = (float)j / steps;
-            Vector2 basePoint = Vector2.Lerp(riverStart, riverEnd, t);
-
-            float noiseVal = Mathf.PerlinNoise(t * totalDist * noiseScale + seedOffset, 0f) * 2f - 1f;
-            Vector2 windingPoint = basePoint + perp * noiseVal * windingStrength;
-
-            // Обход гор
-            PaintedWaterObject hitMountain = null;
-            foreach (var mtn in generatedWaterObjects)
-            {
-                if ((mtn.shape == "blob" || mtn.shape == "mountain") &&
-                    IsPointInsideBlob(windingPoint, mtn.center, mtn.radius, mtn.noiseOffsetX, mtn.noiseOffsetY))
-                {
-                    hitMountain = mtn;
-                    break;
-                }
-            }
-
-            if (hitMountain != null)
-            {
-                Vector2 toCenter = windingPoint - hitMountain.center;
-                if (toCenter.magnitude < 1f)
-                    windingPoint += perp * (halfWidth * 2.0f) * Mathf.Sign(noiseVal);
-                else
-                    windingPoint += toCenter.normalized * (halfWidth * 1.5f);
-            }
-
-            // Обход нод
-            foreach (var node in nodes)
-            {
-                Vector2 nodePos = new Vector2(node.position.x, node.position.z);
-                float distToNode = Vector2.Distance(windingPoint, nodePos);
-                float safeDist = nodeAvoidRadius + halfWidth * 2.0f;
-
-                if (distToNode < safeDist)
-                {
-                    Vector2 pushDir = (windingPoint - nodePos).normalized;
-                    windingPoint = nodePos + pushDir * safeDist;
-                }
-            }
-
-            riverPath.Add(windingPoint);
-        }
-
-        // === КОРРЕКЦИЯ УГЛОВ ПЕРЕСЕЧЕНИЯ ===
-        // Проходим по точкам пути и проверяем, не пересекаем ли мы другие реки под прямым углом
-        if (existingDirections.Count > 0)
-        {
-            float correctionForce = halfWidth * 3.0f; // Сила отклонения
-            float interactionRadius = halfWidth * 6.0f; // Дистанция, на которой начинаем корректировать угол
-
-            for (int j = 1; j < riverPath.Count - 1; j++)
-            {
-                Vector2 currentPt = riverPath[j];
-                Vector2 localDir = (riverPath[j + 1] - riverPath[j - 1]).normalized;
-
-                foreach (Vector2 otherDir in existingDirections)
-                {
-                    // Находим ближайшую точку на другой реке (упрощенно считаем, что другая река бесконечна в направлении otherDir)
-                    // Но лучше проверить расстояние до всех сегментов других рек, если бы мы их хранили.
-                    // Здесь используем эвристику: если мы близко к центру другой реки (которая была добавлена ранее), проверяем угол.
-
-                    // Для простоты: проверяем угол между текущим направлением нашей реки и направлением существующей.
-                    float dot = Mathf.Abs(Vector2.Dot(localDir, otherDir));
-
-                    // Если dot близок к 0, значит угол близок к 90 градусам (перпендикулярно)
-                    // cos(45°) ≈ 0.707. Нам нужно, чтобы угол был < 45, значит dot должен быть > 0.707
-                    if (dot < 0.7f)
-                    {
-                        // Угол слишком прямой! Нужно повернуть нашу реку, чтобы она стала параллельнее otherDir
-
-                        // Вектор, перпендикулярный другой реке (вдоль него我们要 сдвинуться, чтобы уйти от пересечения или выровняться)
-                        Vector2 otherPerp = new Vector2(-otherDir.y, otherDir.x);
-
-                        // Проверяем, насколько мы близки к линии другой реки (предполагаем, что она проходит через seedPos другой реки? Нет, у нас нет центра).
-                        // Упрощение: просто добавляем силу, выравнивающую localDir с otherDir или -otherDir
-
-                        Vector2 targetDir = Vector2.Dot(localDir, otherDir) > 0 ? otherDir : -otherDir;
-                        Vector2 steer = (targetDir - localDir).normalized;
-
-                        // Применяем коррекцию к точке
-                        // Сглаживаем влияние, чтобы не было резких изломов
-                        float influence = 1f - (dot / 0.7f); // Чем меньше dot, тем сильнее влияние
-                        riverPath[j] += steer * correctionForce * influence;
-                    }
-                }
-            }
-
-            // Повторное сглаживание после коррекции углов
-            for (int s = 0; s < 4; s++)
-            {
-                for (int j = 1; j < riverPath.Count - 1; j++)
-                {
-                    riverPath[j] = (riverPath[j - 1] + riverPath[j] + riverPath[j + 1]) / 3f;
-                }
-            }
-        }
-        else
-        {
-            // Стандартное сглаживание, если других рек нет
-            for (int s = 0; s < 3; s++)
-            {
-                for (int j = 1; j < riverPath.Count - 1; j++)
-                {
-                    riverPath[j] = (riverPath[j - 1] + riverPath[j] + riverPath[j + 1]) / 3f;
-                }
-            }
-        }
-
-        // Финальная проверка на проходимость сквозь горы (если после коррекции угла река залезла в гору)
-        foreach (var pt in riverPath)
-        {
-            foreach (var mtn in generatedWaterObjects)
-            {
-                if ((mtn.shape == "blob" || mtn.shape == "mountain") &&
-                    IsPointInsideBlob(pt, mtn.center, mtn.radius * 0.9f, mtn.noiseOffsetX, mtn.noiseOffsetY))
-                {
-                    return null; // Путь невалиден, пробуем заново
-                }
-            }
-        }
-
-        return riverPath;
-    }
-
-    // === ГЕНЕРАЦИЯ ПУТИ РЕКИ ===
     private List<Vector2> GenerateRiverPath(Vector2 seedPos, float halfWidth, float mapSize, List<StoryNode> nodes)
     {
         bool isHorizontal = Random.value > 0.5f;
@@ -846,24 +793,13 @@ public class MapDecorationManager : MonoBehaviour
             riverEnd = new Vector2(seedPos.x + Random.Range(-mapSize * 0.2f, mapSize * 0.2f), mapSize + margin);
         }
 
-        // Проверка: не пересекает ли прямая линия между стартом и концом ноды слишком сильно
-        // (Упрощенная проверка, детальная будет в цикле)
-        foreach (var node in nodes)
-        {
-            Vector2 nodePos = new Vector2(node.position.x, node.position.z);
-            float distStart = Vector2.Distance(riverStart, nodePos);
-            float distEnd = Vector2.Distance(riverEnd, nodePos);
-            // Если обе точки далеко, но линия проходит близко - это сложно проверить без цикла, 
-            // поэтому полагаемся на цикл ниже.
-        }
-
-        float windingStrength = halfWidth * 2.5f * 2.0f; // Усилено для заметности
+        float windingStrength = halfWidth * 2.5f * 2.0f;
         float noiseScale = 0.015f;
         float seedOffset = Random.Range(0f, 1000f);
 
         List<Vector2> riverPath = new List<Vector2>();
         float totalDist = Vector2.Distance(riverStart, riverEnd);
-        int steps = Mathf.CeilToInt(totalDist * 1.5f); // Больше шагов для плавности
+        int steps = Mathf.CeilToInt(totalDist * 1.5f);
         Vector2 direction = (riverEnd - riverStart).normalized;
 
         for (int j = 0; j <= steps; j++)
@@ -875,7 +811,6 @@ public class MapDecorationManager : MonoBehaviour
             Vector2 perpendicular = new Vector2(-direction.y, direction.x);
             Vector2 windingPoint = basePoint + perpendicular * noiseVal * windingStrength;
 
-            // === ОБХОД ГОР ===
             PaintedWaterObject hitMountain = null;
             foreach (var mtn in generatedWaterObjects)
             {
@@ -902,13 +837,11 @@ public class MapDecorationManager : MonoBehaviour
                 }
             }
 
-            // === ОБХОД НОД ===
-            // Если точка слишком близко к ноде, отталкиваем её
             foreach (var node in nodes)
             {
                 Vector2 nodePos = new Vector2(node.position.x, node.position.z);
                 float distToNode = Vector2.Distance(windingPoint, nodePos);
-                float safeDist = nodeAvoidRadius + halfWidth * 2.0f; // Радиус ноды + ширина реки + запас
+                float safeDist = nodeAvoidRadius + halfWidth * 2.0f;
 
                 if (distToNode < safeDist)
                 {
@@ -920,7 +853,6 @@ public class MapDecorationManager : MonoBehaviour
             riverPath.Add(windingPoint);
         }
 
-        // Сглаживание
         for (int s = 0; s < 3; s++)
         {
             for (int j = 1; j < riverPath.Count - 1; j++)
@@ -929,7 +861,6 @@ public class MapDecorationManager : MonoBehaviour
             }
         }
 
-        // Финальная валидация: если река все еще проходит сквозь гору (крайний случай), возвращаем null
         foreach (var pt in riverPath)
         {
             foreach (var mtn in generatedWaterObjects)
@@ -938,7 +869,7 @@ public class MapDecorationManager : MonoBehaviour
                 {
                     if (IsPointInsideBlob(pt, mtn.center, mtn.radius * 0.8f, mtn.noiseOffsetX, mtn.noiseOffsetY))
                     {
-                        return null; // Путь невалиден
+                        return null;
                     }
                 }
             }
@@ -947,7 +878,7 @@ public class MapDecorationManager : MonoBehaviour
         return riverPath;
     }
 
-    // === ОТРИСОВКА ГОР ===
+    // === ОТРИСОВКА ГОРНЫХ ПИКОВ (ГРАДИЕНТ ОТ БЕЛОГО К ЦВЕТУ КАРТЫ) ===
     void DrawMountainPeakWithRidges(Color[] pixels, int resolution, float mapSize, Vector2 centerWorld, float baseRadius, Color snowColor, Color rockColor, List<PathData> paths)
     {
         float pixelsPerUnit = resolution / mapSize;
@@ -965,7 +896,7 @@ public class MapDecorationManager : MonoBehaviour
         float peakOffsetY = baseRadius * 0.25f;
 
         Vector2 peakWorldPos = new Vector2(centerWorld.x, centerWorld.y + peakOffsetY);
-        float snowRadius = baseRadius * 0.45f;
+        float snowRadius = baseRadius * 0.5f; // Зона белого снега
 
         List<float> ridgeAngles = new List<float>();
         int ridgeCount = Random.Range(3, 6);
@@ -994,19 +925,22 @@ public class MapDecorationManager : MonoBehaviour
                 float distToPeakSq = dx * dx + ((worldY - peakOffsetY - centerWorld.y) / verticalSquash) * ((worldY - peakOffsetY - centerWorld.y) / verticalSquash);
                 float distToPeak = Mathf.Sqrt(distToPeakSq);
 
+                // === ГРАДИЕНТ: БЕЛЫЙ ВЕРХ -> СЕРЫЙ НИЗ ===
                 if (distToPeak < snowRadius)
                 {
+                    // В зоне снега - белый с плавным переходом
                     float snowT = distToPeak / snowRadius;
-                    finalColor = Color.Lerp(snowColor, rockColor, Mathf.SmoothStep(0f, 1f, snowT));
+                    finalColor = Color.Lerp(snowColor, rockColor, Mathf.SmoothStep(0f, 0.5f, snowT * snowT));
                 }
                 else
                 {
+                    // Вне зоны снега - переход к цвету карты
                     float rockStartT = snowRadius / baseRadius;
                     float rockT = Mathf.InverseLerp(rockStartT, 1.0f, t);
-                    Color edgeDark = rockColor * 0.7f;
-                    finalColor = Color.Lerp(rockColor, edgeDark, Mathf.SmoothStep(0f, 1f, rockT));
+                    finalColor = Color.Lerp(rockColor, rockColor * 0.8f, Mathf.SmoothStep(0f, 1f, rockT));
                 }
 
+                // === ГРЕБНИ (хребты) ===
                 float dxFromPeak = worldX - peakWorldPos.x;
                 float dyFromPeak = (worldY - peakWorldPos.y) / verticalSquash;
                 float distFromPeakFlat = Mathf.Sqrt(dxFromPeak * dxFromPeak + dyFromPeak * dyFromPeak);
@@ -1038,11 +972,13 @@ public class MapDecorationManager : MonoBehaviour
 
                 if (ridgeIntensity > 0.05f)
                 {
-                    Color ridgeColor = new Color(0.2f, 0.2f, 0.2f);
-                    finalColor = Color.Lerp(finalColor, ridgeColor, ridgeIntensity * 0.8f);
+                    Color ridgeColor = new Color(0.3f, 0.3f, 0.35f);
+                    finalColor = Color.Lerp(finalColor, ridgeColor, ridgeIntensity * 0.6f);
                 }
 
                 int idx = y * resolution + x;
+
+                // Плавное затухание к краям
                 float edgeFadeGlobal = 1f;
                 if (t > 0.9f)
                 {
@@ -1057,7 +993,7 @@ public class MapDecorationManager : MonoBehaviour
         }
     }
 
-    // === ОТРИСОВКА ОЗЕР ===
+    // === ОТРИСОВКА ОЗЁР (ИСПРАВЛЕНО - СВЕТЛЕЕ) ===
     void DrawOrganicBlob(Color[] pixels, int resolution, float mapSize, Vector2 centerWorld, float baseRadius, Color col, float noiseOffsetX, float noiseOffsetY)
     {
         float pixelsPerUnit = resolution / mapSize;
@@ -1121,14 +1057,202 @@ public class MapDecorationManager : MonoBehaviour
 
                     if (alpha > 0.01f)
                     {
-                        pixels[idx] = Color.Lerp(pixels[idx], col, alpha);
+                        // ИСПРАВЛЕНО: используем более сильное смешивание
+                        pixels[idx] = Color.Lerp(pixels[idx], col, alpha * 0.9f);
                     }
                 }
             }
         }
     }
 
-    // === ОТРИСОВКА ПУТЕЙ И МОСТОВ ===
+    // === ОТРИСОВКА ЗЕЛЕНОЙ ПОЛЯНЫ (ОРГАНИЧЕСКАЯ ФОРМА) ===
+    void DrawGrassPatch(Color[] pixels, int resolution, float mapSize, Vector2 centerWorld, float baseRadius, Color grassColor, float noiseOffsetX, float noiseOffsetY)
+    {
+        float pixelsPerUnit = resolution / mapSize;
+        int cx = Mathf.FloorToInt(centerWorld.x * pixelsPerUnit);
+        int cy = Mathf.FloorToInt(centerWorld.y * pixelsPerUnit);
+
+        int maxR = Mathf.CeilToInt(baseRadius * 2.5f * pixelsPerUnit);
+
+        int minX = Mathf.Max(0, cx - maxR);
+        int maxX = Mathf.Min(resolution - 1, cx + maxR);
+        int minY = Mathf.Max(0, cy - maxR);
+        int maxY = Mathf.Min(resolution - 1, cy + maxR);
+
+        float noiseFrequencyMain = 0.12f;
+        float noiseFrequencyDetail = 0.30f;
+        float noiseAmplitudeMain = 0.8f;
+        float noiseAmplitudeDetail = 0.2f;
+        float asymmetryOffset = 300f;
+
+        for (int y = minY; y <= maxY; y++)
+        {
+            for (int x = minX; x <= maxX; x++)
+            {
+                float worldX = x / pixelsPerUnit;
+                float worldY = y / pixelsPerUnit;
+
+                float dx = worldX - centerWorld.x;
+                float dy = worldY - centerWorld.y;
+                float dist = Mathf.Sqrt(dx * dx + dy * dy);
+
+                if (dist > baseRadius * (1.0f + noiseAmplitudeMain + noiseAmplitudeDetail)) continue;
+
+                float angle = Mathf.Atan2(dy, dx);
+
+                float noiseVal1 = Mathf.PerlinNoise(
+                    (Mathf.Cos(angle) * 2.0f + noiseOffsetX) * noiseFrequencyMain,
+                    (Mathf.Sin(angle) * 2.0f + noiseOffsetY) * noiseFrequencyMain
+                );
+
+                float noiseVal2 = Mathf.PerlinNoise(
+                    (Mathf.Cos(angle * 3.0f) + noiseOffsetX + asymmetryOffset) * noiseFrequencyDetail,
+                    (Mathf.Sin(angle * 3.0f) + noiseOffsetY + asymmetryOffset) * noiseFrequencyDetail
+                );
+
+                float radiusLayer1 = (1.0f - noiseAmplitudeMain) + noiseVal1 * (noiseAmplitudeMain * 2.0f);
+                float radiusLayer2 = 1.0f + (noiseVal2 - 0.5f) * (noiseAmplitudeDetail * 4.0f);
+
+                float finalRadiusMultiplier = radiusLayer1 * radiusLayer2;
+                float currentFinalDist = baseRadius * finalRadiusMultiplier;
+
+                if (dist <= currentFinalDist)
+                {
+                    int idx = y * resolution + x;
+                    float edgeDist = currentFinalDist - dist;
+                    float alpha = 1f;
+
+                    float blurZone = 5.0f;
+                    if (edgeDist < blurZone)
+                    {
+                        alpha = Mathf.Clamp01(edgeDist / blurZone);
+                    }
+
+                    alpha *= grassColor.a;
+
+                    if (alpha > 0.01f)
+                    {
+                        pixels[idx] = Color.Lerp(pixels[idx], grassColor, alpha * 0.7f);
+                    }
+                }
+            }
+        }
+    }
+
+    public void DrawGrassUnderSavedDecorations(int chapterIndex, string themeId)
+    {
+        string decorPath = GetDecorSavePath(chapterIndex);
+        if (!File.Exists(decorPath))
+        {
+            Debug.LogWarning($"[DecorMan] Файл декораций не найден для травы: {decorPath}");
+            return;
+        }
+
+        string texPath = Path.Combine(Application.persistentDataPath, $"{baseSaveFileName}{chapterIndex}{finalTextureSuffix}");
+        if (!File.Exists(texPath))
+        {
+            Debug.LogWarning($"[DecorMan] Текстура не найдена для травы: {texPath}");
+            return;
+        }
+
+        // 1. Загружаем координаты деревьев из сохранения
+        string json = File.ReadAllText(decorPath);
+        var wrapper = JsonUtility.FromJson<MapDecorationListWrapper>(json);
+        if (wrapper == null || wrapper.items == null || wrapper.items.Count == 0) return;
+
+        // 2. Загружаем текстуру
+        byte[] bytes = File.ReadAllBytes(texPath);
+        Texture2D tex = new Texture2D(2, 2);
+        if (!tex.LoadImage(bytes)) return;
+
+        int resolution = tex.width;
+        Color[] pixels = tex.GetPixels();
+        float mapSize = MapGenerator3D.Instance != null ? MapGenerator3D.Instance.mapSize : 200f;
+
+        // 3. Находим конфиг травы для цвета
+        Color grassColor = Color.green;
+        DecorationConfig grassCfg = StoryContentLoader.AllDecorations?.Find(c => c.isPainted && c.shape == "grass");
+        if (grassCfg != null && grassCfg.paintColor != default(Color))
+        {
+            grassColor = grassCfg.paintColor;
+        }
+
+        Debug.Log($"[DecorMan] Рисование травы под {wrapper.items.Count} объектами...");
+
+        // Параметры для проверки воды
+        float waterSafetyMargin = 3.5f; // Минимальное расстояние до воды (в единицах карты)
+
+        // 4. Проходим по всем объектам и рисуем траву под деревьями
+        foreach (var decor in wrapper.items)
+        {
+            if (string.IsNullOrEmpty(decor.prefabId)) continue;
+
+            // Проверка: является ли объект деревом
+            bool isTree = decor.prefabId.ToLower().Contains("tree");
+            if (!isTree)
+            {
+                var cfg = StoryContentLoader.AllDecorations?.Find(c => c.prefabId == decor.prefabId);
+                if (cfg != null && cfg.prefabId.ToLower().Contains("tree")) isTree = true;
+            }
+
+            if (isTree)
+            {
+                Vector2 pos = new Vector2(decor.position.x, decor.position.z);
+
+                // === УМЕНЬШЕН РАЗМЕР ===
+                // Было 2.5f, стало 1.8f - клякса будет меньше ствола дерева
+                float baseSize = decor.scale.x * 1.8f;
+
+                // === ПРОВЕРКА НА ВОДУ ===
+                float minDistToWater = float.MaxValue;
+                foreach (var waterObj in generatedWaterObjects)
+                {
+                    if (waterObj.shape == "circle" || waterObj.shape == "blob" || waterObj.shape == "mountain")
+                    {
+                        float dist = Vector2.Distance(pos, waterObj.center) - waterObj.radius;
+                        if (dist < minDistToWater) minDistToWater = dist;
+                    }
+                    else if (waterObj.shape == "line")
+                    {
+                        float dist = GetDistanceToLineSegment(pos.x, pos.y, waterObj.center.x, waterObj.center.y, waterObj.endPoint.x, waterObj.endPoint.y) - (waterObj.width * 0.5f);
+                        if (dist < minDistToWater) minDistToWater = dist;
+                    }
+                }
+
+                // Если ближе чем safetyMargin к воде - уменьшаем размер или пропускаем
+                if (minDistToWater < waterSafetyMargin + baseSize)
+                {
+                    if (minDistToWater < waterSafetyMargin * 0.5f)
+                    {
+                        // Слишком близко к воде - не рисуем траву здесь
+                        continue;
+                    }
+                    else
+                    {
+                        // Близо к воде - уменьшаем размер кляксы
+                        float reductionFactor = (minDistToWater - waterSafetyMargin * 0.5f) / (baseSize + waterSafetyMargin - waterSafetyMargin * 0.5f);
+                        baseSize *= Mathf.Clamp01(reductionFactor);
+                    }
+                }
+
+                if (baseSize < 0.5f) continue; // Слишком маленькая - не рисуем
+
+                // Добавляем случайный шум для уникальности каждой кляксы
+                float noiseX = Random.Range(0f, 1000f);
+                float noiseY = Random.Range(0f, 1000f);
+
+                DrawGrassPatch(pixels, resolution, mapSize, pos, baseSize, grassColor, noiseX, noiseY);
+            }
+        }
+
+        // 5. Сохраняем обновленную текстуру
+        tex.SetPixels(pixels);
+        tex.Apply();
+        SaveFinalTexture(tex, chapterIndex);
+
+        Debug.Log("[DecorMan] Трава под деревьями нанесена на текстуру (с проверкой воды).");
+    }
+
     public void DrawPathsOnTextureWithBridges(List<PathData> paths, int chapterIndex)
     {
         string path = Path.Combine(Application.persistentDataPath, $"{baseSaveFileName}{chapterIndex}{finalTextureSuffix}");
@@ -1144,10 +1268,7 @@ public class MapDecorationManager : MonoBehaviour
 
         Debug.Log("[DecorMan] Отрисовка мостов и путей...");
 
-        // ШАГ 1: Рисуем МОСТЫ там, где путь пересекает воду.
         DrawBridgesPrePass(pixels, resolution, paths, mapSize);
-
-        // ШАГ 2: Рисуем тропинки, пропуская пиксели мостов (или рисуя поверх, но мост уже задает тон)
         DrawPathsSkippingBridges(pixels, resolution, paths, mapSize);
 
         tex.SetPixels(pixels);
@@ -1163,25 +1284,47 @@ public class MapDecorationManager : MonoBehaviour
     void DrawBridgesPrePass(Color[] pixels, int resolution, List<PathData> paths, float mapSize)
     {
         float pixelsPerUnit = resolution / mapSize;
-        float bridgeHalfWidthPx = (pathWidth * 0.5f + bridgeWidthMargin) * pixelsPerUnit;
+        float bridgeHalfWidthPx = (pathWidth * 0.5f + bridgeWidthMargin + 0.7f) * pixelsPerUnit;
+        float edgeSoftness = 3.0f; // Зона размытия в пикселях
 
         foreach (var path in paths)
         {
             float totalDist = Vector2.Distance(path.start, path.end);
-            int steps = Mathf.Max(20, Mathf.FloorToInt(totalDist * 2));
+            int steps = Mathf.Max(30, Mathf.FloorToInt(totalDist * pathDetailPoints));
+            Vector2 dir = (path.end - path.start).normalized;
+            Vector2 perp = new Vector2(-dir.y, dir.x);
+            float curveAmplitude = 4.0f;
+            float noiseFrequency = 0.08f;
 
             for (int i = 0; i <= steps; i++)
             {
                 float t = (float)i / steps;
-                Vector2 pt = Vector2.Lerp(path.start, path.end, t);
+                Vector2 currentPos = Vector2.Lerp(path.start, path.end, t);
+                float noiseInput = t * totalDist * noiseFrequency + MapGenerator3D.Instance.offsetX;
+                float noiseValue = Mathf.PerlinNoise(noiseInput, 0f) * 2f - 1f;
+                float fade = 1f - Mathf.Abs(t - 0.5f) * 2f;
+                fade = Mathf.SmoothStep(0, 1, fade);
+                if (t < 0.1f || t > 0.9f) fade *= (t < 0.1f ? t * 10f : (1f - t) * 10f);
+
+                float offset = noiseValue * curveAmplitude * fade;
+                Vector2 windingPos = currentPos + perp * offset;
 
                 bool isOverWater = false;
+                bool isOverMountain = false;
 
                 foreach (var waterObj in generatedWaterObjects)
                 {
-                    if (waterObj.shape == "circle" || waterObj.shape == "blob" || waterObj.shape == "mountain")
+                    if (waterObj.shape == "mountain")
                     {
-                        if (IsPointInsideBlob(pt, waterObj.center, waterObj.radius, waterObj.noiseOffsetX, waterObj.noiseOffsetY))
+                        if (IsPointInsideBlob(windingPos, waterObj.center, waterObj.radius, waterObj.noiseOffsetX, waterObj.noiseOffsetY))
+                        {
+                            isOverMountain = true;
+                            break;
+                        }
+                    }
+                    else if (waterObj.shape == "circle" || waterObj.shape == "blob")
+                    {
+                        if (IsPointInsideBlob(windingPos, waterObj.center, waterObj.radius, waterObj.noiseOffsetX, waterObj.noiseOffsetY))
                         {
                             isOverWater = true;
                             break;
@@ -1189,7 +1332,7 @@ public class MapDecorationManager : MonoBehaviour
                     }
                     else if (waterObj.shape == "line")
                     {
-                        float dist = GetDistanceToLineSegment(pt.x, pt.y, waterObj.center.x, waterObj.center.y, waterObj.endPoint.x, waterObj.endPoint.y);
+                        float dist = GetDistanceToLineSegment(windingPos.x, windingPos.y, waterObj.center.x, waterObj.center.y, waterObj.endPoint.x, waterObj.endPoint.y);
                         if (dist < (waterObj.width * 0.5f))
                         {
                             isOverWater = true;
@@ -1198,24 +1341,100 @@ public class MapDecorationManager : MonoBehaviour
                     }
                 }
 
-                if (isOverWater)
+                if (isOverWater && !isOverMountain)
                 {
-                    int cx = Mathf.FloorToInt(pt.x * pixelsPerUnit);
-                    int cy = Mathf.FloorToInt(pt.y * pixelsPerUnit);
+                    int cx = Mathf.FloorToInt(windingPos.x * pixelsPerUnit);
+                    int cy = Mathf.FloorToInt(windingPos.y * pixelsPerUnit);
                     int r = Mathf.CeilToInt(bridgeHalfWidthPx);
 
-                    int minX = Mathf.Max(0, cx - r);
-                    int maxX = Mathf.Min(resolution - 1, cx + r);
-                    int minY = Mathf.Max(0, cy - r);
-                    int maxY = Mathf.Min(resolution - 1, cy + r);
+                    // === ВАЖНО: Расширяем зону проверки на edgeSoftness ===
+                    int minX = Mathf.Max(0, cx - r - (int)edgeSoftness);
+                    int maxX = Mathf.Min(resolution - 1, cx + r + (int)edgeSoftness);
+                    int minY = Mathf.Max(0, cy - r - (int)edgeSoftness);
+                    int maxY = Mathf.Min(resolution - 1, cy + r + (int)edgeSoftness);
 
                     for (int y = minY; y <= maxY; y++)
                     {
                         for (int x = minX; x <= maxX; x++)
                         {
-                            int idx = y * resolution + x;
-                            pixels[idx] = bridgeColor;
+                            int dx = x - cx;
+                            int dy = y - cy;
+                            float dist = Mathf.Sqrt(dx * dx + dy * dy);
+                            float edgeT = dist / r;
+
+                            // === Вычисляем альфу с размытием ===
+                            float alpha = 1f;
+
+                            if (edgeT > 0.7f) // Начинаем затухание раньше
+                            {
+                                float edgeDist = r - dist; // Расстояние до края
+                                alpha = Mathf.Clamp01(edgeDist / edgeSoftness);
+                                alpha = Mathf.Pow(alpha, 0.6f); // Плавная кривая
+                            }
+
+                            if (alpha > 0.01f)
+                            {
+                                int idx = y * resolution + x;
+                                pixels[idx] = Color.Lerp(pixels[idx], bridgeColor, alpha * 0.95f);
+                            }
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    // === НОВЫЙ МЕТОД: Отрисовка пути с органическими краями ===
+    void DrawOrganicPath(Color[] pixels, int resolution, float mapSize, Vector2 start, Vector2 end, Color col, float width, float noiseOffsetX, float noiseOffsetY)
+    {
+        float pixelsPerUnit = resolution / mapSize;
+        float halfWidthPx = (width * 0.5f) * pixelsPerUnit;
+        float edgeSoftness = 3.0f;
+
+        float totalDist = Vector2.Distance(start, end);
+        int steps = Mathf.Max(40, Mathf.FloorToInt(totalDist * 3));
+        Vector2 dir = (end - start).normalized;
+        Vector2 perp = new Vector2(-dir.y, dir.x);
+
+        for (int i = 0; i <= steps; i++)
+        {
+            float t = (float)i / steps;
+            Vector2 currentPos = Vector2.Lerp(start, end, t);
+
+            // Добавляем шум для органичности
+            float noiseInput = t * totalDist * 0.05f + noiseOffsetX;
+            float noiseValue = Mathf.PerlinNoise(noiseInput, noiseOffsetY) * 2f - 1f;
+            Vector2 windingPos = currentPos + perp * noiseValue * 2f;
+
+            int cx = Mathf.FloorToInt(windingPos.x * pixelsPerUnit);
+            int cy = Mathf.FloorToInt(windingPos.y * pixelsPerUnit);
+            int r = Mathf.CeilToInt(halfWidthPx);
+
+            int minX = Mathf.Max(0, cx - r - (int)edgeSoftness);
+            int maxX = Mathf.Min(resolution - 1, cx + r + (int)edgeSoftness);
+            int minY = Mathf.Max(0, cy - r - (int)edgeSoftness);
+            int maxY = Mathf.Min(resolution - 1, cy + r + (int)edgeSoftness);
+
+            for (int y = minY; y <= maxY; y++)
+            {
+                for (int x = minX; x <= maxX; x++)
+                {
+                    int dx = x - cx;
+                    int dy = y - cy;
+                    float dist = Mathf.Sqrt(dx * dx + dy * dy);
+
+                    float alpha = 1f;
+                    if (dist > r * 0.7f)
+                    {
+                        float edgeDist = r - dist;
+                        alpha = Mathf.Clamp01(edgeDist / edgeSoftness);
+                        alpha = Mathf.Pow(alpha, 0.6f);
+                    }
+
+                    if (alpha > 0.01f)
+                    {
+                        int idx = y * resolution + x;
+                        pixels[idx] = Color.Lerp(pixels[idx], col, alpha * 0.85f);
                     }
                 }
             }
@@ -1226,6 +1445,7 @@ public class MapDecorationManager : MonoBehaviour
     {
         float pixelsPerUnit = resolution / mapSize;
         float halfPathPx = (pathWidth * 0.5f) * pixelsPerUnit;
+        float edgeSoftness = 2.5f; // Зона размытия в пикселях
 
         foreach (var path in paths)
         {
@@ -1253,11 +1473,11 @@ public class MapDecorationManager : MonoBehaviour
                 int cy = Mathf.FloorToInt(windingPos.y * pixelsPerUnit);
                 int r = Mathf.CeilToInt(halfPathPx);
 
-                int minX = Mathf.Max(0, cx - r);
-                int maxX = Mathf.Min(resolution - 1, cx + r);
-                int minY = Mathf.Max(0, cy - r);
-                int maxY = Mathf.Min(resolution - 1, cy + r);
-                int rSquared = r * r;
+                // === ВАЖНО: Расширяем зону проверки ===
+                int minX = Mathf.Max(0, cx - r - (int)edgeSoftness);
+                int maxX = Mathf.Min(resolution - 1, cx + r + (int)edgeSoftness);
+                int minY = Mathf.Max(0, cy - r - (int)edgeSoftness);
+                int maxY = Mathf.Min(resolution - 1, cy + r + (int)edgeSoftness);
 
                 for (int y = minY; y <= maxY; y++)
                 {
@@ -1265,24 +1485,25 @@ public class MapDecorationManager : MonoBehaviour
                     {
                         int dx = x - cx;
                         int dy = y - cy;
-                        int distSq = dx * dx + dy * dy;
+                        float dist = Mathf.Sqrt(dx * dx + dy * dy);
+                        float edgeT = dist / r;
 
-                        if (distSq <= rSquared)
+                        // === Вычисляем альфу с размытием ===
+                        float alpha = 1f;
+
+                        if (edgeT > 0.7f)
+                        {
+                            float edgeDist = r - dist;
+                            alpha = Mathf.Clamp01(edgeDist / edgeSoftness);
+                            alpha = Mathf.Pow(alpha, 0.6f);
+                        }
+
+                        if (alpha > 0.01f)
                         {
                             int idx = y * resolution + x;
 
-                            // Если тут уже мост, не закрашиваем его цветом пути, 
-                            // либо слегка затемняем, если нужно. Сейчас оставляем цвет моста.
                             if (pixels[idx] == bridgeColor) continue;
 
-                            float dist = Mathf.Sqrt(distSq);
-                            float edgeT = dist / r;
-                            float alpha = 1f;
-                            if (edgeT > 0.8f)
-                            {
-                                alpha = Mathf.Pow(1f - edgeT, 0.5f) * 1.25f;
-                                if (alpha > 1f) alpha = 1f;
-                            }
                             pixels[idx] = Color.Lerp(pixels[idx], pathColor, alpha * 0.9f);
                         }
                     }
@@ -1291,14 +1512,15 @@ public class MapDecorationManager : MonoBehaviour
         }
     }
 
-    // === ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ===
-
-    private bool IsPositionBlockedByNodes(Vector2 pos, List<StoryNode> nodes)
+    private bool IsPositionBlockedByNodes(Vector2 pos, List<StoryNode> nodes, float avoidRadius = -1f)
     {
         if (nodes == null) return false;
+
+        float radius = (avoidRadius > 0f) ? avoidRadius : nodeAvoidRadius;
+
         foreach (var node in nodes)
         {
-            if (Vector2.Distance(pos, new Vector2(node.position.x, node.position.z)) < nodeAvoidRadius)
+            if (Vector2.Distance(pos, new Vector2(node.position.x, node.position.z)) < radius)
                 return true;
         }
         return false;
@@ -1348,17 +1570,67 @@ public class MapDecorationManager : MonoBehaviour
         }
     }
 
-    Texture2D GeneratePaperTextureWithFolds(float[,] heightData, int resolution, List<FoldLine> folds, float mapSize)
+    Texture2D GeneratePaperTextureWithFolds(float[,] heightData, int resolution, List<FoldLine> folds, float mapSize, string theme = "")
     {
         Texture2D texture = new Texture2D(resolution, resolution, TextureFormat.RGB24, false);
         texture.filterMode = FilterMode.Point;
         texture.wrapMode = TextureWrapMode.Clamp;
 
         Color[] pixels = new Color[resolution * resolution];
-        Color basePaperLight = new Color(0.75f, 0.65f, 0.45f);
+
+        // === ЦВЕТА ИЗ JSON КОНФИГА ===
+        Color basePaperLight = new Color(0.75f, 0.65f, 0.45f); // Default
         Color basePaperDark = new Color(0.45f, 0.35f, 0.20f);
         Color foldShadowColor = new Color(0.35f, 0.28f, 0.18f);
         Color edgeBurnColor = new Color(0.25f, 0.20f, 0.12f);
+
+        Debug.Log($"[DEBUG] Тема для генерации: '{theme}'");
+        Debug.Log($"[DEBUG] AllDecorations загружен? {StoryContentLoader.AllDecorations != null}");
+
+        // Пытаемся найти конфиг фона для текущей темы
+        if (StoryContentLoader.AllDecorations != null && !string.IsNullOrEmpty(theme))
+        {
+            var themeBgConfig = StoryContentLoader.AllDecorations.Find(
+                c => c.isPainted && c.shape == "theme_background" &&
+                     (c.allowedThemes == null || c.allowedThemes.Contains(theme))
+            );
+
+            Debug.Log($"[DEBUG] Найден theme_background конфиг? {themeBgConfig != null}");
+
+            if (themeBgConfig != null)
+            {
+                Debug.Log($"[DEBUG] basePaperLight из JSON: {themeBgConfig.basePaperLight}");
+                Debug.Log($"[DEBUG] basePaperDark из JSON: {themeBgConfig.basePaperDark}");
+
+                // Используем цвета из JSON если они заданы (не default)
+                if (themeBgConfig.basePaperLight != default(Color))
+                {
+                    basePaperLight = themeBgConfig.basePaperLight;
+                    Debug.Log($"[DEBUG] Установлен basePaperLight: {basePaperLight}");
+                }
+                if (themeBgConfig.basePaperDark != default(Color))
+                {
+                    basePaperDark = themeBgConfig.basePaperDark;
+                    Debug.Log($"[DEBUG] Установлен basePaperDark: {basePaperDark}");
+                }
+                if (themeBgConfig.foldShadowColor != default(Color))
+                    foldShadowColor = themeBgConfig.foldShadowColor;
+                if (themeBgConfig.edgeBurnColor != default(Color))
+                    edgeBurnColor = themeBgConfig.edgeBurnColor;
+            }
+            else
+            {
+                Debug.LogWarning($"[DEBUG] Не найден theme_background для темы '{theme}'");
+                // Выведем все доступные theme_background
+                foreach (var decor in StoryContentLoader.AllDecorations)
+                {
+                    if (decor.isPainted && decor.shape == "theme_background")
+                    {
+                        Debug.Log($"[DEBUG] Доступен theme_background с allowedThemes: {string.Join(", ", decor.allowedThemes ?? new List<string>())}");
+                    }
+                }
+            }
+        }
 
         int index = 0;
         float centerX = resolution * 0.5f;
