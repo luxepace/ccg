@@ -149,7 +149,7 @@ MonoBehaviour:
   lockedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   availableColor: {r: 1, g: 1, b: 1, a: 1}
   visitedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  skippedColor: {r: 0.5, g: 0.5, b: 0.5, a: 0.7}
+  skippedColor: {r: 0.8207547, g: 0.8207547, b: 0.8207547, a: 0.7}
 --- !u!1 &2925445353494068980
 GameObject:
   m_ObjectHideFlags: 0

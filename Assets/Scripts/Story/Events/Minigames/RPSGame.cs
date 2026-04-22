@@ -37,7 +37,6 @@ public class RPSGame : EventInteractiveBase
 
         string enemyChoice = choices[UnityEngine.Random.Range(0, choices.Length)];
 
-        // Определяем победу
         bool isVictory = false;
         bool isDraw = false;
 
@@ -57,8 +56,6 @@ public class RPSGame : EventInteractiveBase
         if (resultText)
             resultText.text = $"Вы: {playerChoice}\nВраг: {enemyChoice}\n{resultMessage}";
 
-        // Запоминаем результат для кнопки продолжения
-        // Используем closure или временную переменную, но проще сохранить в поле класса
         lastRoundVictory = isVictory;
         lastRoundDraw = isDraw;
 
@@ -71,8 +68,7 @@ public class RPSGame : EventInteractiveBase
 
     private void FinishGame()
     {
-        // Передаем результат: награду даем только если победа (ничью можно считать как поражение или победу по желанию)
-        // Сейчас логика: Награда только за чистую победу.
+
         bool giveReward = lastRoundVictory;
 
         Debug.Log($"[RPS] Игра окончена. Победа: {giveReward}");

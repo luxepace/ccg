@@ -2,16 +2,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// =============================================================================
-// ДАННЫЕ СОБЫТИЙ (ТОЛЬКО ЗДЕСЬ)
-// Все классы ниже объявлены в глобальном пространстве имен, чтобы быть доступными везде.
-// =============================================================================
-
 [Serializable]
 public class StoryEventData
 {
     public string id;
-    public string title; // Заголовок события (например, "Таинственный торговец")
+    public string title; 
     public List<EventStep> steps = new List<EventStep>();
 }
 
@@ -30,7 +25,7 @@ public class EventStep
     // Для шага REWARD
     public RewardData reward;
 
-    // Для шагов мини-игр (имя префаба в Resources/Events/Minigames/)
+    // Для шагов мини-игр
     public string minigamePrefabName;
 
     public bool isFinal = false;

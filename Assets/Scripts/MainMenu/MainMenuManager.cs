@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.SceneManagement;
-using System.IO; // Убедись, что это есть
+using System.IO;
 
 public class MainMenuManager : MonoBehaviour
 {
@@ -38,13 +38,13 @@ public class MainMenuManager : MonoBehaviour
     {
         Debug.Log("[MENU] Нажата кнопка 'Новая игра'");
 
-        // 1. Очищаем сохранения игрока
+        // Очищаем сохранения игрока
         if (PlayerProgressionManager.Instance != null)
         {
             PlayerProgressionManager.Instance.DeleteSave();
         }
 
-        // 2. Очищаем сохранение карты сюжета
+        // Очищаем сохранение карты сюжета
         string mapPath = Path.Combine(Application.persistentDataPath, "storyMapSave.json");
         if (File.Exists(mapPath))
         {
@@ -52,9 +52,8 @@ public class MainMenuManager : MonoBehaviour
             Debug.Log("[MENU] Старое сохранение карты удалено.");
         }
 
-        // === НОВОЕ: Удаляем файлы ландшафтов для всех глав ===
-        // Мы должны гарантировать, что старые файлы высот не будут использованы
-        for (int i = 0; i < 10; i++) // Предполагаем макс 10 глав
+        // Удаляем файлы ландшафтов для всех глав
+        for (int i = 0; i < 10; i++) 
         {
             string chapterMapPath = Path.Combine(Application.persistentDataPath, $"map_chapter_{i}.json");
             if (File.Exists(chapterMapPath))
@@ -63,30 +62,25 @@ public class MainMenuManager : MonoBehaviour
                 Debug.Log($"[MENU] Удален старый ландшафт главы {i}: {chapterMapPath}");
             }
         }
-        // ================================================
 
-        // Если в сцене меню есть StoryMapManager, вызываем у него очистку (на всякий случай)
         var mapManager = FindObjectOfType<StoryMapManager>();
         if (mapManager != null)
         {
             mapManager.DeleteSave();
-            // Если у MapGenerator3D есть метод очистки, можно вызвать и его здесь, 
-            // но удаление файлов выше уже решает проблему.
             var gen = FindObjectOfType<MapGenerator3D>();
             if (gen != null)
             {
-                gen.DeleteAllChapterMaps(); // Если ты добавил этот метод в MapGenerator3D
+                gen.DeleteAllChapterMaps(); 
             }
         }
 
-        // 3. Инициализируем данные игрока с нуля
+        // Инициализируем данные игрока с нуля
         if (PlayerProgressionManager.Instance != null)
         {
             PlayerProgressionManager.Instance.StartNewGame();
         }
 
-        // 4. Загружаем сцену сюжета
-        // В StoryMapManager.Start() сработает логика: "Сохранения нет -> Генерируем новую карту и новые ландшафты"
+        // Загружаем сцену сюжета
         SceneManager.LoadScene("StoryScene");
     }
 

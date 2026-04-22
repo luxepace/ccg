@@ -20,11 +20,11 @@ public class MapDecorationManager : MonoBehaviour
     [Header("Зоны отчуждения (Avoidance)")]
     public float nodeAvoidRadius = 8f;
     public float pathAvoidMargin = 15f;
-    public float waterNodeAvoidRadius = 30f; // === НОВОЕ: Увеличенный радиус для воды ===
+    public float waterNodeAvoidRadius = 30f; 
 
     [Header("Настройки мостов")]
     public Color bridgeColor = new Color(0.55f, 0.55f, 0.55f, 1.0f);
-    public float bridgeWidthMargin = 0.7f; // === БЫЛО 0.5f, СТАЛО 1.2f ===
+    public float bridgeWidthMargin = 0.7f;
 
     private string baseSaveFileName = "map_chapter_";
     private string decorSaveSuffix = "_decor.json";
@@ -262,7 +262,6 @@ public class MapDecorationManager : MonoBehaviour
         // Сначала сохраняем координаты объектов
         SaveDecorations(currentDecorations, GetDecorSavePath(chapterIndex));
 
-        // === НОВОЕ: Рисуем траву на текстуре, используя только что сохраненный файл ===
         DrawGrassUnderSavedDecorations(chapterIndex, themeId);
 
         currentDecorations.Clear();
@@ -300,7 +299,7 @@ public class MapDecorationManager : MonoBehaviour
         {
             if (waterObj.shape == "circle" || waterObj.shape == "blob" || waterObj.shape == "mountain")
             {
-                float safetyBuffer = waterNodeAvoidRadius * 0.5f; // === УВЕЛИЧЕНО ===
+                float safetyBuffer = waterNodeAvoidRadius * 0.5f; 
                 float effectiveRadius = waterObj.radius + safetyBuffer;
 
                 if (IsPointInsideBlob(pos, waterObj.center, effectiveRadius, waterObj.noiseOffsetX, waterObj.noiseOffsetY))
@@ -310,7 +309,7 @@ public class MapDecorationManager : MonoBehaviour
             }
             else if (waterObj.shape == "line")
             {
-                float safetyBuffer = waterNodeAvoidRadius * 0.3f; // === УВЕЛИЧЕНО ===
+                float safetyBuffer = waterNodeAvoidRadius * 0.3f; 
                 float dist = GetDistanceToLineSegment(pos.x, pos.y, waterObj.center.x, waterObj.center.y, waterObj.endPoint.x, waterObj.endPoint.y);
                 if (dist < (waterObj.width * 0.5f) + safetyBuffer) return true;
             }
