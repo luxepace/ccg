@@ -126,31 +126,21 @@ public class StoryMapVisual : MonoBehaviour
         }
     }
 
-    // === ЛОГИКА КЛИКОВ (Без изменений) ===
+    // В файле StoryMapVisual.cs найдите метод OnNodeClicked и замените его содержимое:
     public void OnNodeClicked(StoryNode node)
     {
-        // ИЗМЕНЕНИЕ: Разрешаем клик, если узел разблокирован И НЕ посещен. 
-        // Раньше было !node.isVisited, что правильно, но проверим isUnlocked.
         if (!node.isUnlocked || node.isVisited || node.type == StoryNodeType.START)
-        {
-            // Если вы кликаете на старт новой главы, он может быть уже "посещен" логически, 
-            // но нам нужно разрешить выбор следующего шага. 
-            // Однако старт обычно не кликабельный, он просто точка отсчета.
             return;
-        }
 
-        // Защита от клика на тот же узел
         if (StoryMapManager.Instance.CurrentNode != null &&
            (StoryMapManager.Instance.CurrentNode.nodeId == node.nodeId))
             return;
 
-        // Передаем клик в менеджер
-        StoryMapManager.Instance.MarkNodeVisited(node.chapterIndex, node.nodeId);
+        // УДАЛЕНО: StoryMapManager.Instance.MarkNodeVisited(node.chapterIndex, node.nodeId);
+        // Теперь узел помечается как пройденный только после успешного завершения боя/события.
 
-        // Обновляем вид этого узла сразу
-        UpdateNodeVisualState(node);
+        UpdateNodeVisualState(node); // Оставляем для визуальной подсветки текущего выбора
 
-        // Запускаем событие
         switch (node.type)
         {
             case StoryNodeType.ENEMY:

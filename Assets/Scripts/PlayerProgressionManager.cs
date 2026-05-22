@@ -8,7 +8,10 @@ public class PlayerSaveData
     public int currentHp;
     public int maxHp;
     public int gold;
+    public List<string> unlockedCards = new List<string>();    // Коллекция (уникальные)
+    public List<string> availableCards = new List<string>();   // Пул доступных копий (с дублями)
     public List<string> deckCardNames = new List<string>();
+    public int currentChapter = 1;
 }
 
 public class PlayerProgressionManager : MonoBehaviour
@@ -22,9 +25,23 @@ public class PlayerProgressionManager : MonoBehaviour
     public int CurrentHp { get; private set; }
     public int MaxHp { get; private set; }
     public int Gold { get; private set; }
+
+    public List<string> UnlockedCards { get; private set; } = new List<string>();
+    public List<string> AvailableCards { get; private set; } = new List<string>();
     public List<string> DeckCardNames { get; private set; } = new List<string>();
 
     private string saveFileName = "playerProgress.json";
+
+    public int CurrentChapter { get; set; } = 1;
+
+    [System.Serializable]
+    public class DeckLimits
+    {
+        public int maxTotal;
+        public int maxLevel1;
+        public int maxLevel2;
+        public int maxLevel3;
+    }
 
     private void Awake()
     {
@@ -32,7 +49,8 @@ public class PlayerProgressionManager : MonoBehaviour
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
-            LoadProgress(); // Пытаемся загрузить при старте приложения
+            LoadProgress();
+            RepairSaveData(); // Автоматически чинит битое сохранение при старте
         }
         else
         {
@@ -40,46 +58,68 @@ public class PlayerProgressionManager : MonoBehaviour
         }
     }
 
-    // === ПРОВЕРКА НАЛИЧИЯ СОХРАНЕНИЯ ===
     public bool HasSave()
     {
         string path = Path.Combine(Application.persistentDataPath, saveFileName);
         return File.Exists(path);
     }
 
-    // === НОВАЯ ИГРА (ПОЛНЫЙ СБРОС) ===
     public void StartNewGame(List<string> chosenDeck = null)
     {
-        Debug.Log("[Progression] Старт новой игры. Сброс данных...");
+        Debug.Log("[Progression] Старт новой игры...");
 
-        // 1. Сброс статов
+        // Сброс прогресса
+        CurrentChapter = 1;
         MaxHp = StartingMaxHp;
         CurrentHp = MaxHp;
         Gold = 0;
 
+        // 1. ВСЕ карты из текущей колоды возвращаем в доступные
+        foreach (var cardName in DeckCardNames)
+        {
+            AvailableCards.Add(cardName);
+        }
+
+        // 2. Очищаем колоду
         DeckCardNames.Clear();
 
-        // 2. Инициализация колоды
-        if (chosenDeck != null && chosenDeck.Count > 0)
+        // 3. Формируем стартовую колоду из DefaultStarterDeck
+        List<string> starterCards = (chosenDeck != null && chosenDeck.Count > 0)
+            ? chosenDeck
+            : DefaultStarterDeck;
+
+        foreach (var card in starterCards)
         {
-            DeckCardNames.AddRange(chosenDeck);
-        }
-        else if (DefaultStarterDeck.Count > 0)
-        {
-            DeckCardNames.AddRange(DefaultStarterDeck);
-        }
-        else
-        {
-            // Дефолтная колода, если ничего не передано
-            DeckCardNames.Add("Охотник с копьём");
-            DeckCardNames.Add("Щитоносец");
-            // Добавь остальные стартовые карты
+            // Добавляем карту в коллекцию (если это новая карта)
+            if (!UnlockedCards.Contains(card))
+            {
+                UnlockedCards.Add(card);
+                Debug.Log($"[Collection] Открыта новая карта: {card}");
+            }
+
+            // 4. Ищем карту в доступных
+            int index = AvailableCards.IndexOf(card);
+
+            if (index >= 0)
+            {
+                // Карта найдена - убираем из доступных и добавляем в колоду
+                AvailableCards.RemoveAt(index);
+                DeckCardNames.Add(card);
+                Debug.Log($"[Deck] {card} взята из доступных");
+            }
+            else
+            {
+                // Карта не найдена (первый запуск или нехватка копий) - просто добавляем в колоду
+                DeckCardNames.Add(card);
+                Debug.Log($"[Deck] {card} добавлена в колоду (новая/первый запуск)");
+            }
         }
 
-        // 3. Сохраняем сразу, чтобы при переходе в сцену данные были
+        Debug.Log($"[Progression] Колода сформирована: {DeckCardNames.Count} карт");
+        Debug.Log($"[Progression] Доступно карт: {AvailableCards.Count}");
+        Debug.Log($"[Progression] Открыто карт: {UnlockedCards.Count}");
+
         SaveProgress();
-
-        // 4. Очищаем статистику боев
         BattleStats.ClearHistory();
     }
 
@@ -91,7 +131,7 @@ public class PlayerProgressionManager : MonoBehaviour
     }
 
     public void ApplyReward(int goldChange = 0, int healAmount = 0, int maxHpChange = 0,
-                            List<string> cardsToAdd = null, List<string> cardsToRemove = null)
+                    List<string> cardsToAdd = null, List<string> cardsToRemove = null)
     {
         bool changed = false;
 
@@ -103,9 +143,22 @@ public class PlayerProgressionManager : MonoBehaviour
         {
             foreach (var card in cardsToAdd)
             {
-                if (!string.IsNullOrEmpty(card) && !DeckCardNames.Contains(card))
+                if (!string.IsNullOrEmpty(card))
                 {
-                    DeckCardNames.Add(card);
+                    // Если карта новая, добавляем в коллекцию
+                    if (!UnlockedCards.Contains(card))
+                    {
+                        UnlockedCards.Add(card);
+                        Debug.Log($"[Collection] ОТКРЫТА НОВАЯ КАРТА: {card}");
+                    }
+
+                    // ДОБАВЛЯЕМ ТОЛЬКО В ПУЛ ДОСТУПНЫХ КАРТ (не в колоду!)
+                    AvailableCards.Add(card);
+                    Debug.Log($"[Available] Добавлена копия в доступные: {card}");
+
+                    // УБРАНО: DeckCardNames.Add(card); 
+                    // Игрок сам решит, добавлять ли эту карту в колоду через конструктор
+
                     changed = true;
                 }
             }
@@ -138,20 +191,36 @@ public class PlayerProgressionManager : MonoBehaviour
 
     public void SaveProgress()
     {
-        PlayerSaveData data = new PlayerSaveData
+        try
         {
-            currentHp = CurrentHp,
-            maxHp = MaxHp,
-            gold = Gold,
-            deckCardNames = new List<string>(DeckCardNames)
-        };
+            // Гарантируем, что списки не null перед сериализацией
+            if (UnlockedCards == null) UnlockedCards = new List<string>();
+            if (AvailableCards == null) AvailableCards = new List<string>();
+            if (DeckCardNames == null) DeckCardNames = new List<string>();
 
-        string json = JsonUtility.ToJson(data, true);
-        string path = Path.Combine(Application.persistentDataPath, saveFileName);
+            PlayerSaveData data = new PlayerSaveData
+            {
+                currentHp = CurrentHp,
+                maxHp = MaxHp,
+                gold = Gold,
+                unlockedCards = new List<string>(UnlockedCards),
+                availableCards = new List<string>(AvailableCards),
+                deckCardNames = new List<string>(DeckCardNames),
+                currentChapter = CurrentChapter
+            };
 
-        Directory.CreateDirectory(Path.GetDirectoryName(path));
-        File.WriteAllText(path, json);
-        // Debug.Log("[Progression] Данные сохранены.");
+            string json = JsonUtility.ToJson(data, true);
+            string path = Path.Combine(Application.persistentDataPath, saveFileName);
+
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            File.WriteAllText(path, json);
+
+            Debug.Log($"[Save] Прогресс успешно сохранен в файл: {path}");
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"[Save] Ошибка сохранения: {e.Message}\nStackTrace: {e.StackTrace}");
+        }
     }
 
     public void LoadProgress()
@@ -168,20 +237,114 @@ public class PlayerProgressionManager : MonoBehaviour
                 CurrentHp = data.currentHp;
                 MaxHp = data.maxHp;
                 Gold = data.gold;
+                UnlockedCards = data.unlockedCards ?? new List<string>();
+                AvailableCards = data.availableCards ?? new List<string>();
                 DeckCardNames = data.deckCardNames ?? new List<string>();
+                CurrentChapter = data.currentChapter > 0 ? data.currentChapter : 1;
                 Debug.Log("[Progression] Данные загружены.");
                 return;
             }
         }
 
-        // Если сохранения нет, инициализируем дефолтными значениями (но не сохраняем, пока игрок не начнет игру)
-        MaxHp = StartingMaxHp;
-        CurrentHp = MaxHp;
-        Gold = 0;
-        if (DefaultStarterDeck.Count > 0) DeckCardNames = new List<string>(DefaultStarterDeck);
-        else { DeckCardNames.Add("Охотник с копьём"); DeckCardNames.Add("Щитоносец"); }
+        Debug.Log("[Progression] Первый запуск. Инициализация...");
+        StartNewGame();
+    }
 
-        Debug.Log("[Progression] Сохранение не найдено, установлены значения по умолчанию.");
+    // === АВТОПОЧИНКА СОХРАНЕНИЯ ===
+    private void RepairSaveData()
+    {
+        bool fixedSomething = false;
+
+        // Если пул пуст, но в колоде есть карты (например, после бага), переносим их в пул
+        if (AvailableCards.Count == 0 && DeckCardNames.Count > 0)
+        {
+            foreach (var card in DeckCardNames)
+            {
+                if (!AvailableCards.Contains(card))
+                {
+                    AvailableCards.Add(card);
+                    fixedSomething = true;
+                }
+            }
+        }
+
+        // Синхронизируем коллекцию с пулом (все, что в пуле, должно быть открыто в коллекции)
+        foreach (var card in AvailableCards)
+        {
+            if (!UnlockedCards.Contains(card))
+            {
+                UnlockedCards.Add(card);
+                fixedSomething = true;
+            }
+        }
+
+        if (fixedSomething)
+        {
+            Debug.Log("[Progression] Исправлена структура сохранения.");
+            SaveProgress();
+        }
+    }
+
+    public void SetDeckFromBuilder(List<string> newDeck)
+    {
+        DeckCardNames = new List<string>(newDeck);
+        SaveProgress();
+        Debug.Log($"[Progression] Колода обновлена игроком. Размер: {DeckCardNames.Count}");
+    }
+
+    public bool IsCardUnlocked(string cardName)
+    {
+        return UnlockedCards.Contains(cardName);
+    }
+
+    public bool IsCardAvailable(string cardName)
+    {
+        return GetAvailableCount(cardName) > 0;
+    }
+
+    public int GetUnlockedCount()
+    {
+        return new HashSet<string>(UnlockedCards).Count;
+    }
+
+    public int GetAvailableCount(string cardName)
+    {
+        int count = 0;
+        foreach (var card in AvailableCards)
+        {
+            if (card == cardName) count++;
+        }
+        return count;
+    }
+
+    public void UnlockCard(string cardName)
+    {
+        if (!string.IsNullOrEmpty(cardName) && !UnlockedCards.Contains(cardName))
+        {
+            UnlockedCards.Add(cardName);
+            AvailableCards.Add(cardName); // Даем 1 копию при открытии
+            Debug.Log($"[Collection] ОТКРЫТА НОВАЯ КАРТА: {cardName}");
+            SaveProgress();
+        }
+    }
+
+    public void AddCardsToDeck(List<string> cardsToAdd)
+    {
+        if (cardsToAdd == null) return;
+        foreach (var card in cardsToAdd)
+        {
+            if (!string.IsNullOrEmpty(card))
+            {
+                UnlockCard(card);
+                DeckCardNames.Add(card);
+            }
+        }
+        SaveProgress();
+    }
+
+    public List<string> GetUnlockedCards()
+    {
+        return new List<string>(UnlockedCards);
     }
 
     public void DeleteSave()
@@ -192,5 +355,20 @@ public class PlayerProgressionManager : MonoBehaviour
             File.Delete(path);
             Debug.Log("[Progression] Сохранение игрока удалено.");
         }
+    }
+
+    public DeckLimits GetDeckLimits()
+    {
+        return GetDeckLimits(CurrentChapter);
+    }
+
+    public DeckLimits GetDeckLimits(int chapter)
+    {
+        if (chapter >= 3)
+            return new DeckLimits { maxTotal = 25, maxLevel1 = 12, maxLevel2 = 8, maxLevel3 = 5 };
+        else if (chapter == 2)
+            return new DeckLimits { maxTotal = 20, maxLevel1 = 10, maxLevel2 = 7, maxLevel3 = 3 };
+        else // Глава 1 или игра не начата
+            return new DeckLimits { maxTotal = 15, maxLevel1 = 8, maxLevel2 = 5, maxLevel3 = 2 };
     }
 }

@@ -44,7 +44,9 @@ public class CardDatabase : ScriptableObject
                 Abilities = ParseAbilities(m.abilities),
                 abilityValue = m.abilityValue,
                 shortDescription = m.shortDescription,
-                fullDescription = m.fullDescription
+                fullDescription = m.fullDescription,
+                minChapterLevel = m.minChapterLevel,
+                isBaseCard = m.isBaseCard
             });
         }
 
@@ -57,7 +59,9 @@ public class CardDatabase : ScriptableObject
                 manacost: s.manacost,
                 spellType: ParseSpellType(s.spellType),
                 spellValue: s.spellValue,
-                targetType: ParseTargetType(s.targetType)
+                targetType: ParseTargetType(s.targetType),
+                minChapter: s.minChapterLevel,
+                isBase: s.isBaseCard
             )
             {
                 Abilities = ParseAbilities(s.abilities),
@@ -180,6 +184,8 @@ public class FieldCardJSON
     public List<string> abilities;
     public string shortDescription;
     public string fullDescription;
+    public int minChapterLevel = 1;
+    public bool isBaseCard = false;
 }
 
 [System.Serializable]
@@ -194,4 +200,6 @@ public class SpellJSON
     public List<string> abilities;
     public string shortDescription;
     public string fullDescription;
+    public int minChapterLevel = 1;
+    public bool isBaseCard = false;
 }

@@ -422,10 +422,15 @@ public class StoryMapManager : MonoBehaviour
 
     public void MarkNodeVisited(int chIdx, int nId)
     {
+        // === ДИАГНОСТИКА ===
+        Debug.LogWarning($"[MAP] Узел {nId} помечен как пройденный! Вызов из:\n{new System.Diagnostics.StackTrace(true)}");
+
         StoryNode node = GetNodeById(chIdx, nId);
         if (node != null)
         {
-            if (CurrentNode != null && CurrentNode.nodeId != nId) CurrentNode.isVisited = true;
+            if (CurrentNode != null && CurrentNode.nodeId != nId)
+                CurrentNode.isVisited = true;
+
             node.isVisited = true;
             CurrentNode = node;
 
@@ -489,6 +494,13 @@ public class StoryMapManager : MonoBehaviour
             nextCh.isActive = true;
             CurrentChapter = nextCh;
 
+            if (PlayerProgressionManager.Instance != null)
+            {
+                // chapterIndex в данных обычно начинается с 0, поэтому прибавляем 1
+                PlayerProgressionManager.Instance.CurrentChapter = nextCh.chapterIndex + 1;
+                PlayerProgressionManager.Instance.SaveProgress(); // Сохраняем новый номер главы
+                Debug.Log($"[StoryMap] Переход на главу {PlayerProgressionManager.Instance.CurrentChapter}. Лимиты колоды обновлены.");
+            }
             // 2. Находим старт и разблокируем его
             StoryNode start = nextCh.nodes.Find(n => n.type == StoryNodeType.START);
             if (start != null)
@@ -544,34 +556,46 @@ public class StoryMapManager : MonoBehaviour
         }
     }
 
-    // === НОВЫЙ МЕТОД: ФИНАЛ ИГРЫ ===
-    // === МЕТОД: ФИНАЛ ИГРЫ С ОЧИСТКОЙ СОХРАНЕНИЙ ===
     public void FinishGame()
     {
-        Debug.Log("==================================================");
         Debug.Log("=== ПОЗДРАВЛЯЕМ! ВЫ ПРОШЛИ ИГРУ ДО КОНЦА! ===");
-        Debug.Log("==================================================");
         Debug.Log("[FinishGame] Очистка сохранений для нового прохождения...");
 
-        // 1. Очищаем прогресс игрока (HP, Gold, Колода)
+        // === НОВОЕ: Сначала возвращаем ВСЕ карты из текущей колоды в доступные ===
         if (PlayerProgressionManager.Instance != null)
         {
-            PlayerProgressionManager.Instance.DeleteSave();
-            Debug.Log("[FinishGame] Данные игрока сброшены.");
+            var progression = PlayerProgressionManager.Instance;
+
+            // Возвращаем все карты из колоды в доступные
+            foreach (var cardName in progression.DeckCardNames)
+            {
+                if (!progression.AvailableCards.Contains(cardName))
+                {
+                    progression.AvailableCards.Add(cardName);
+                }
+            }
+
+            Debug.Log($"[FinishGame] Возвращено {progression.DeckCardNames.Count} карт из колоды в доступные");
+
+            // === ИСПРАВЛЕНИЕ: Просто вызываем StartNewGame() ===
+            // Он сам сбросит HP, Gold, Chapter и сформирует стартовую колоду
+            progression.StartNewGame();
+
+            Debug.Log("[FinishGame] Прогресс сброшен, коллекция и карты сохранены");
         }
 
         // 2. Очищаем сохранение структуры карты (storyMapSave.json)
         DeleteSave();
-        Debug.Log("[FinishGame] Файл storyMapSave.json удален.");
+        Debug.Log("[FinishGame] Файл storyMapSave.json удален");
 
         // 3. Очищаем файлы ландшафтов и текстур глав (map_chapter_X.json, .png)
         if (MapGenerator3D.Instance != null)
         {
             MapGenerator3D.Instance.DeleteAllChapterMaps();
-            Debug.Log("[FinishGame] Файлы ландшафтов и текстур удалены.");
+            Debug.Log("[FinishGame] Файлы ландшафтов и текстур удалены");
         }
 
-        Debug.Log("[FinishGame] Все сохранения очищены. Игра готова к новому запуску.");
+        Debug.Log("[FinishGame] Все сохранения очищены. Игра готова к новому запуску");
 
         // 4. Показываем экран победы
         ShowVictoryScreen();

@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using Unity.VisualScripting;
 using UnityEngine;
 
 [System.Serializable]
@@ -54,6 +55,10 @@ public class Card
 
     public string shortDescription;
     public string fullDescription;
+
+    [Range(1, 3)]
+    public int minChapterLevel = 1; 
+    public bool isBaseCard = false;
 
     public Card(string name, string logoPath, int attack, int defense, int manacost, AbilityType abilityType = 0, int abilityValue = 0)
     {
@@ -144,13 +149,16 @@ public class SpellCard : Card
     public TargetType SpellTarget;
     public int SpellValue;
 
-    public SpellCard(string name, string logoPath, int manacost, SpellType spellType = 0, int spellValue = 0, TargetType targetType = 0) : base(name, logoPath, 0, 0, manacost, AbilityType.NO_ABILITY, 0)
+    public SpellCard(string name, string logoPath, int manacost, SpellType spellType = 0, int spellValue = 0, TargetType targetType = 0, int minChapter = 1, bool isBase = false) : base(name, logoPath, 0, 0, manacost, AbilityType.NO_ABILITY, 0)
     {
         IsSpell = true;
 
         Spell = spellType;
         SpellTarget = targetType;
         SpellValue = spellValue;
+
+        minChapterLevel = minChapter;
+        isBaseCard = isBase;
     }
     public SpellCard(SpellCard card) : base(card)
     {
@@ -158,6 +166,8 @@ public class SpellCard : Card
         Spell = card.Spell;
         SpellTarget = card.SpellTarget;
         SpellValue = card.SpellValue;
+        minChapterLevel = card.minChapterLevel;
+        isBaseCard = card.isBaseCard;
     }
 
     public new SpellCard GetCopy()

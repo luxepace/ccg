@@ -4,47 +4,36 @@ using UnityEngine.UI;
 
 public class PauseMenu : MonoBehaviour
 {
-    public GameObject pauseMenuUI; // Сюда перетащи панель меню из UI_HUD_Canvas
+    [Header("UI References")]
+    public GameObject pauseMenuUI;
+
     private bool isPaused = false;
+
+    // Геттер для проверки состояния паузы (нужен CardCollectionUI, чтобы не снимать паузу случайно)
+    public bool IsPaused() => isPaused;
 
     void Update()
     {
-        // ЭТА ПРОВЕРКА РАБОТАЕТ ТОЛЬКО ЗДЕСЬ (в Update)
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             TogglePause();
         }
     }
 
-    // Этот метод теперь вызывает и Update (при Esc), и Кнопка (при клике)
     public void TogglePause()
     {
         if (isPaused)
-        {
             ResumeGame();
-        }
         else
-        {
             PauseGame();
-        }
     }
 
-    // Метод ТОЛЬКО для кнопки "Пауза" в интерфейсе
-    // В инспекторе кнопки на событие OnClick() повесь именно этот метод!
     public void OnPauseButtonClicked()
     {
-        // Если игра уже на паузе (например, нажали Esc), то кнопка должна закрывать меню
-        // Но обычно кнопка "Пауза" нужна только чтобы открыть её.
-        // Логичнее сделать так:
         if (!isPaused)
-        {
             PauseGame();
-        }
         else
-        {
-            // Если вдруг нажали кнопку, когда меню открыто - закрываем
             ResumeGame();
-        }
     }
 
     void PauseGame()
@@ -71,15 +60,28 @@ public class PauseMenu : MonoBehaviour
         Debug.Log("[PAUSE] Игра возобновлена.");
     }
 
+    // === Открыть коллекцию карт из паузы ===
+    public void OpenCardCollection()
+    {
+        // Статический метод сам найдёт панель или создаст её из префаба
+        CardCollectionUI.OpenFromPause();
+    }
+
+    // === Возврат в главное меню ===
     public void ToMainMenu()
     {
         Time.timeScale = 1f;
-        // Сохранение прогресса перед выходом (опционально)
-        // StoryMapManager.Instance.SaveMap(); 
+
+        // Очищаем временные данные, чтобы следующий запуск не подхватил старый бой/узел
+        TempData.CurrentEnemy = null;
+        TempData.CurrentNode = null;
+        TempData.CurrentEvent = null;
+        TempData.IsStoryMode = false;
 
         SceneManager.LoadScene("MainMenu");
     }
 
+    // === Выход из приложения ===
     public void ExitGame()
     {
         Time.timeScale = 1f;

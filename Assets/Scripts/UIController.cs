@@ -133,37 +133,32 @@ public class UIController : MonoBehaviour
         }
     }
 
-    // === МЕТОДЫ ДЕЙСТВИЙ ===
-
     void ReturnToStoryMap()
     {
         Time.timeScale = 1f;
         TempData.CurrentEnemy = null;
         TempData.IsStoryMode = false;
 
-        // === НОВАЯ ЛОГИКА: ПРОВЕРКА ПОБЕДЫ НАД БОССОМ ===
-
-        // Проверяем, был ли текущий узел типом BOSS
-        if (TempData.CurrentNode != null && TempData.CurrentNode.type == StoryNodeType.BOSS)
+        // === ИСПРАВЛЕНИЕ: Фиксируем прохождение узла ТОЛЬКО после победы ===
+        if (TempData.CurrentNode != null)
         {
-            // Проверяем, жив ли враг. Если HP <= 0, значит мы победили.
-            // Внимание: GameManager может быть уже уничтожен при выходе из сцены боя, 
-            // но данные о победе можно взять из BattleStats или проверить флаг.
-            // Самый надежный способ сейчас - проверить BattleStats или просто факт возврата с босса,
-            // если ты уверен, что проигравший не нажимает "Продолжить путь" (а рестартит бой).
-
-            // Вариант А: Проверка через BattleStats (если там есть флаг победы последнего боя)
+            // Проверяем историю боев, чтобы убедиться, что последний бой был выигран
             bool isVictory = false;
             if (BattleStats.BattleHistory.Count > 0)
             {
                 isVictory = BattleStats.BattleHistory[BattleStats.BattleHistory.Count - 1].isVictory;
             }
 
-            // Вариант Б: Если ты нажимаешь "Продолжить" только после победы (кнопка меняется), то можно считать это победой.
-            // Но лучше использовать явную проверку. Допустим, мы используем BattleStats.
+            // Сохраняем прогресс ТОЛЬКО если победа
+            if (isVictory)
+            {
+                StoryMapManager.Instance.MarkNodeVisited(TempData.CurrentNode.chapterIndex, TempData.CurrentNode.nodeId);
+            }
+
+            // Очищаем временные данные
+            TempData.CurrentNode = null;
         }
 
-        // Загружаем сцену карты
         SceneManager.LoadScene("StoryScene");
     }
 

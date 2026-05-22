@@ -7,6 +7,9 @@ public class StoryHUD : MonoBehaviour
     public TextMeshProUGUI textHP;
     public TextMeshProUGUI textGold;
 
+    [Header("Deck Builder")] // Новое поле
+    public GameObject deckBuilderPanel; // Сюда перетащить DeckBuilderPanel
+
     private void Start()
     {
         UpdateUI();
@@ -14,16 +17,13 @@ public class StoryHUD : MonoBehaviour
 
     private void Update()
     {
-        // Обновляем каждый кадр, чтобы видеть изменения сразу
         UpdateUI();
     }
 
     void UpdateUI()
     {
-        // ПРОВЕРКА: Используем PlayerProgressionManager вместо PlayerStats
         if (PlayerProgressionManager.Instance == null)
         {
-            // Если менеджера нет (например, в редакторе до старта), можно скрыть UI или поставить заглушку
             if (textHP) textHP.text = "HP: --";
             if (textGold) textGold.text = "Gold: --";
             return;
@@ -31,13 +31,21 @@ public class StoryHUD : MonoBehaviour
 
         if (textHP != null)
         {
-            // Берем данные из нового менеджера
             textHP.text = $"HP: {PlayerProgressionManager.Instance.CurrentHp} / {PlayerProgressionManager.Instance.MaxHp}";
         }
 
         if (textGold != null)
         {
             textGold.text = $"Gold: {PlayerProgressionManager.Instance.Gold}";
+        }
+    }
+
+    // === НОВЫЙ МЕТОД ===
+    public void OpenDeckBuilder()
+    {
+        if (deckBuilderPanel != null)
+        {
+            deckBuilderPanel.SetActive(true);
         }
     }
 }
