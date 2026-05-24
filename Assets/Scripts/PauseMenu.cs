@@ -67,16 +67,17 @@ public class PauseMenu : MonoBehaviour
         CardCollectionUI.OpenFromPause();
     }
 
-    // === Возврат в главное меню ===
     public void ToMainMenu()
     {
         Time.timeScale = 1f;
 
-        // Очищаем временные данные, чтобы следующий запуск не подхватил старый бой/узел
+        // Полная очистка временного состояния
         TempData.CurrentEnemy = null;
-        TempData.CurrentNode = null;
         TempData.CurrentEvent = null;
+        TempData.CurrentNode = null;
         TempData.IsStoryMode = false;
+        TempData.BossDefeated = false;
+        TempData.RewardCards.Clear();
 
         SceneManager.LoadScene("MainMenu");
     }

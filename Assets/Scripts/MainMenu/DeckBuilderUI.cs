@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI; // Обязательно для Button
 using TMPro;
+using UnityEngine.UI;
 
 public class DeckBuilderUI : MonoBehaviour
 {
@@ -11,39 +11,96 @@ public class DeckBuilderUI : MonoBehaviour
     public TextMeshProUGUI collectionProgressText;
     public GameObject cardSlotPrefab;
 
-    [Header("Buttons")]
-    public Button closeButton; // <-- Явное поле для кнопки закрытия
-
-    [Header("Deck Stats Texts")]
+    [Header("Deck Stats Texts (Split)")]
     public TextMeshProUGUI totalDeckText;
     public TextMeshProUGUI level1DeckText;
     public TextMeshProUGUI level2DeckText;
     public TextMeshProUGUI level3DeckText;
 
+    [Header("Buttons")]
+    public Button confirmButton; // Кнопка "Сохранить" / "Играть"
+
     [Header("Settings")]
-    public int minDeckSize = 8;
+    public int minDeckSize = 5;
+
+    // === ЛОКАЛЬНЫЕ РАБОЧИЕ СПИСКИ ===
+    private List<string> _localDeck;
+    private List<string> _localAvailable;
+
+    // Для быстрой игры: единый пул всех карт игрока
+    private List<string> _fastGameInventory;
 
     private static bool isInitializing = false;
+
+    // Свойство для проверки режима
+    private bool IsFastGameMode => TempData.IsSettingUpFastGame;
 
     private void OnEnable()
     {
         if (isInitializing) return;
         isInitializing = true;
 
-        Time.timeScale = 0f; // Пауза при открытии
+        Debug.Log("[DeckBuilder] Панель включена.");
 
-        if (PlayerProgressionManager.Instance == null)
+        var mgr = PlayerProgressionManager.Instance;
+        if (mgr == null)
         {
-            Debug.LogError("[DeckBuilder] PlayerProgressionManager не найден!");
-            CloseDeck();
+            isInitializing = false;
             return;
         }
 
-        // Программно привязываем кнопку закрытия (надежнее, чем через Inspector)
-        if (closeButton != null)
+        // 1. ИНИЦИАЛИЗАЦИЯ ДАННЫХ
+        if (IsFastGameMode)
         {
-            closeButton.onClick.RemoveAllListeners();
-            closeButton.onClick.AddListener(CloseDeck);
+            // === РЕЖИМ БЫСТРОЙ ИГРЫ ===
+
+            // Создаем единый инвентарь из всех доступных игроку карт (Available + StoryDeck)
+            _fastGameInventory = new List<string>(mgr.AvailableCards);
+            _fastGameInventory.AddRange(mgr.DeckCardNames);
+
+            // Инициализируем локальную колоду (копией из TempData или пустой)
+            if (TempData.FastGameDeck != null && TempData.FastGameDeck.Count > 0)
+            {
+                _localDeck = new List<string>(TempData.FastGameDeck);
+
+                // Вычитаем из инвентаря те карты, которые уже есть в сохраненной колоде,
+                // чтобы они не отображались слева дважды.
+                foreach (var card in _localDeck)
+                {
+                    if (_fastGameInventory.Contains(card))
+                        _fastGameInventory.Remove(card);
+                }
+            }
+            else
+            {
+                _localDeck = new List<string>();
+            }
+
+            Debug.Log($"[DeckBuilder] Быстрая игра. Инвентарь: {_fastGameInventory.Count}, Колода: {_localDeck.Count}");
+        }
+        else
+        {
+            // === СТАНДАРТНЫЙ РЕЖИМ ===
+            _localDeck = new List<string>(mgr.DeckCardNames);
+            _localAvailable = new List<string>(mgr.AvailableCards);
+        }
+
+        // 2. НАСТРОЙКА КНОПКИ ПОДТВЕРЖДЕНИЯ
+        if (confirmButton != null)
+        {
+            confirmButton.onClick.RemoveAllListeners();
+            TextMeshProUGUI btnText = confirmButton.GetComponentInChildren<TextMeshProUGUI>();
+
+            if (IsFastGameMode)
+            {
+                confirmButton.onClick.AddListener(StartFastGameBattle);
+                if (btnText) btnText.text = "ИГРАТЬ";
+            }
+            else
+            {
+                confirmButton.onClick.AddListener(ConfirmDeck);
+                if (btnText) btnText.text = "СОХРАНИТЬ";
+            }
         }
 
         ClearContainers();
@@ -53,8 +110,15 @@ public class DeckBuilderUI : MonoBehaviour
 
     private void OnDisable()
     {
-        Time.timeScale = 1f; // Возвращаем время
+        Time.timeScale = 1f;
         isInitializing = false;
+
+        // СБРОС ФЛАГА ПРИ ЗАКРЫТИИ ПАНЕЛИ
+        TempData.IsSettingUpFastGame = false;
+
+        _localDeck?.Clear();
+        _localAvailable?.Clear();
+        if (_fastGameInventory != null) _fastGameInventory.Clear();
     }
 
     public void ConfirmDeck()
@@ -64,38 +128,84 @@ public class DeckBuilderUI : MonoBehaviour
 
         var limits = mgr.GetDeckLimits();
 
-        if (mgr.DeckCardNames.Count < minDeckSize)
+        if (_localDeck.Count < minDeckSize) { Debug.LogWarning("Колода слишком маленькая!"); return; }
+        if (_localDeck.Count > limits.maxTotal) { Debug.LogWarning("Превышен общий лимит!"); return; }
+
+        int l1 = GetCardLevelCount(_localDeck, 1);
+        int l2 = GetCardLevelCount(_localDeck, 2);
+        int l3 = GetCardLevelCount(_localDeck, 3);
+
+        if (l1 > limits.maxLevel1 || l2 > limits.maxLevel2 || l3 > limits.maxLevel3)
+        {
+            Debug.LogWarning("Нарушены лимиты по уровням!");
+            return;
+        }
+
+        // Сохраняем в прогресс
+        mgr.DeckCardNames.Clear();
+        mgr.DeckCardNames.AddRange(_localDeck);
+
+        mgr.AvailableCards.Clear();
+        mgr.AvailableCards.AddRange(_localAvailable);
+
+        mgr.SetDeckFromBuilder(mgr.DeckCardNames);
+
+        Debug.Log($"[DeckBuilder] Сюжетная колода успешно сохранена: {mgr.DeckCardNames.Count} карт");
+
+        MainMenuManager mainMenu = FindObjectOfType<MainMenuManager>();
+        if (mainMenu != null)
+            mainMenu.CloseDeckBuilder();
+        else
+        {
+            gameObject.SetActive(false);
+            Time.timeScale = 1f;
+        }
+    }
+
+    public void StartFastGameBattle()
+    {
+        Debug.Log("[DeckBuilder] Режим быстрой игры. Проверка колоды...");
+
+        if (_localDeck.Count < minDeckSize)
         {
             Debug.LogWarning($"[DeckBuilder] Колода слишком маленькая! Минимум: {minDeckSize}");
             return;
         }
 
-        if (mgr.DeckCardNames.Count > limits.maxTotal)
+        // Сохраняем локальные изменения во временное хранилище TempData
+        TempData.FastGameDeck.Clear();
+        TempData.FastGameDeck.AddRange(_localDeck);
+
+        Debug.Log($"[DeckBuilder] Колода для быстрой игры подтверждена ({TempData.FastGameDeck.Count} карт). Запуск боя...");
+
+        FastGameSettingsManager fastSettings = FindObjectOfType<FastGameSettingsManager>();
+
+        if (fastSettings != null)
         {
-            Debug.LogWarning($"[DeckBuilder] Превышен общий лимит! Максимум: {limits.maxTotal}");
-            return;
+            fastSettings.StartFastBattle();
         }
-
-        int l1 = GetCardLevelCount(mgr.DeckCardNames, 1);
-        int l2 = GetCardLevelCount(mgr.DeckCardNames, 2);
-        int l3 = GetCardLevelCount(mgr.DeckCardNames, 3);
-
-        if (l1 > limits.maxLevel1 || l2 > limits.maxLevel2 || l3 > limits.maxLevel3)
+        else
         {
-            Debug.LogWarning($"[DeckBuilder] Нарушены лимиты по уровням!");
-            return;
+            Debug.LogError("[DeckBuilder] ОШИБКА: Не найден объект FastGameSettingsManager на сцене!");
         }
-
-        mgr.SetDeckFromBuilder(mgr.DeckCardNames);
-        Debug.Log($"[DeckBuilder] Колода успешно сохранена в память!");
-
-        CloseDeck();
     }
 
-    public void CloseDeck()
+    public void CancelDeckBuilding()
     {
-        gameObject.SetActive(false); // Вызовет OnDisable и вернет Time.timeScale = 1
+        Debug.Log("[DeckBuilder] Отмена изменений.");
+        TempData.IsSettingUpFastGame = false;
+
+        MainMenuManager mainMenu = FindObjectOfType<MainMenuManager>();
+        if (mainMenu != null)
+            mainMenu.CloseDeckBuilder();
+        else
+        {
+            gameObject.SetActive(false);
+            Time.timeScale = 1f;
+        }
     }
+
+    // В файле DeckBuilderUI.cs
 
     void RefreshUI()
     {
@@ -107,10 +217,11 @@ public class DeckBuilderUI : MonoBehaviour
 
         var limits = mgr.GetDeckLimits();
 
-        int total = mgr.DeckCardNames.Count;
-        int l1 = GetCardLevelCount(mgr.DeckCardNames, 1);
-        int l2 = GetCardLevelCount(mgr.DeckCardNames, 2);
-        int l3 = GetCardLevelCount(mgr.DeckCardNames, 3);
+        // === СТАТИСТИКА ===
+        int total = _localDeck.Count;
+        int l1 = GetCardLevelCount(_localDeck, 1);
+        int l2 = GetCardLevelCount(_localDeck, 2);
+        int l3 = GetCardLevelCount(_localDeck, 3);
 
         if (totalDeckText != null) totalDeckText.text = $"Колода: {total}/{limits.maxTotal}";
         if (level1DeckText != null) level1DeckText.text = $"1 ур: {l1}/{limits.maxLevel1}";
@@ -123,34 +234,146 @@ public class DeckBuilderUI : MonoBehaviour
             collectionProgressText.text = $"Открыто карт: {unlocked}/{CardM.AllCards.Count}";
         }
 
-        Dictionary<string, int> poolCounts = new Dictionary<string, int>();
-        foreach (var cardName in mgr.AvailableCards)
+        // === ЛЕВАЯ ПАНЕЛЬ: ДОСТУПНЫЕ КАРТЫ (Одна карта с счетчиком xN) ===
+
+        List<string> sourceList;
+        if (IsFastGameMode)
         {
-            if (poolCounts.ContainsKey(cardName)) poolCounts[cardName]++;
-            else poolCounts[cardName] = 1;
+            sourceList = _fastGameInventory;
+        }
+        else
+        {
+            sourceList = _localAvailable;
         }
 
-        List<Card> sortedAvailable = new List<Card>();
-        foreach (var kvp in poolCounts)
+        // Группируем карты по именам и считаем копии
+        Dictionary<string, int> leftCounts = new Dictionary<string, int>();
+        foreach (var name in sourceList)
         {
-            Card c = CardM.AllCards.Find(x => x.Name == kvp.Key);
-            if (c != null) sortedAvailable.Add(c);
+            if (leftCounts.ContainsKey(name)) leftCounts[name]++;
+            else leftCounts[name] = 1;
         }
-        sortedAvailable.Sort((a, b) => a.Name.CompareTo(b.Name));
 
-        foreach (var card in sortedAvailable)
-            CreateCardSlot(card, availableCardsContainer, true);
+        // Сортируем уникальные имена
+        List<string> sortedLeftNames = new List<string>(leftCounts.Keys);
+        sortedLeftNames.Sort((a, b) => {
+            Card cA = CardM.AllCards.Find(x => x.Name == a);
+            Card cB = CardM.AllCards.Find(x => x.Name == b);
+            if (cA == null || cB == null) return 0;
+            return cA.Name.CompareTo(cB.Name);
+        });
 
-        List<Card> sortedDeck = new List<Card>();
-        foreach (var cardName in mgr.DeckCardNames)
+        // Создаем слоты для левой панели
+        foreach (var name in sortedLeftNames)
         {
-            Card c = CardM.AllCards.Find(x => x.Name == cardName);
-            if (c != null) sortedDeck.Add(c);
+            Card card = CardM.AllCards.Find(x => x.Name == name);
+            if (card != null)
+            {
+                int count = leftCounts[name];
+                CreateCardSlot(card, availableCardsContainer, true, count);
+            }
         }
-        sortedDeck.Sort((a, b) => a.Name.CompareTo(b.Name));
 
-        foreach (var card in sortedDeck)
-            CreateCardSlot(card, deckCardsContainer, false);
+        // === ПРАВАЯ ПАНЕЛЬ: КОЛОДА (Каждая копия - отдельная ячейка) ===
+
+        // Просто создаем список всех карт в колоде (с дубликатами)
+        List<Card> deckCardsList = new List<Card>();
+        foreach (var name in _localDeck)
+        {
+            Card c = CardM.AllCards.Find(x => x.Name == name);
+            if (c != null) deckCardsList.Add(c);
+        }
+
+        // Сортируем их
+        deckCardsList.Sort((a, b) => a.Name.CompareTo(b.Name));
+
+        // Создаем по одному слоту на каждую копию
+        foreach (var card in deckCardsList)
+        {
+            CreateCardSlot(card, deckCardsContainer, false, 1); // 1 означает, что счетчик не нужен
+        }
+    }
+
+    void CreateCardSlot(Card card, Transform container, bool isAvailable, int count)
+    {
+        if (cardSlotPrefab == null || container == null) return;
+
+        GameObject slot = Instantiate(cardSlotPrefab, container);
+        CardSlotUI slotUI = slot.GetComponent<CardSlotUI>();
+
+        if (slotUI != null)
+        {
+            slotUI.Init(card, isAvailable, this);
+
+            // Если это левая панель (доступные карты), устанавливаем счетчик вручную
+            if (isAvailable)
+            {
+                slotUI.SetCount(count);
+            }
+            // Для правой панели (колода) убеждаемся, что счетчик скрыт
+            else
+            {
+                slotUI.SetCount(1); // 1 скроет бейджик согласно логике выше
+            }
+        }
+    }
+
+    public void AddCardToDeck(string cardName)
+    {
+        var mgr = PlayerProgressionManager.Instance;
+        var limits = mgr.GetDeckLimits();
+
+        // Проверки лимитов
+        if (_localDeck.Count >= limits.maxTotal) return;
+
+        Card card = CardM.AllCards.Find(c => c.Name == cardName);
+        if (card != null)
+        {
+            int level = card.minChapterLevel;
+            if (level > 3) level = 3;
+            int currentLevelCount = GetCardLevelCount(_localDeck, level);
+            int limitForLevel = level == 1 ? limits.maxLevel1 : level == 2 ? limits.maxLevel2 : limits.maxLevel3;
+            if (currentLevelCount >= limitForLevel) return;
+        }
+
+        // === ЛОГИКА ПЕРЕНОСА ===
+        if (IsFastGameMode)
+        {
+            if (_fastGameInventory.Contains(cardName))
+            {
+                _fastGameInventory.Remove(cardName); // Убираем одну копию из инвентаря
+                _localDeck.Add(cardName);            // Добавляем в колоду
+            }
+        }
+        else
+        {
+            if (_localAvailable.Contains(cardName))
+            {
+                _localAvailable.Remove(cardName);
+                _localDeck.Add(cardName);
+            }
+        }
+
+        RefreshUI();
+    }
+
+    public void RemoveCardFromDeck(string cardName)
+    {
+        if (_localDeck.Contains(cardName))
+        {
+            _localDeck.Remove(cardName);
+
+            if (IsFastGameMode)
+            {
+                _fastGameInventory.Add(cardName); // Возвращаем в инвентарь
+            }
+            else
+            {
+                _localAvailable.Add(cardName);
+            }
+
+            RefreshUI();
+        }
     }
 
     void ClearContainers()
@@ -169,49 +392,6 @@ public class DeckBuilderUI : MonoBehaviour
         CardM.AllCards.AddRange(db.spells);
     }
 
-    void CreateCardSlot(Card card, Transform container, bool isAvailable)
-    {
-        if (cardSlotPrefab == null || container == null) return;
-        GameObject slot = Instantiate(cardSlotPrefab, container);
-        CardSlotUI slotUI = slot.GetComponent<CardSlotUI>();
-        if (slotUI != null) slotUI.Init(card, isAvailable, this);
-    }
-
-    public void AddCardToDeck(string cardName)
-    {
-        var mgr = PlayerProgressionManager.Instance;
-        var limits = mgr.GetDeckLimits();
-
-        if (mgr.DeckCardNames.Count >= limits.maxTotal) { Debug.Log("[DeckBuilder] Лимит колоды!"); return; }
-
-        Card card = CardM.AllCards.Find(c => c.Name == cardName);
-        if (card != null)
-        {
-            int level = card.minChapterLevel > 3 ? 3 : card.minChapterLevel;
-            int currentLevelCount = GetCardLevelCount(mgr.DeckCardNames, level);
-            int limitForLevel = level == 1 ? limits.maxLevel1 : level == 2 ? limits.maxLevel2 : limits.maxLevel3;
-            if (currentLevelCount >= limitForLevel) { Debug.Log($"[DeckBuilder] Лимит {level} уровня!"); return; }
-        }
-
-        if (mgr.AvailableCards.Contains(cardName))
-        {
-            mgr.AvailableCards.Remove(cardName);
-            mgr.DeckCardNames.Add(cardName);
-            RefreshUI();
-        }
-    }
-
-    public void RemoveCardFromDeck(string cardName)
-    {
-        var mgr = PlayerProgressionManager.Instance;
-        if (mgr != null && mgr.DeckCardNames.Contains(cardName))
-        {
-            mgr.DeckCardNames.Remove(cardName);
-            mgr.AvailableCards.Add(cardName);
-            RefreshUI();
-        }
-    }
-
     int GetCardLevelCount(List<string> deckNames, int targetLevel)
     {
         int count = 0;
@@ -220,7 +400,8 @@ public class DeckBuilderUI : MonoBehaviour
             Card card = CardM.AllCards.Find(c => c.Name == name);
             if (card != null)
             {
-                int lvl = card.minChapterLevel > 3 ? 3 : card.minChapterLevel;
+                int lvl = card.minChapterLevel;
+                if (lvl > 3) lvl = 3;
                 if (lvl == targetLevel) count++;
             }
         }

@@ -79,6 +79,12 @@ public static class StoryMapGenerator
         for (int layer = 1; layer < nodesInChapter; layer++)
         {
             float baseZ = settings.startMaxZ + ((layer - 1) * zStep);
+
+            // === ИЗМЕНЕНИЕ 1: Босс появляется ближе к предыдущим узлам ===
+            if (layer == nodesInChapter - 1)
+            {
+                baseZ -= zStep * 0.35f; // Сдвигаем слой босса на ~35% ближе
+            }
             List<StoryNode> currentLayerNodes = new List<StoryNode>();
             int nodesInLayer = (layer == nodesInChapter - 1) ? 1 : Random.Range(1, settings.maxBranches + 1);
 
@@ -167,9 +173,14 @@ public static class StoryMapGenerator
         StoryNode bossNode = chapter.nodes.Find(n => n.type == StoryNodeType.BOSS);
         if (bossNode != null)
         {
-            float endZ = bossNode.position.z + settings.nodeSpacingZ;
+            // === ИЗМЕНЕНИЕ 2: Награда появляется ближе к боссу и со смещением по X ===
+            float endZ = bossNode.position.z + settings.nodeSpacingZ * 1f; // Чуть ближе, чем раньше
             if (endZ > settings.mapMaxZ - 5f) endZ = settings.mapMaxZ - 5f;
-            float endX = bossNode.position.x;
+
+            // Случайный разброс влево/вправо (в пределах безопасной зоны карты)
+            float randomOffsetX = Random.Range(-25f, 25f);
+            float endX = Mathf.Clamp(bossNode.position.x + randomOffsetX, settings.mapMinX + 15f, settings.mapMaxX - 15f);
+
             float h = MapGenerator3D.GetTerrainHeightAt(endX, endZ);
             Vector3 endPos = new Vector3(endX, h + settings.nodeHeightOffset, endZ);
 

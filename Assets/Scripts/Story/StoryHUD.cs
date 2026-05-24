@@ -31,7 +31,7 @@ public class StoryHUD : MonoBehaviour
 
         if (textHP != null)
         {
-            textHP.text = $"HP: {PlayerProgressionManager.Instance.CurrentHp} / {PlayerProgressionManager.Instance.MaxHp}";
+            textHP.text = $"HP: {PlayerProgressionManager.Instance.MaxHp}";
         }
 
         if (textGold != null)

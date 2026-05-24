@@ -205,9 +205,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: MainMenuManager, Assembly-CSharp
-        m_MethodName: CloseDeckBuilder
+      - m_Target: {fileID: 1360372711}
+        m_TargetAssemblyTypeName: DeckBuilderUI, Assembly-CSharp
+        m_MethodName: CancelDeckBuilding
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -3159,7 +3159,7 @@ MonoBehaviour:
   collectionProgressText: {fileID: 917114831}
   cardSlotPrefab: {fileID: 503108305495398454, guid: 988074844d30e174b8a705e615a118e9,
     type: 3}
-  closeButton: {fileID: 111390969}
+  confirmButton: {fileID: 1891310681}
   totalDeckText: {fileID: 1929797482}
   level1DeckText: {fileID: 355790438}
   level2DeckText: {fileID: 1610838250}

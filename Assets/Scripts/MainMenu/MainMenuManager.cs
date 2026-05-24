@@ -8,6 +8,7 @@ public class MainMenuManager : MonoBehaviour
     public GameObject settingsPanel;
     public GameObject deckBuilderPanel;  // ← Ссылка на GameObject панели (как settingsPanel)
     public GameObject continueButtonObject;
+    public GameObject fastGameSettingsPanel;
 
     private void Start()
     {
@@ -102,9 +103,15 @@ public class MainMenuManager : MonoBehaviour
 
     public void StartQuickGame()
     {
-        TempData.IsStoryMode = false;
-        TempData.CurrentEnemy = null;
-        SceneManager.LoadScene("CardGame");
+        mainMenuPanel.SetActive(false);
+        if (fastGameSettingsPanel != null)
+        {
+            fastGameSettingsPanel.SetActive(true);
+        }
+        else
+        {
+            Debug.LogError("FastGameSettingsPanel не назначен в MainMenuManager!");
+        }
     }
 
     public void OpenSettings()

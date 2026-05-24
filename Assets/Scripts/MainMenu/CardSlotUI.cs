@@ -13,7 +13,7 @@ public class CardSlotUI : MonoBehaviour
     public TextMeshProUGUI countText;
 
     [Header("Count UI")]
-    public GameObject countCircle; // <-- Добавьте сюда ссылку на кружок из префаба
+    public GameObject countCircle; // Кружок с количеством
 
     [Header("Buttons")]
     public Button actionButton;
@@ -32,10 +32,36 @@ public class CardSlotUI : MonoBehaviour
         LoadCardData();
         SetupButton();
 
-        // Включаем кружок только для карт в списке "Доступные"
+        // По умолчанию включаем кружок только для панели "Доступные"
         if (countCircle != null)
         {
             countCircle.SetActive(isAvailable);
+        }
+
+        // Для правой панели (колода) кружок не нужен
+        if (!isAvailable && countCircle != null)
+        {
+            countCircle.SetActive(false);
+        }
+    }
+
+    // === НОВЫЙ МЕТОД ДЛЯ УПРАВЛЕНИЯ КОЛИЧЕСТВОМ ===
+    public void SetCount(int count)
+    {
+        if (countText != null && countCircle != null)
+        {
+            if (count > 1)
+            {
+                countCircle.SetActive(true);
+                countText.text = "x" + count.ToString();
+                countText.gameObject.SetActive(true);
+            }
+            else
+            {
+                // Если карта одна или её нет, полностью скрываем бейджик и текст
+                countCircle.SetActive(false);
+                countText.gameObject.SetActive(false);
+            }
         }
     }
 
@@ -80,16 +106,19 @@ public class CardSlotUI : MonoBehaviour
             }
         }
 
-        // Показываем текст количества только для доступных карт
+        // СТАРАЯ ЛОГИКА ДЛЯ СЮЖЕТНОГО РЕЖИМА (оставляем как фоллбэк)
+        // Но в быстрой игре мы будем перезаписывать это через SetCount()
         if (countText != null && isAvailable && PlayerProgressionManager.Instance != null)
         {
             int count = PlayerProgressionManager.Instance.GetAvailableCount(cardData.Name);
-            countText.text = $"x{count}";
-            countText.gameObject.SetActive(count > 0);
-        }
-        else if (countText != null)
-        {
-            countText.gameObject.SetActive(false);
+
+            // Если мы НЕ в быстрой игре, используем стандартную логику
+            if (!TempData.IsSettingUpFastGame)
+            {
+                countText.text = $"x{count}";
+                countText.gameObject.SetActive(count > 1); // Показываем только если > 1
+                if (countCircle != null) countCircle.SetActive(count > 1);
+            }
         }
     }
 

@@ -21,33 +21,47 @@ public class Game
         Enemy = new Player();
     }
 
-    // НОВЫЙ Конструктор для боя с конкретным врагом (из карты сюжета)
     public Game(EnemyData enemyData)
     {
-        // 1. ВРАГ (без изменений)
+        // 1. ВРАГ
         Enemy = new Player();
         Enemy.HP = enemyData.enemyHP;
         EnemyDeck = GenerateDeckFromList(enemyData.enemyDeck);
 
-        // 2. ИГРОК (БЕРЕМ ДАННЫЕ ИЗ PROGRESSION MANAGER)
+        // 2. ИГРОК
         Player = new Player();
 
-        if (PlayerProgressionManager.Instance != null)
+        // === ПРОВЕРКА РЕЖИМА БЫСТРОЙ ИГРЫ ===
+        if (TempData.IsSettingUpFastGame || !TempData.IsStoryMode)
         {
-            // Берем текущее макс. ХП (оно уже полное благодаря PrepareForBattle, но ставим явно)
-            Player.MaxHP = PlayerProgressionManager.Instance.MaxHp;
-            Player.HP = PlayerProgressionManager.Instance.CurrentHp;
+            // РЕЖИМ БЫСТРОЙ ИГРЫ
+            Player.MaxHP = 30; // Или берите из настроек сложности
+            Player.HP = Player.MaxHP;
 
-            // Генерируем колоду из сохраненного списка имен
-            PlayerDeck = GenerateDeckFromList(PlayerProgressionManager.Instance.DeckCardNames);
-
-            Debug.Log($"[Game] Колода игрока загружена из прогресса ({PlayerDeck.Count} карт). HP: {Player.HP}/{Player.MaxHP}");
+            if (TempData.FastGameDeck != null && TempData.FastGameDeck.Count > 0)
+            {
+                PlayerDeck = GenerateDeckFromList(TempData.FastGameDeck);
+                Debug.Log($"[Game] Быстрая игра. Колода игрока из TempData: {PlayerDeck.Count} карт.");
+            }
+            else
+            {
+                // Фоллбэк на случайную, если TempData пуста (ошибка логики)
+                PlayerDeck = GiveRandomDeck();
+            }
         }
         else
         {
-            // Фоллбэк на рандом, если менеджер не найден (ошибка)
-            PlayerDeck = GiveRandomDeck();
-            Debug.LogError("[Game] PlayerProgressionManager не найден! Генерируем случайную колоду.");
+            // СЮЖЕТНЫЙ РЕЖИМ
+            if (PlayerProgressionManager.Instance != null)
+            {
+                Player.MaxHP = PlayerProgressionManager.Instance.MaxHp;
+                Player.HP = PlayerProgressionManager.Instance.CurrentHp;
+                PlayerDeck = GenerateDeckFromList(PlayerProgressionManager.Instance.DeckCardNames);
+            }
+            else
+            {
+                PlayerDeck = GiveRandomDeck();
+            }
         }
     }
 

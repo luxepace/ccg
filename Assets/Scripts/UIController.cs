@@ -172,8 +172,11 @@ public class UIController : MonoBehaviour
     void RestartQuickGame()
     {
         Time.timeScale = 1f;
-        // Сброс врага для новой случайной генерации
-        TempData.CurrentEnemy = null;
+
+        // НЕ очищаем TempData.CurrentEnemy, чтобы сохранить того же врага
+        // TempData.CurrentEnemy = null;  <-- УДАЛИТЬ ЭТУ СТРОКУ
+
+        // Просто перезагружаем сцену
         SceneManager.LoadScene("CardGame");
     }
 
