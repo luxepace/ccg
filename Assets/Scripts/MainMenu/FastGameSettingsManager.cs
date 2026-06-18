@@ -1,4 +1,4 @@
-using UnityEngine;
+п»їusing UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
@@ -8,14 +8,14 @@ using UnityEngine.SceneManagement;
 public class FastGameSettingsManager : MonoBehaviour
 {
     [Header("UI References")]
-    public TMP_Dropdown difficultyDropdown; // Низкая, Средняя, Высокая сложность
-    public TMP_Dropdown aiModeDropdown;     // Сбалансированный, Атака, Защита
-    public TMP_Dropdown enemyDeckDropdown;  // Случайный, Конкретные колоды
+    public TMP_Dropdown difficultyDropdown; // РќРёР·РєР°СЏ, РЎСЂРµРґРЅСЏСЏ, Р’С‹СЃРѕРєР°СЏ СЃР»РѕР¶РЅРѕСЃС‚СЊ
+    public TMP_Dropdown aiModeDropdown;     // РЎР±Р°Р»Р°РЅСЃРёСЂРѕРІР°РЅРЅС‹Р№, РђС‚Р°РєР°, Р—Р°С‰РёС‚Р°
+    public TMP_Dropdown enemyDeckDropdown;  // РЎР»СѓС‡Р°Р№РЅС‹Р№, РљРѕРЅРєСЂРµС‚РЅС‹Рµ РєРѕР»РѕРґС‹
     public Button playButton;
     public Button backButton;
 
     [Header("Settings")]
-    public int minDeckSizeForFastGame = 5; // Минимальный размер колоды для быстрой игры
+    public int minDeckSizeForFastGame = 5; // РњРёРЅРёРјР°Р»СЊРЅС‹Р№ СЂР°Р·РјРµСЂ РєРѕР»РѕРґС‹ РґР»СЏ Р±С‹СЃС‚СЂРѕР№ РёРіСЂС‹
 
     public void Start()
     {
@@ -25,7 +25,7 @@ public class FastGameSettingsManager : MonoBehaviour
 
         if (playButton != null)
         {
-            // Кнопка "Играть" теперь открывает редактор колоды
+            // РљРЅРѕРїРєР° "РРіСЂР°С‚СЊ" С‚РµРїРµСЂСЊ РѕС‚РєСЂС‹РІР°РµС‚ СЂРµРґР°РєС‚РѕСЂ РєРѕР»РѕРґС‹
             playButton.onClick.AddListener(OnOpenDeckBuilder);
         }
 
@@ -36,7 +36,7 @@ public class FastGameSettingsManager : MonoBehaviour
     void InitializeDifficultyDropdown()
     {
         if (difficultyDropdown == null) return;
-        List<string> options = new List<string> { "Низкая (Глава 1)", "Средняя (Глава 2)", "Высокая (Глава 3)" };
+        List<string> options = new List<string> { "РќРёР·РєР°СЏ (Р“Р»Р°РІР° 1)", "РЎСЂРµРґРЅСЏСЏ (Р“Р»Р°РІР° 2)", "Р’С‹СЃРѕРєР°СЏ (Р“Р»Р°РІР° 3)" };
         difficultyDropdown.ClearOptions();
         difficultyDropdown.AddOptions(options);
     }
@@ -44,23 +44,23 @@ public class FastGameSettingsManager : MonoBehaviour
     void InitializeAiModeDropdown()
     {
         if (aiModeDropdown == null) return;
-        List<string> options = new List<string> { "Сбалансированный", "Атакующий", "Защитный" };
+        List<string> options = new List<string> { "РЎР±Р°Р»Р°РЅСЃРёСЂРѕРІР°РЅРЅС‹Р№", "РђС‚Р°РєСѓСЋС‰РёР№", "Р—Р°С‰РёС‚РЅС‹Р№" };
         aiModeDropdown.ClearOptions();
         aiModeDropdown.AddOptions(options);
     }
 
-    // В файле FastGameSettingsManager.cs
+    // Р’ С„Р°Р№Р»Рµ FastGameSettingsManager.cs
 
     void InitializeEnemyDeckDropdown()
     {
         if (enemyDeckDropdown == null) return;
 
-        List<string> options = new List<string> { "Случайный враг" };
+        List<string> options = new List<string> { "РЎР»СѓС‡Р°Р№РЅС‹Р№ РІСЂР°Рі" };
 
-        // === ИСПРАВЛЕНИЕ: Принудительная загрузка контента, если он еще не готов ===
+        // === РРЎРџР РђР’Р›Р•РќРР•: РџСЂРёРЅСѓРґРёС‚РµР»СЊРЅР°СЏ Р·Р°РіСЂСѓР·РєР° РєРѕРЅС‚РµРЅС‚Р°, РµСЃР»Рё РѕРЅ РµС‰Рµ РЅРµ РіРѕС‚РѕРІ ===
         if (!StoryContentLoader.IsLoaded)
         {
-            Debug.Log("[FastGame] Контент не загружен. Загружаем...");
+            Debug.Log("[FastGame] РљРѕРЅС‚РµРЅС‚ РЅРµ Р·Р°РіСЂСѓР¶РµРЅ. Р—Р°РіСЂСѓР¶Р°РµРј...");
             StoryContentLoader.LoadAllContent();
         }
 
@@ -68,42 +68,42 @@ public class FastGameSettingsManager : MonoBehaviour
         {
             foreach (var enemy in StoryContentLoader.AllEnemies)
             {
-                // Добавляем пометку [БОСС] для удобства
-                string label = enemy.isBoss ? $"[БОСС] {enemy.enemyName}" : enemy.enemyName;
+                // Р”РѕР±Р°РІР»СЏРµРј РїРѕРјРµС‚РєСѓ [Р‘РћРЎРЎ] РґР»СЏ СѓРґРѕР±СЃС‚РІР°
+                string label = enemy.isBoss ? $"[Р‘РћРЎРЎ] {enemy.enemyName}" : enemy.enemyName;
                 options.Add(label);
             }
-            Debug.Log($"[FastGame] Загружено {StoryContentLoader.AllEnemies.Count} врагов в dropdown.");
+            Debug.Log($"[FastGame] Р—Р°РіСЂСѓР¶РµРЅРѕ {StoryContentLoader.AllEnemies.Count} РІСЂР°РіРѕРІ РІ dropdown.");
         }
         else
         {
-            Debug.LogError("[FastGame] ОШИБКА: Список врагов пуст даже после загрузки! Проверьте enemies.json в StreamingAssets.");
-            options.Add("Ошибка загрузки");
+            Debug.LogError("[FastGame] РћРЁРР‘РљРђ: РЎРїРёСЃРѕРє РІСЂР°РіРѕРІ РїСѓСЃС‚ РґР°Р¶Рµ РїРѕСЃР»Рµ Р·Р°РіСЂСѓР·РєРё! РџСЂРѕРІРµСЂСЊС‚Рµ enemies.json РІ StreamingAssets.");
+            options.Add("РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё");
         }
 
         enemyDeckDropdown.ClearOptions();
         enemyDeckDropdown.AddOptions(options);
     }
 
-    // В файле FastGameSettingsManager.cs
+    // Р’ С„Р°Р№Р»Рµ FastGameSettingsManager.cs
 
-    // В файле FastGameSettingsManager.cs
+    // Р’ С„Р°Р№Р»Рµ FastGameSettingsManager.cs
 
     public void OnOpenDeckBuilder()
     {
-        // 1. СНАЧАЛА сохраняем настройки и СТАВИМ ФЛАГ
+        // 1. РЎРќРђР§РђР›Рђ СЃРѕС…СЂР°РЅСЏРµРј РЅР°СЃС‚СЂРѕР№РєРё Рё РЎРўРђР’РРњ Р¤Р›РђР“
         SaveSettingsToTempData();
 
-        Debug.Log($"[FastGame] Перед установкой: TempData.IsSettingUpFastGame = {TempData.IsSettingUpFastGame}");
+        Debug.Log($"[FastGame] РџРµСЂРµРґ СѓСЃС‚Р°РЅРѕРІРєРѕР№: TempData.IsSettingUpFastGame = {TempData.IsSettingUpFastGame}");
         TempData.IsSettingUpFastGame = true;
-        Debug.Log($"[FastGame] После установки: TempData.IsSettingUpFastGame = {TempData.IsSettingUpFastGame}");
+        Debug.Log($"[FastGame] РџРѕСЃР»Рµ СѓСЃС‚Р°РЅРѕРІРєРё: TempData.IsSettingUpFastGame = {TempData.IsSettingUpFastGame}");
 
-        Debug.Log($"[FastGame] Флаг IsSettingUpFastGame установлен: {TempData.IsSettingUpFastGame}");
+        Debug.Log($"[FastGame] Р¤Р»Р°Рі IsSettingUpFastGame СѓСЃС‚Р°РЅРѕРІР»РµРЅ: {TempData.IsSettingUpFastGame}");
 
-        // 2. Инициализируем временную колоду, если она пуста
+        // 2. РРЅРёС†РёР°Р»РёР·РёСЂСѓРµРј РІСЂРµРјРµРЅРЅСѓСЋ РєРѕР»РѕРґСѓ, РµСЃР»Рё РѕРЅР° РїСѓСЃС‚Р°
         if (TempData.FastGameDeck == null)
         {
             TempData.FastGameDeck = new List<string>();
-            // Можно скопировать текущую колоду игрока для удобства
+            // РњРѕР¶РЅРѕ СЃРєРѕРїРёСЂРѕРІР°С‚СЊ С‚РµРєСѓС‰СѓСЋ РєРѕР»РѕРґСѓ РёРіСЂРѕРєР° РґР»СЏ СѓРґРѕР±СЃС‚РІР°
             if (PlayerProgressionManager.Instance != null)
             {
                 foreach (var card in PlayerProgressionManager.Instance.DeckCardNames)
@@ -114,9 +114,9 @@ public class FastGameSettingsManager : MonoBehaviour
             }
         }
 
-        Debug.Log("[FastGame] Переход к сборке колоды для быстрой игры.");
+        Debug.Log("[FastGame] РџРµСЂРµС…РѕРґ Рє СЃР±РѕСЂРєРµ РєРѕР»РѕРґС‹ РґР»СЏ Р±С‹СЃС‚СЂРѕР№ РёРіСЂС‹.");
 
-        // 3. ТОЛЬКО ПОСЛЕ ЭТОГО открываем панель
+        // 3. РўРћР›Р¬РљРћ РџРћРЎР›Р• Р­РўРћР“Рћ РѕС‚РєСЂС‹РІР°РµРј РїР°РЅРµР»СЊ
         MainMenuManager mainMenu = FindObjectOfType<MainMenuManager>();
         if (mainMenu != null)
         {
@@ -124,17 +124,17 @@ public class FastGameSettingsManager : MonoBehaviour
         }
     }
 
-    // 2. Этот метод вызывается из DeckBuilderUI после подтверждения колоды
+    // 2. Р­С‚РѕС‚ РјРµС‚РѕРґ РІС‹Р·С‹РІР°РµС‚СЃСЏ РёР· DeckBuilderUI РїРѕСЃР»Рµ РїРѕРґС‚РІРµСЂР¶РґРµРЅРёСЏ РєРѕР»РѕРґС‹
     public void StartFastBattle()
     {
-        // Проверка на минимальный размер колоды
+        // РџСЂРѕРІРµСЂРєР° РЅР° РјРёРЅРёРјР°Р»СЊРЅС‹Р№ СЂР°Р·РјРµСЂ РєРѕР»РѕРґС‹
         if (TempData.FastGameDeck == null || TempData.FastGameDeck.Count < 5)
         {
-            Debug.LogError("[FastGame] Ошибка: Колода слишком маленькая или пуста!");
+            Debug.LogError("[FastGame] РћС€РёР±РєР°: РљРѕР»РѕРґР° СЃР»РёС€РєРѕРј РјР°Р»РµРЅСЊРєР°СЏ РёР»Рё РїСѓСЃС‚Р°!");
             return;
         }
 
-        // Если враг не выбран (случайный), выбираем его сейчас
+        // Р•СЃР»Рё РІСЂР°Рі РЅРµ РІС‹Р±СЂР°РЅ (СЃР»СѓС‡Р°Р№РЅС‹Р№), РІС‹Р±РёСЂР°РµРј РµРіРѕ СЃРµР№С‡Р°СЃ
         if (TempData.CurrentEnemy == null && StoryContentLoader.AllEnemies != null && StoryContentLoader.AllEnemies.Count > 0)
         {
             TempData.CurrentEnemy = StoryContentLoader.AllEnemies[Random.Range(0, StoryContentLoader.AllEnemies.Count)];
@@ -142,21 +142,21 @@ public class FastGameSettingsManager : MonoBehaviour
 
         if (TempData.CurrentEnemy == null)
         {
-            Debug.LogError("[FastGame] Ошибка: Не удалось выбрать врага!");
+            Debug.LogError("[FastGame] РћС€РёР±РєР°: РќРµ СѓРґР°Р»РѕСЃСЊ РІС‹Р±СЂР°С‚СЊ РІСЂР°РіР°!");
             return;
         }
 
         TempData.IsStoryMode = false;
-        TempData.IsSettingUpFastGame = false; // Сбрасываем флаг, так как настройка завершена
+        TempData.IsSettingUpFastGame = false; // РЎР±СЂР°СЃС‹РІР°РµРј С„Р»Р°Рі, С‚Р°Рє РєР°Рє РЅР°СЃС‚СЂРѕР№РєР° Р·Р°РІРµСЂС€РµРЅР°
 
-        Debug.Log($"[FastGame] Запуск боя против: {TempData.CurrentEnemy.enemyName}");
+        Debug.Log($"[FastGame] Р—Р°РїСѓСЃРє Р±РѕСЏ РїСЂРѕС‚РёРІ: {TempData.CurrentEnemy.enemyName}");
         SceneManager.LoadScene("CardGame");
     }
 
-    // Вспомогательный метод сохранения настроек из Dropdown'ов
+    // Р’СЃРїРѕРјРѕРіР°С‚РµР»СЊРЅС‹Р№ РјРµС‚РѕРґ СЃРѕС…СЂР°РЅРµРЅРёСЏ РЅР°СЃС‚СЂРѕРµРє РёР· Dropdown'РѕРІ
     private void SaveSettingsToTempData()
     {
-        // Режим ИИ
+        // Р РµР¶РёРј РР
         switch (aiModeDropdown.value)
         {
             case 0: TempData.FastGameAiMode = AISourceData.AIMode.Balanced; break;
@@ -164,11 +164,11 @@ public class FastGameSettingsManager : MonoBehaviour
             case 2: TempData.FastGameAiMode = AISourceData.AIMode.Defend; break;
         }
 
-        // Выбор врага
+        // Р’С‹Р±РѕСЂ РІСЂР°РіР°
         int enemyIndex = enemyDeckDropdown.value;
         if (enemyIndex == 0)
         {
-            TempData.CurrentEnemy = null; // Null означает "Случайный"
+            TempData.CurrentEnemy = null; // Null РѕР·РЅР°С‡Р°РµС‚ "РЎР»СѓС‡Р°Р№РЅС‹Р№"
         }
         else
         {
@@ -181,7 +181,7 @@ public class FastGameSettingsManager : MonoBehaviour
 
     EnemyData GetSelectedEnemyData()
     {
-        // Дополнительная проверка загрузки перед выбором
+        // Р”РѕРїРѕР»РЅРёС‚РµР»СЊРЅР°СЏ РїСЂРѕРІРµСЂРєР° Р·Р°РіСЂСѓР·РєРё РїРµСЂРµРґ РІС‹Р±РѕСЂРѕРј
         if (!StoryContentLoader.IsLoaded)
         {
             StoryContentLoader.LoadAllContent();
@@ -189,21 +189,21 @@ public class FastGameSettingsManager : MonoBehaviour
 
         if (StoryContentLoader.AllEnemies == null || StoryContentLoader.AllEnemies.Count == 0)
         {
-            Debug.LogError("[FastGame] AllEnemies пуст!");
+            Debug.LogError("[FastGame] AllEnemies РїСѓСЃС‚!");
             return null;
         }
 
         int index = enemyDeckDropdown.value;
 
-        // Если выбран "Случайный враг" (индекс 0)
+        // Р•СЃР»Рё РІС‹Р±СЂР°РЅ "РЎР»СѓС‡Р°Р№РЅС‹Р№ РІСЂР°Рі" (РёРЅРґРµРєСЃ 0)
         if (index == 0)
         {
             return StoryContentLoader.AllEnemies[Random.Range(0, StoryContentLoader.AllEnemies.Count)];
         }
         else
         {
-            // Иначе берем конкретного врага. 
-            // Минус 1, так как первый элемент в списке - "Случайный враг"
+            // РРЅР°С‡Рµ Р±РµСЂРµРј РєРѕРЅРєСЂРµС‚РЅРѕРіРѕ РІСЂР°РіР°. 
+            // РњРёРЅСѓСЃ 1, С‚Р°Рє РєР°Рє РїРµСЂРІС‹Р№ СЌР»РµРјРµРЅС‚ РІ СЃРїРёСЃРєРµ - "РЎР»СѓС‡Р°Р№РЅС‹Р№ РІСЂР°Рі"
             int enemyIndex = index - 1;
 
             if (enemyIndex >= 0 && enemyIndex < StoryContentLoader.AllEnemies.Count)
@@ -229,33 +229,33 @@ public class FastGameSettingsManager : MonoBehaviour
     {
         if (PlayerProgressionManager.Instance == null) return;
 
-        var limits = PlayerProgressionManager.Instance.GetDeckLimits(difficulty + 1); // +1 т.к. главы начинаются с 1
+        var limits = PlayerProgressionManager.Instance.GetDeckLimits(difficulty + 1); // +1 С‚.Рє. РіР»Р°РІС‹ РЅР°С‡РёРЅР°СЋС‚СЃСЏ СЃ 1
 
         List<string> currentDeck = PlayerProgressionManager.Instance.DeckCardNames;
         List<string> availablePool = PlayerProgressionManager.Instance.AvailableCards;
 
-        // Простая логика: если колода превышает лимиты, удаляем лишние карты случайным образом
-        // В идеале тут должна быть более умная логика удаления (например, сначала дорогие, потом дубликаты)
+        // РџСЂРѕСЃС‚Р°СЏ Р»РѕРіРёРєР°: РµСЃР»Рё РєРѕР»РѕРґР° РїСЂРµРІС‹С€Р°РµС‚ Р»РёРјРёС‚С‹, СѓРґР°Р»СЏРµРј Р»РёС€РЅРёРµ РєР°СЂС‚С‹ СЃР»СѓС‡Р°Р№РЅС‹Рј РѕР±СЂР°Р·РѕРј
+        // Р’ РёРґРµР°Р»Рµ С‚СѓС‚ РґРѕР»Р¶РЅР° Р±С‹С‚СЊ Р±РѕР»РµРµ СѓРјРЅР°СЏ Р»РѕРіРёРєР° СѓРґР°Р»РµРЅРёСЏ (РЅР°РїСЂРёРјРµСЂ, СЃРЅР°С‡Р°Р»Р° РґРѕСЂРѕРіРёРµ, РїРѕС‚РѕРј РґСѓР±Р»РёРєР°С‚С‹)
 
         bool changed = false;
 
-        // Проверка общего лимита
+        // РџСЂРѕРІРµСЂРєР° РѕР±С‰РµРіРѕ Р»РёРјРёС‚Р°
         while (currentDeck.Count > limits.maxTotal && currentDeck.Count > 0)
         {
             string cardToRemove = currentDeck[Random.Range(0, currentDeck.Count)];
             currentDeck.Remove(cardToRemove);
-            // Возвращаем карту в пул доступных, чтобы она не потерялась
+            // Р’РѕР·РІСЂР°С‰Р°РµРј РєР°СЂС‚Сѓ РІ РїСѓР» РґРѕСЃС‚СѓРїРЅС‹С…, С‡С‚РѕР±С‹ РѕРЅР° РЅРµ РїРѕС‚РµСЂСЏР»Р°СЃСЊ
             availablePool.Add(cardToRemove);
             changed = true;
         }
 
-        // Здесь можно добавить проверки по уровням карт (maxLevel1, maxLevel2...) аналогично общему лимиту
-        // Для простоты пока оставим только общий лимит.
+        // Р—РґРµСЃСЊ РјРѕР¶РЅРѕ РґРѕР±Р°РІРёС‚СЊ РїСЂРѕРІРµСЂРєРё РїРѕ СѓСЂРѕРІРЅСЏРј РєР°СЂС‚ (maxLevel1, maxLevel2...) Р°РЅР°Р»РѕРіРёС‡РЅРѕ РѕР±С‰РµРјСѓ Р»РёРјРёС‚Сѓ
+        // Р”Р»СЏ РїСЂРѕСЃС‚РѕС‚С‹ РїРѕРєР° РѕСЃС‚Р°РІРёРј С‚РѕР»СЊРєРѕ РѕР±С‰РёР№ Р»РёРјРёС‚.
 
         if (changed)
         {
             PlayerProgressionManager.Instance.SetDeckFromBuilder(currentDeck);
-            Debug.Log("[FastGame] Колода игрока ограничена под выбранную сложность.");
+            Debug.Log("[FastGame] РљРѕР»РѕРґР° РёРіСЂРѕРєР° РѕРіСЂР°РЅРёС‡РµРЅР° РїРѕРґ РІС‹Р±СЂР°РЅРЅСѓСЋ СЃР»РѕР¶РЅРѕСЃС‚СЊ.");
         }
     }
 

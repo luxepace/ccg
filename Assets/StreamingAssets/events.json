@@ -59,6 +59,74 @@
       ]
     },
 	{
+  "id": "spirit_ritual",
+  "title": "Испытание Духа Леса",
+  "steps": [
+    {
+      "type": 0,
+      "speaker": "Старейшина",
+      "text": "Злой дух заблудился в наших лесах. Поймай его три раза, чтобы успокоить, иначе он проклянет тебя!",
+      "backgroundSpriteName": "forest_day",
+          "frameSpriteName": "wood_frame",
+      "portraitSpriteName": "merchant_smile",
+      "choices": []
+    },
+    {
+      "type": 6,
+      "text": "Кликай по духу, пока не истекло время!",
+	  "backgroundSpriteName": "forest_day",
+          "frameSpriteName": "wood_frame",
+      "minigamePrefabName": "CatchSpirit_Panel",
+      "choices": []
+    },
+    {
+      "type": 1,
+	  "speaker": "Старейшина",
+      "text": "Ты справился! Дух благодарит тебя и дарует благословение.",
+	  "backgroundSpriteName": "forest_day",
+          "frameSpriteName": "wood_frame",
+      "reward": {
+        "gold": 10,
+        "healAmount": 5,
+        "cardNames": ["Шепот Вирявы"],
+        "bonusTypes": []
+      },
+	  "portraitSpriteName": "merchant_smile",
+      "choices": [
+        { "choiceText": "Спасибо!", "nextStepIndex": 4 }
+      ]
+    },
+    {
+      "type": 1,
+	  "speaker": "Старейшина",
+      "text": "Дух разозлился и укусил тебя. Ты чувствуешь слабость...",
+	  "backgroundSpriteName": "forest_day",
+          "frameSpriteName": "wood_frame",
+      "reward": {
+        "gold": 0,
+        "healAmount": -5,
+        "cardNames": [],
+        "bonusTypes": []
+      },
+	  "portraitSpriteName": "merchant_smile",
+      "choices": [
+        { "choiceText": "Больно...", "nextStepIndex": 4 }
+      ]
+    },
+    {
+      "type": 0,
+	  "speaker": "Старейшина",
+      "text": "Путь свободен.",
+	  "backgroundSpriteName": "forest_day",
+          "frameSpriteName": "wood_frame",
+      "buttonText": "Идти дальше",
+	  "portraitSpriteName": "merchant_smile",
+      "isFinal": true,
+      "choices": []
+    }
+  ]
+},
+	{
   "id": "rest_event",
   "title": "Привал",
   "steps": [

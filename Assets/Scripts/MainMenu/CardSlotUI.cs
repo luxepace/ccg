@@ -5,7 +5,7 @@ using TMPro;
 public class CardSlotUI : MonoBehaviour
 {
     [Header("UI References")]
-    public Image cardImage;
+    public Image cardImage, AttackBack, DefenceBack;
     public TextMeshProUGUI cardNameText;
     public TextMeshProUGUI manaCostText;
     public TextMeshProUGUI attackText;
@@ -90,7 +90,9 @@ public class CardSlotUI : MonoBehaviour
         if (cardData.IsSpell)
         {
             if (attackText != null) attackText.gameObject.SetActive(false);
+            if (attackText != null) AttackBack.gameObject.SetActive(false);
             if (defenseText != null) defenseText.gameObject.SetActive(false);
+            if (defenseText != null) DefenceBack.gameObject.SetActive(false);
         }
         else
         {

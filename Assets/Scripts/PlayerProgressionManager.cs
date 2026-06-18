@@ -68,56 +68,85 @@ public class PlayerProgressionManager : MonoBehaviour
     {
         Debug.Log("[Progression] Старт новой игры...");
 
-        // Сброс прогресса
+        // 1. СБРОС ТЕКУЩЕГО ЗАБЕГА
         CurrentChapter = 1;
         MaxHp = StartingMaxHp;
         CurrentHp = MaxHp;
         Gold = 0;
 
-        // 1. ВСЕ карты из текущей колоды возвращаем в доступные
+        // 2. ВОЗВРАТ КАРТ ИЗ КОЛОДЫ В ОБЩИЙ ПУЛ (Для повторных запусков)
         foreach (var cardName in DeckCardNames)
         {
             AvailableCards.Add(cardName);
         }
-
-        // 2. Очищаем колоду
         DeckCardNames.Clear();
 
-        // 3. Формируем стартовую колоду из DefaultStarterDeck
-        List<string> starterCards = (chosenDeck != null && chosenDeck.Count > 0)
-            ? chosenDeck
-            : DefaultStarterDeck;
+        List<string> starterCards = new List<string>();
 
-        foreach (var card in starterCards)
+        if (chosenDeck != null && chosenDeck.Count > 0)
         {
-            // Добавляем карту в коллекцию (если это новая карта)
-            if (!UnlockedCards.Contains(card))
-            {
-                UnlockedCards.Add(card);
-                Debug.Log($"[Collection] Открыта новая карта: {card}");
-            }
+            // Если передана кастомная колода (например, из быстрой игры), используем её
+            starterCards = chosenDeck;
+        }
+        else
+        {
+            // === ПРОВЕРКА НА ПЕРВЫЙ ЗАПУСК ===
+            bool isFirstLaunch = (UnlockedCards.Count == 0);
 
-            // 4. Ищем карту в доступных
-            int index = AvailableCards.IndexOf(card);
-
-            if (index >= 0)
+            if (isFirstLaunch)
             {
-                // Карта найдена - убираем из доступных и добавляем в колоду
-                AvailableCards.RemoveAt(index);
-                DeckCardNames.Add(card);
-                Debug.Log($"[Deck] {card} взята из доступных");
+                Debug.Log("[Progression] Первый запуск! Генерируем стартовую колоду.");
+
+                // Убедимся, что база карт загружена
+                if (CardM.AllCards == null || CardM.AllCards.Count == 0)
+                {
+                    Debug.LogWarning("[Progression] База карт пуста! Попытка принудительной загрузки...");
+                    CardDatabase db = ScriptableObject.CreateInstance<CardDatabase>();
+                    db.LoadFromJSON("cards.json");
+                    CardM.AllCards = new List<Card>(db.fieldCards);
+                    CardM.AllCards.AddRange(db.spells);
+                }
+
+                foreach (var card in CardM.AllCards)
+                {
+                    if (card.isBaseCard)
+                    {
+                        int copiesToAdd = (card.Manacost <= 2) ? 2 : 1;
+
+                        for (int i = 0; i < copiesToAdd; i++)
+                        {
+                            // ВАЖНО: Добавляем ТОЛЬКО в колоду и коллекцию.
+                            // В AvailableCards НЕ добавляем, чтобы избежать дублей.
+                            starterCards.Add(card.Name);
+
+                            if (!UnlockedCards.Contains(card.Name))
+                            {
+                                UnlockedCards.Add(card.Name);
+                            }
+                        }
+                    }
+                }
             }
             else
             {
-                // Карта не найдена (первый запуск или нехватка копий) - просто добавляем в колоду
-                DeckCardNames.Add(card);
-                Debug.Log($"[Deck] {card} добавлена в колоду (новая/первый запуск)");
+                // Повторный запуск: Колода остается пустой.
+                // Игрок должен собрать её сам через редактор колоды.
+                Debug.Log($"[Progression] Повторный запуск. В пуле доступно {AvailableCards.Count} карт.");
             }
         }
 
+        // Заполняем колоду сформированными картами
+        foreach (var cardName in starterCards)
+        {
+            // Для первого запуска карты идут напрямую в колоду.
+            // Для повторного запуска (если бы мы делали авто-сборку) нужно было бы проверять AvailableCards.
+            // Но так как мы решили не давать стартовые карты повторно, просто добавляем.
+            DeckCardNames.Add(cardName);
+        }
+
         Debug.Log($"[Progression] Колода сформирована: {DeckCardNames.Count} карт");
-        Debug.Log($"[Progression] Доступно карт: {AvailableCards.Count}");
-        Debug.Log($"[Progression] Открыто карт: {UnlockedCards.Count}");
+        Debug.Log($"[Progression] Доступно карт (пул): {AvailableCards.Count}");
+        Debug.Log($"[Progression] Открыто карт (коллекция): {UnlockedCards.Count}");
 
         SaveProgress();
         BattleStats.ClearHistory();
@@ -136,8 +165,18 @@ public class PlayerProgressionManager : MonoBehaviour
         bool changed = false;
 
         if (goldChange != 0) { Gold += goldChange; if (Gold < 0) Gold = 0; changed = true; }
-        if (maxHpChange != 0) { MaxHp += maxHpChange; if (MaxHp < 1) MaxHp = 1; changed = true; }
-        if (healAmount != 0) { CurrentHp += healAmount; CurrentHp = Mathf.Clamp(CurrentHp, 0, MaxHp); changed = true; }
+        int totalMaxHpChange = maxHpChange + healAmount;
+
+        if (totalMaxHpChange != 0)
+        {
+            MaxHp += totalMaxHpChange;
+            if (MaxHp < 1) MaxHp = 1;
+
+            // Также восстанавливаем текущее HP до нового максимума, чтобы не было ситуации HP < MaxHP
+            CurrentHp = MaxHp;
+
+            changed = true;
+        }
 
         if (cardsToAdd != null)
         {
@@ -253,6 +292,17 @@ public class PlayerProgressionManager : MonoBehaviour
     // === АВТОПОЧИНКА СОХРАНЕНИЯ ===
     private void RepairSaveData()
     {
+        // ИСПРАВЛЕНИЕ: Не пытаемся "чинить" сохранение при самом первом запуске игры.
+        // При первом запуске AvailableCards ДОЛЖЕН быть пустым, а карты - только в колоде.
+        // Проверяем признаки реального прогресса: наличие золота, открытых карт или пройденных глав.
+        bool hasRealProgress = Gold > 0 || UnlockedCards.Count > 0 || CurrentChapter > 1;
+
+        if (!hasRealProgress)
+        {
+            Debug.Log("[Repair] Первый запуск detected. Пропускаем автопочинку, чтобы не дублировать стартовые карты.");
+            return;
+        }
+
         bool fixedSomething = false;
 
         // Если пул пуст, но в колоде есть карты (например, после бага), переносим их в пул

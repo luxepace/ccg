@@ -254,7 +254,8 @@ public class GameManager : MonoBehaviour
     void SetupEnemyVisuals(EnemyData enemy)
     {
         // 1. Установка аватара (если у EnemyHero есть дочерний Image)
-        Image avatarImage = EnemyHero.GetComponentInChildren<Image>();
+        Transform sprTransform = EnemyHero.transform.Find("EnemySpr");
+        Image avatarImage = sprTransform != null ? sprTransform.GetComponent<Image>() : null;
         if (avatarImage != null && !string.IsNullOrEmpty(enemy.avatarPath))
         {
             Sprite avatarSprite = Resources.Load<Sprite>(enemy.avatarPath);
@@ -325,6 +326,24 @@ public class GameManager : MonoBehaviour
         CardController cardC = cardGO.GetComponent<CardController>();
 
         cardC.Init(card, hand == PlayerHand);
+
+        // === ИСПРАВЛЕНИЕ РУБАШКИ ===
+        // 1. Ищем конкретно объект "HideObj" внутри префаба карты
+        Transform hideObjTransform = cardGO.transform.Find("HideObj");
+
+        if (hideObjTransform != null)
+        {
+            // 2. Получаем компонент Image именно с него
+            Image cardBackImage = hideObjTransform.GetComponent<Image>();
+
+            // 3. Применяем выбранную в настройках рубашку
+            if (cardBackImage != null && GlobalSettings.CurrentCardBack != null)
+            {
+                cardBackImage.sprite = GlobalSettings.CurrentCardBack;
+                Debug.Log($"[GameManager] Рубашка применена к карте {card.Name}");
+            }
+        }
+        // =========================
 
         if (cardC.IsPlayerCard)
             PlayerHandCards.Add(cardC);
@@ -421,13 +440,19 @@ public class GameManager : MonoBehaviour
         defender.CheckForAlive();
     }
 
-    public void ReduceMana(bool playerMana, int manacost)
+    public void ReduceMana(bool isPlayer, int amount)
     {
-        if (playerMana)
-            CurrentGame.Player.Mana -= manacost;
-        else
-            CurrentGame.Enemy.Mana -= manacost;
+        Player target = isPlayer ? CurrentGame.Player : CurrentGame.Enemy;
 
+        // ЗАЩИТА ОТ ОТРИЦАТЕЛЬНОЙ МАНЫ
+        if (target.Mana - amount < 0)
+        {
+            Debug.LogWarning($"[Mana] Попытка потратить {amount} маны при наличии {target.Mana}. Мана установлена в 0.");
+            target.Mana = 0;
+            return;
+        }
+
+        target.Mana -= amount;
         UIController.Instance.UpdateHPAndMana();
     }
 

@@ -8,13 +8,13 @@ public class EventManager : MonoBehaviour
 {
     [Header("UI References (Назначаются в префабе!)")]
     public GameObject eventPanel;
-    public TextMeshProUGUI titleText;
-    public TextMeshProUGUI dialogText;
-    public TextMeshProUGUI speakerText;
-
+    public TextMeshProUGUI titleText;      // Заголовок окна (название события)
+    public TextMeshProUGUI dialogText; // Основной текст диалога
+    public TextMeshProUGUI dialogTextMG; //Текст диалога если есть контейнер на экране
+    public TextMeshProUGUI speakerText;    // Имя говорящего (отдельное поле)
     public Button nextButton;
     public Transform choicesContainer;
-    public Button choiceButtonPrefab;  
+    public Button choiceButtonPrefab;
     public Button closeButton;
     public Transform minigameContainer;
 
@@ -22,14 +22,23 @@ public class EventManager : MonoBehaviour
     public Image frameImage;
     public Image portraitImage;
 
+    private GameObject statsPanel;
+
     [Header("Settings")]
     public string resourcesFolder = "Events/Minigames";
+
+    public GameObject rewardItemPrefab;
+    public GameObject collectionCardPreviewPrefab;  // Перетащите сюда RewardItemUI.prefab
+    public Transform rewardsContainer;  // Контейнер для наград (Horizontal Layout Group)
 
     private List<EventStep> currentSteps;
     private int currentStepIndex = 0;
     private StoryNode sourceNode;
     private bool isProcessingMinigame = false;
     private Action onCustomFinishCallback;
+
+    // Хранит название текущего события для отображения в заголовке
+    private string currentEventTitle = "";
 
     public void Init(StoryNode node)
     {
@@ -72,10 +81,13 @@ public class EventManager : MonoBehaviour
             closeButton.onClick.AddListener(CloseEvent);
         }
 
-        sourceNode = null; 
+        sourceNode = null;
         currentSteps = data.steps;
         currentStepIndex = 0;
         isProcessingMinigame = false;
+
+        // Сохраняем название события из конфига
+        currentEventTitle = !string.IsNullOrEmpty(data.title) ? data.title : "Событие";
 
         onCustomFinishCallback = onFinishCallback;
 
@@ -84,7 +96,7 @@ public class EventManager : MonoBehaviour
 
         ProcessStep();
 
-        Debug.Log($"[EventManager] Инициализировано кастомное событие: {data.title}");
+        Debug.Log($"[EventManager] Инициализировано кастомное событие: {currentEventTitle}");
     }
 
     private void StartEventInternal(StoryNode node)
@@ -102,8 +114,12 @@ public class EventManager : MonoBehaviour
         currentStepIndex = 0;
         isProcessingMinigame = false;
 
+        // Сохраняем название события из конфига
+        currentEventTitle = !string.IsNullOrEmpty(eventData.title) ? eventData.title : "Событие";
+
         Time.timeScale = 0f;
-        if (eventPanel != null) eventPanel.SetActive(true); 
+        if (eventPanel != null) eventPanel.SetActive(true);
+        SetStatsVisible(false);
 
         ProcessStep();
     }
@@ -119,6 +135,10 @@ public class EventManager : MonoBehaviour
         EventStep step = currentSteps[currentStepIndex];
 
         Debug.Log($"[DEBUG] Обработка шага {currentStepIndex}. Тип: {step.type}");
+
+        ClearRewards();
+        ClearChoices();
+        foreach (Transform child in minigameContainer) Destroy(child.gameObject);
 
         // Фон
         if (backgroundImage != null)
@@ -139,7 +159,7 @@ public class EventManager : MonoBehaviour
             }
             else
             {
-                // backgroundImage.gameObject.SetActive(false); 
+                backgroundImage.gameObject.SetActive(false);
             }
         }
 
@@ -188,13 +208,78 @@ public class EventManager : MonoBehaviour
                 portraitImage.gameObject.SetActive(false);
             }
         }
+
+        if (dialogText != null)
+        {
+            dialogText.gameObject.SetActive(true);
+            dialogText.text = step.text;
+        }
+
         // Очищаем контейнеры
         foreach (Transform child in minigameContainer) Destroy(child.gameObject);
         ClearChoices();
 
-        // Заполняем тексты
-        if (titleText) titleText.text = step.speaker ?? "";
-        if (dialogText) dialogText.text = step.text;
+        // === ЗАПОЛНЕНИЕ ТЕКСТОВ ===
+
+        // 1. ЗАГОЛОВОК ОКНА: Название события (например, "Таинственный торговец")
+        if (titleText != null)
+        {
+            titleText.text = currentEventTitle;
+        }
+
+        // 2. ИМЯ ГОВОРЯЩЕГО: Отдельно в поле speakerText (например, "Торговец")
+        if (speakerText != null)
+        {
+            if (!string.IsNullOrEmpty(step.speaker))
+            {
+                speakerText.text = step.speaker;
+                speakerText.gameObject.SetActive(true);
+            }
+            else
+            {
+                speakerText.text = "";
+                speakerText.gameObject.SetActive(false);
+            }
+        }
+
+        bool hasMinigame = !string.IsNullOrEmpty(step.minigamePrefabName);
+
+        if (hasMinigame)
+        {
+            // --- ВАРИАНТ А: ЕСТЬ МИНИ-ИГРА ---
+
+            // 1. Основной текст (на месте контейнера) очищаем или скрываем, чтобы не мешал
+            if (dialogText != null)
+            {
+                dialogText.text = "";
+                // Можно полностью скрыть объект, если он занимает место
+                // dialogText.gameObject.SetActive(false); 
+            }
+
+            // 2. Текст инструкции/описания пишем в НИЖНИЙ блок
+            if (dialogTextMG != null)
+            {
+                dialogTextMG.text = step.text;
+                dialogTextMG.gameObject.SetActive(true);
+            }
+        }
+        else
+        {
+            // --- ВАРИАНТ Б: НЕТ МИНИ-ИГРЫ ---
+
+            // 1. Нижний текст скрываем
+            if (dialogTextMG != null)
+            {
+                dialogTextMG.gameObject.SetActive(false);
+            }
+
+            // 2. Основной текст пишем в стандартное место (где обычно стоит контейнер)
+            if (dialogText != null)
+            {
+                dialogText.text = step.text;
+                dialogText.gameObject.SetActive(true);
+            }
+        }
 
         if (nextButton != null)
         {
@@ -202,34 +287,44 @@ public class EventManager : MonoBehaviour
 
             if (!string.IsNullOrEmpty(step.buttonText))
             {
-                // Если в JSON задан свой текст - используем его
                 if (btnTextComponent) btnTextComponent.text = step.buttonText;
             }
             else
             {
-                // Иначе ставим текст по умолчанию
                 if (btnTextComponent) btnTextComponent.text = "Далее";
             }
         }
+
         switch (step.type)
         {
             case StepType.DIALOG:
-                Debug.Log("[DEBUG] Запуск HandleDialogStep");
                 HandleDialogStep(step);
                 break;
             case StepType.REWARD:
-                Debug.Log("[DEBUG] Запуск HandleRewardStep");
-                HandleRewardStep(step);
+                // === ИЗМЕНЕНИЕ: Запускаем визуальное отображение ===
+                ShowVisualRewards(step);
+
+                // Если есть выбор после наград, показываем
+                if (step.choices != null && step.choices.Count > 0)
+                {
+                    ShowChoices(step.choices);
+                    if (nextButton) nextButton.gameObject.SetActive(false);
+                }
+                else
+                {
+                    if (nextButton) nextButton.gameObject.SetActive(true);
+                }
+                if (closeButton) closeButton.gameObject.SetActive(false);
                 break;
             case StepType.CARD_CHOICE:
             case StepType.PUZZLE_SLIDER:
             case StepType.RPS:
-                Debug.Log($"[DEBUG] Запуск StartMinigame для типа {step.type}");
+            case StepType.CATCH_SPIRIT: // Поддержка новой мини-игры
                 StartMinigame(step);
                 break;
             default:
                 Debug.LogError($"[ERROR] Неизвестный тип шага: {step.type}! Пропускаем шаг.");
-                NextStep(); 
+                NextStep();
                 break;
         }
     }
@@ -315,10 +410,7 @@ public class EventManager : MonoBehaviour
     {
         if (reward == null) return;
 
-        // Обработка Золота
         int goldChange = reward.gold;
-
-        // Обработка Изменения Макс. ХП
         int maxHpChange = 0;
         if (reward.bonusTypes != null)
         {
@@ -329,7 +421,6 @@ public class EventManager : MonoBehaviour
             }
         }
 
-        // Обработка Карт
         List<string> cardsToAdd = reward.cardNames;
         List<string> cardsToRemove = new List<string>();
 
@@ -338,7 +429,6 @@ public class EventManager : MonoBehaviour
             PlayerProgressionManager.Instance.RemoveRandomCard();
         }
 
-        // Вызов универсального метода прогрессии
         PlayerProgressionManager.Instance.ApplyReward(
             goldChange: goldChange,
             healAmount: reward.healAmount,
@@ -346,7 +436,6 @@ public class EventManager : MonoBehaviour
             cardsToAdd: cardsToAdd,
             cardsToRemove: cardsToRemove
         );
-
     }
 
     private void StartMinigame(EventStep step)
@@ -373,22 +462,18 @@ public class EventManager : MonoBehaviour
 
         if (minigameContainer != null)
         {
-            // Создаем игру внутри контейнера
             GameObject gameObj = Instantiate(prefab, minigameContainer);
 
             RectTransform rt = gameObj.GetComponent<RectTransform>();
             if (rt != null)
             {
-                rt.anchorMin = Vector2.zero;      
-                rt.anchorMax = Vector2.one;       
-               
+                rt.anchorMin = Vector2.zero;
+                rt.anchorMax = Vector2.one;
                 rt.offsetMin = Vector2.zero;
                 rt.offsetMax = Vector2.zero;
-
                 rt.localPosition = Vector3.zero;
                 rt.localRotation = Quaternion.identity;
                 rt.localScale = Vector3.one;
-
                 rt.SetAsLastSibling();
             }
 
@@ -402,7 +487,6 @@ public class EventManager : MonoBehaviour
             else
             {
                 Debug.LogError($"[ERROR] Нет скрипта мини-игры на префабе!");
-                miniGameScript.OnFinished += OnMinigameFinished;
             }
         }
         else
@@ -413,25 +497,33 @@ public class EventManager : MonoBehaviour
 
     private void OnMinigameFinished(bool isVictory)
     {
-        Debug.Log($"[EVENT] Мини-игра завершена. Победа: {isVictory}");
+        Debug.Log($"[EVENT] Мини-игра завершена. Победа: {isVictory}. Текущий индекс: {currentStepIndex}");
         isProcessingMinigame = false;
+
+        // ЛОГИКА ПЕРЕХОДОВ ДЛЯ МИНИ-ИГР:
+        // Индекс N: Сама мини-игра
+        // Индекс N+1: Шаг ПОБЕДЫ (Reward/Dialog)
+        // Индекс N+2: Шаг ПОРАЖЕНИЯ (Reward/Dialog)
 
         if (isVictory)
         {
+            // При победе идем на следующий шаг по порядку (N+1)
+            Debug.Log("[EVENT] Переход к шагу ПОБЕДЫ (следующий по порядку)");
             NextStep();
         }
         else
         {
-            Debug.Log("[EVENT] Игрок проиграл. Пропускаем награду и идем на шаг прощания.");
+            // При поражении пропускаем шаг победы и идем сразу к шагу поражения (N+2)
+            int loseStepIndex = currentStepIndex + 2;
 
-            int skipIndex = currentStepIndex + 2;
-
-            if (skipIndex < currentSteps.Count)
+            if (loseStepIndex < currentSteps.Count)
             {
-                GoToStep(skipIndex);
+                Debug.Log($"[EVENT] Переход к шагу ПОРАЖЕНИЯ (индекс {loseStepIndex})");
+                GoToStep(loseStepIndex);
             }
             else
             {
+                Debug.Log("[EVENT] Шага поражения нет, завершаем событие.");
                 FinishEvent(true);
             }
         }
@@ -443,7 +535,6 @@ public class EventManager : MonoBehaviour
         {
             EventStep currentStep = currentSteps[currentStepIndex];
 
-            // Если текущий шаг имеет флаг isFinal, то дальше идти некуда - завершаем
             if (currentStep.isFinal)
             {
                 Debug.Log("[EVENT] Достигнут финальный шаг. Завершение события.");
@@ -452,12 +543,10 @@ public class EventManager : MonoBehaviour
             }
         }
 
-        // Обычный переход к следующему шагу
         currentStepIndex++;
 
         if (currentStepIndex >= currentSteps.Count)
         {
-            // Если шаги кончились, тоже завершаем
             FinishEvent(true);
         }
         else
@@ -472,22 +561,17 @@ public class EventManager : MonoBehaviour
 
         Time.timeScale = 1f;
 
+        SetStatsVisible(true);
+
         if (onCustomFinishCallback != null)
         {
             Debug.Log("[EventManager] Вызов кастомного коллбэка завершения (событие главы).");
-
-            // Вызываем коллбэк (который запустит переход к следующей главе)
             onCustomFinishCallback.Invoke();
-
-            // Очищаем коллбэк
             onCustomFinishCallback = null;
-
-            // Уничтожаем окно события
             Destroy(gameObject);
             return;
         }
 
-        // Стандартная логика для обычных узлов карты
         if (success && sourceNode != null)
         {
             StoryMapManager.Instance.MarkNodeVisited(sourceNode.chapterIndex, sourceNode.nodeId);
@@ -502,5 +586,129 @@ public class EventManager : MonoBehaviour
     private void CloseEvent()
     {
         FinishEvent(false);
+    }
+
+    private void FindStatsPanel()
+    {
+        if (statsPanel == null)
+        {
+            // Ищем объект по имени "StatsPanel" или по тегу, если вы его назначили
+            statsPanel = GameObject.Find("StatsPanel");
+            // Или если у вас есть тег "Stats":
+            // statsPanel = GameObject.FindGameObjectWithTag("Stats");
+
+            if (statsPanel == null)
+            {
+                Debug.LogWarning("[EventManager] StatsPanel не найден! Убедитесь, что объект называется 'StatsPanel' в иерархии.");
+            }
+        }
+    }
+
+    private void SetStatsVisible(bool visible)
+    {
+        FindStatsPanel();
+        if (statsPanel != null)
+        {
+            statsPanel.SetActive(visible);
+        }
+    }
+
+    private void ShowVisualRewards(EventStep step)
+    {
+        if (step == null || step.reward == null || rewardsContainer == null) return;
+
+        RewardData reward = step.reward;
+
+        // === ВЫВОД ТЕКСТА ШАГА В НИЖНИЙ БЛОК (dialogTextMG) ===
+        if (dialogTextMG != null)
+        {
+            dialogTextMG.text = !string.IsNullOrEmpty(step.text) ? step.text : "";
+            dialogTextMG.gameObject.SetActive(true);
+        }
+
+        // Скрываем обычный текст диалога, чтобы не дублировался
+        if (dialogText != null)
+        {
+            dialogText.text = "";
+            dialogText.gameObject.SetActive(false);
+        }
+
+        // Очищаем старые награды
+        foreach (Transform child in rewardsContainer) Destroy(child.gameObject);
+
+        // 1. Отображаем HP
+        if (reward.healAmount != 0)
+        {
+            GameObject hpObj = Instantiate(rewardItemPrefab, rewardsContainer);
+            RewardItemUI hpUI = hpObj.GetComponent<RewardItemUI>();
+
+            if (reward.healAmount > 0)
+            {
+                hpUI.SetHP(reward.healAmount, "+");
+            }
+            else
+            {
+                hpUI.SetHP(Mathf.Abs(reward.healAmount), "-");
+            }
+        }
+
+        // 2. Отображаем Gold
+        if (reward.gold != 0)
+        {
+            GameObject goldObj = Instantiate(rewardItemPrefab, rewardsContainer);
+            RewardItemUI goldUI = goldObj.GetComponent<RewardItemUI>();
+
+            if (reward.gold > 0) goldUI.SetGold(reward.gold, "+");
+            else goldUI.SetGold(Mathf.Abs(reward.gold), "-");
+        }
+
+        // 3. Отображаем Карты
+        if (reward.cardNames != null)
+        {
+            foreach (string cardName in reward.cardNames)
+            {
+                Card cardData = CardM.AllCards.Find(c => c.Name == cardName);
+                if (cardData != null)
+                {
+                    GameObject cardObj = Instantiate(collectionCardPreviewPrefab, rewardsContainer);
+                    CollectionCardPreview preview = cardObj.GetComponent<CollectionCardPreview>();
+
+                    if (preview != null)
+                    {
+                        preview.Init(cardData, true);
+
+                        Button btn = cardObj.GetComponent<Button>();
+                        if (btn != null) btn.interactable = false;
+
+                        RectTransform rt = cardObj.GetComponent<RectTransform>();
+                        if (rt != null) rt.localScale = Vector3.one * 1.0f;
+                    }
+                }
+            }
+        }
+
+        // Применяем логику наград
+        ApplyRewards(reward);
+    }
+
+    private void ClearRewards()
+    {
+        if (rewardsContainer != null)
+        {
+            foreach (Transform child in rewardsContainer)
+            {
+                Destroy(child.gameObject);
+            }
+        }
+
+        // Возвращаем обычный текстовый диалог обратно
+        if (dialogText != null) dialogText.gameObject.SetActive(true);
+
+        // Скрываем нижний блок — его состояние будет заново определено в ProcessStep
+        if (dialogTextMG != null)
+        {
+            dialogTextMG.text = "";
+            dialogTextMG.gameObject.SetActive(false);
+        }
     }
 }

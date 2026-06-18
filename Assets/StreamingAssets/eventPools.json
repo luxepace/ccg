@@ -1,8 +1,8 @@
 {
   "pools": [
     {
-      "poolId": "pool_test",
-      "eventIds": ["merchant_test"]
-    }
+  "poolId": "pool_test",
+  "eventIds": ["merchant_test", "spirit_ritual"]
+}
   ]
 }

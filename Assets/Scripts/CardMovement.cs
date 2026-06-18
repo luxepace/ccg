@@ -8,7 +8,6 @@ using UnityEngine.UI;
 public class CardMovement : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
     public CardController CC;
-
     Camera MainCamera;
     Vector3 offset;
     public Transform DefaultParent, DefaultTempCardParent;
@@ -22,7 +21,6 @@ public class CardMovement : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
         TempCardGO = GameObject.Find("TempCardGO");
     }
 
-
     public void OnBeginDrag(PointerEventData eventData)
     {
         offset = transform.position - MainCamera.ScreenToWorldPoint(eventData.position);
@@ -30,12 +28,12 @@ public class CardMovement : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
         DefaultParent = DefaultTempCardParent = transform.parent;
 
         IsDraggable = GameManager.Instance.IsPlayerTurn &&
-                         (
-                             (DefaultParent.GetComponent<DropPlace>().Type == FieldType.SELF_HAND &&
-                              GameManager.Instance.CurrentGame.Player.Mana    >= CC.Card.Manacost) ||
-                             (DefaultParent.GetComponent<DropPlace>().Type == FieldType.SELF_FIELD &&
-                              CC.Card.CanAttack)
-                         );
+                     (
+                         (DefaultParent.GetComponent<DropPlace>().Type == FieldType.SELF_HAND &&
+                          GameManager.Instance.CurrentGame.Player.Mana >= CC.Card.Manacost) ||
+                         (DefaultParent.GetComponent<DropPlace>().Type == FieldType.SELF_FIELD &&
+                          CC.Card.CanAttack)
+                     );
 
         if (!IsDraggable)
             return;
@@ -59,7 +57,7 @@ public class CardMovement : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
 
         Vector3 newPos = MainCamera.ScreenToWorldPoint(eventData.position);
         transform.position = newPos + offset;
-        
+
         if (!CC.Card.IsSpell)
         {
             if (TempCardGO.transform.parent != DefaultTempCardParent)
@@ -68,7 +66,6 @@ public class CardMovement : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
             if (DefaultParent.GetComponent<DropPlace>().Type != FieldType.SELF_FIELD)
                 CheckPosition();
         }
-
     }
 
     public void OnEndDrag(PointerEventData eventData)
@@ -115,14 +112,23 @@ public class CardMovement : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
         transform.DOMove(field.position, .5f);
     }
 
+    // === НОВЫЙ МЕТОД ДЛЯ ИИ (ЖДЕТ ОКОНЧАНИЯ АНИМАЦИИ) ===
+    public IEnumerator MoveToFieldCoroutine(Transform field)
+    {
+        // Переносим на Canvas, чтобы анимация работала корректно
+        transform.SetParent(GameObject.Find("Canvas").transform);
+
+        // Запускаем твин и ЖДЕМ его завершения
+        yield return transform.DOMove(field.position, 0.5f).WaitForCompletion();
+    }
+
     public void MoveToTarget(Transform target)
     {
         StartCoroutine(MoveToTargetCor(target));
     }
 
-    IEnumerator MoveToTargetCor(Transform target)
+    public IEnumerator MoveToTargetCor(Transform target)
     {
-        // Проверяем, что объект ещё существует
         if (transform == null || !gameObject.activeInHierarchy)
             yield return null;
 
@@ -130,14 +136,12 @@ public class CardMovement : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
         Transform parent = transform.parent;
         int index = transform.GetSiblingIndex();
 
-        // Отключаем layout, если нужно
         if (parent != null && parent.GetComponent<HorizontalLayoutGroup>())
         {
             var layout = parent.GetComponent<HorizontalLayoutGroup>();
             layout.enabled = false;
         }
 
-        // Перемещаем карту на Canvas для корректной анимации
         Transform canvasTransform = GameObject.Find("Canvas").transform;
         if (canvasTransform == null)
         {
@@ -147,23 +151,18 @@ public class CardMovement : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
 
         transform.SetParent(canvasTransform);
 
-        // Проверяем перед первой анимацией
         if (transform == null || !gameObject.activeInHierarchy)
             yield break;
 
         // Анимация к цели
-        transform.DOMove(target.position, 0.25f);
-        yield return new WaitForSeconds(0.25f);
+        yield return transform.DOMove(target.position, 0.25f).WaitForCompletion();
 
-        // Проверяем перед второй частью анимации
         if (transform == null || !gameObject.activeInHierarchy)
             yield break;
 
         // Возвращаемся обратно
-        transform.DOMove(pos, 0.25f);
-        yield return new WaitForSeconds(0.25f);
+        yield return transform.DOMove(pos, 0.25f).WaitForCompletion();
 
-        // Восстанавливаем родителя и позицию
         if (parent != null)
         {
             transform.SetParent(parent);
@@ -175,5 +174,4 @@ public class CardMovement : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
             }
         }
     }
-
 }

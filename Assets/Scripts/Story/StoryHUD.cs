@@ -31,12 +31,12 @@ public class StoryHUD : MonoBehaviour
 
         if (textHP != null)
         {
-            textHP.text = $"HP: {PlayerProgressionManager.Instance.MaxHp}";
+            textHP.text = $"Здоровье: {PlayerProgressionManager.Instance.MaxHp}";
         }
 
         if (textGold != null)
         {
-            textGold.text = $"Gold: {PlayerProgressionManager.Instance.Gold}";
+            textGold.text = $"Золото: {PlayerProgressionManager.Instance.Gold}";
         }
     }
 

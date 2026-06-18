@@ -33,7 +33,6 @@ public class NodeVisualController : MonoBehaviour, IPointerEnterHandler, IPointe
     public Color skippedColor = new Color(0.5f, 0.5f, 0.5f, 0.7f);
 
     private StoryMapVisual mapVisual;
-    private bool isHovering = false;
 
     public void Init(StoryNode node, StoryMapVisual visual)
     {
@@ -212,7 +211,6 @@ public class NodeVisualController : MonoBehaviour, IPointerEnterHandler, IPointe
 
     public void OnPointerEnter(PointerEventData eventData)
     {
-        isHovering = true;
         UpdateTooltipText();
         if (NodeData.isUnlocked && tooltipPanel != null)
         {
@@ -222,7 +220,6 @@ public class NodeVisualController : MonoBehaviour, IPointerEnterHandler, IPointe
 
     public void OnPointerExit(PointerEventData eventData)
     {
-        isHovering = false;
 
         if (tooltipPanel != null)
         {

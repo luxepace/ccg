@@ -62,6 +62,12 @@ public class SettingsMenuManager : MonoBehaviour
     {
         currentBackIndex = (currentBackIndex + 1) % cardBacks.Length;
         cardBackPreview.sprite = cardBacks[currentBackIndex];
+
+        // === ДОБАВЬТЕ ЭТИ СТРОКИ ===
+        // Сохраняем выбранную рубашку в глобальные настройки
+        GlobalSettings.SetCardBack(cardBacks[currentBackIndex]);
+
+        Debug.Log($"[Settings] Рубашка карты изменена на #{currentBackIndex}");
     }
 
     public void BackToMain()

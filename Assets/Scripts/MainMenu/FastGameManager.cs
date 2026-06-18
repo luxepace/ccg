@@ -1,4 +1,4 @@
-using UnityEngine;
+п»їusing UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using TMPro;
@@ -7,8 +7,8 @@ using UnityEngine.UI;
 public class FastGameManager : MonoBehaviour
 {
     [Header("UI Panels")]
-    public GameObject settingsPanel;      // Панель выбора сложности/врага/режима ИИ
-    public GameObject deckBuilderPanel;   // Панель сборки колоды (можно переиспользовать DeckBuilderUI)
+    public GameObject settingsPanel;      // РџР°РЅРµР»СЊ РІС‹Р±РѕСЂР° СЃР»РѕР¶РЅРѕСЃС‚Рё/РІСЂР°РіР°/СЂРµР¶РёРјР° РР
+    public GameObject deckBuilderPanel;   // РџР°РЅРµР»СЊ СЃР±РѕСЂРєРё РєРѕР»РѕРґС‹ (РјРѕР¶РЅРѕ РїРµСЂРµРёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ DeckBuilderUI)
     public GameObject mainMenuPanel;
 
     [Header("Dropdowns & Buttons")]
@@ -22,59 +22,59 @@ public class FastGameManager : MonoBehaviour
 
     private void Start()
     {
-        // Скрываем все панели при старте, кроме главного меню
+        // РЎРєСЂС‹РІР°РµРј РІСЃРµ РїР°РЅРµР»Рё РїСЂРё СЃС‚Р°СЂС‚Рµ, РєСЂРѕРјРµ РіР»Р°РІРЅРѕРіРѕ РјРµРЅСЋ
         if (settingsPanel) settingsPanel.SetActive(false);
         if (deckBuilderPanel) deckBuilderPanel.SetActive(false);
 
-        // Настраиваем кнопки
+        // РќР°СЃС‚СЂР°РёРІР°РµРј РєРЅРѕРїРєРё
         if (startDeckBuildingBtn) startDeckBuildingBtn.onClick.AddListener(OnStartDeckBuilding);
         if (backToSettingsBtn) backToSettingsBtn.onClick.AddListener(OnBackToSettings);
         if (confirmDeckBtn) confirmDeckBtn.onClick.AddListener(OnConfirmDeckAndStart);
         if (cancelDeckBtn) cancelDeckBtn.onClick.AddListener(OnCancelDeckBuilding);
     }
 
-    // 1. Игрок нажал "Начать сборку колоды" после выбора настроек
+    // 1. РРіСЂРѕРє РЅР°Р¶Р°Р» "РќР°С‡Р°С‚СЊ СЃР±РѕСЂРєСѓ РєРѕР»РѕРґС‹" РїРѕСЃР»Рµ РІС‹Р±РѕСЂР° РЅР°СЃС‚СЂРѕРµРє
     public void OnStartDeckBuilding()
     {
-        // Сохраняем выбранные настройки во TempData
+        // РЎРѕС…СЂР°РЅСЏРµРј РІС‹Р±СЂР°РЅРЅС‹Рµ РЅР°СЃС‚СЂРѕР№РєРё РІРѕ TempData
         SaveSettingsToTempData();
 
-        // Помечаем, что мы в режиме настройки
+        // РџРѕРјРµС‡Р°РµРј, С‡С‚Рѕ РјС‹ РІ СЂРµР¶РёРјРµ РЅР°СЃС‚СЂРѕР№РєРё
         TempData.IsSettingUpFastGame = true;
 
-        // Переключаем UI
+        // РџРµСЂРµРєР»СЋС‡Р°РµРј UI
         if (settingsPanel) settingsPanel.SetActive(false);
         if (deckBuilderPanel) deckBuilderPanel.SetActive(true);
 
-        // Здесь можно инициализировать DeckBuilderUI для режима быстрой игры
-        // Например, передать ему TempData.FastGameDeck для редактирования
-        Debug.Log("[FastGame] Переход к сборке колоды.");
+        // Р—РґРµСЃСЊ РјРѕР¶РЅРѕ РёРЅРёС†РёР°Р»РёР·РёСЂРѕРІР°С‚СЊ DeckBuilderUI РґР»СЏ СЂРµР¶РёРјР° Р±С‹СЃС‚СЂРѕР№ РёРіСЂС‹
+        // РќР°РїСЂРёРјРµСЂ, РїРµСЂРµРґР°С‚СЊ РµРјСѓ TempData.FastGameDeck РґР»СЏ СЂРµРґР°РєС‚РёСЂРѕРІР°РЅРёСЏ
+        Debug.Log("[FastGame] РџРµСЂРµС…РѕРґ Рє СЃР±РѕСЂРєРµ РєРѕР»РѕРґС‹.");
     }
 
-    // 2. Игрок подтвердил колоду и хочет начать бой
+    // 2. РРіСЂРѕРє РїРѕРґС‚РІРµСЂРґРёР» РєРѕР»РѕРґСѓ Рё С…РѕС‡РµС‚ РЅР°С‡Р°С‚СЊ Р±РѕР№
     public void OnConfirmDeckAndStart()
     {
-        // Получаем текущую колоду из DeckBuilderUI (предполагаем, что он обновляет TempData.FastGameDeck)
-        // Или берем напрямую из PlayerProgressionManager, если вы разрешаете менять основную колоду
+        // РџРѕР»СѓС‡Р°РµРј С‚РµРєСѓС‰СѓСЋ РєРѕР»РѕРґСѓ РёР· DeckBuilderUI (РїСЂРµРґРїРѕР»Р°РіР°РµРј, С‡С‚Рѕ РѕРЅ РѕР±РЅРѕРІР»СЏРµС‚ TempData.FastGameDeck)
+        // РР»Рё Р±РµСЂРµРј РЅР°РїСЂСЏРјСѓСЋ РёР· PlayerProgressionManager, РµСЃР»Рё РІС‹ СЂР°Р·СЂРµС€Р°РµС‚Рµ РјРµРЅСЏС‚СЊ РѕСЃРЅРѕРІРЅСѓСЋ РєРѕР»РѕРґСѓ
 
-        // ВАЖНО: Если вы хотите, чтобы колода для быстрой игры была ОТДЕЛЬНОЙ от сюжетной,
-        // то DeckBuilderUI должен работать с TempData.FastGameDeck, а не с PlayerProgressionManager.DeckCardNames.
+        // Р’РђР–РќРћ: Р•СЃР»Рё РІС‹ С…РѕС‚РёС‚Рµ, С‡С‚РѕР±С‹ РєРѕР»РѕРґР° РґР»СЏ Р±С‹СЃС‚СЂРѕР№ РёРіСЂС‹ Р±С‹Р»Р° РћРўР”Р•Р›Р¬РќРћР™ РѕС‚ СЃСЋР¶РµС‚РЅРѕР№,
+        // С‚Рѕ DeckBuilderUI РґРѕР»Р¶РµРЅ СЂР°Р±РѕС‚Р°С‚СЊ СЃ TempData.FastGameDeck, Р° РЅРµ СЃ PlayerProgressionManager.DeckCardNames.
 
-        // Для простоты сейчас предположим, что игрок собирает колоду из своих доступных карт,
-        // и мы просто сохраняем этот список во TempData.
+        // Р”Р»СЏ РїСЂРѕСЃС‚РѕС‚С‹ СЃРµР№С‡Р°СЃ РїСЂРµРґРїРѕР»РѕР¶РёРј, С‡С‚Рѕ РёРіСЂРѕРє СЃРѕР±РёСЂР°РµС‚ РєРѕР»РѕРґСѓ РёР· СЃРІРѕРёС… РґРѕСЃС‚СѓРїРЅС‹С… РєР°СЂС‚,
+        // Рё РјС‹ РїСЂРѕСЃС‚Рѕ СЃРѕС…СЂР°РЅСЏРµРј СЌС‚РѕС‚ СЃРїРёСЃРѕРє РІРѕ TempData.
 
-        // Проверка на минимальный размер колоды (например, 5 карт)
+        // РџСЂРѕРІРµСЂРєР° РЅР° РјРёРЅРёРјР°Р»СЊРЅС‹Р№ СЂР°Р·РјРµСЂ РєРѕР»РѕРґС‹ (РЅР°РїСЂРёРјРµСЂ, 5 РєР°СЂС‚)
         if (TempData.FastGameDeck.Count < 5)
         {
-            Debug.LogWarning("[FastGame] Колода слишком маленькая! Минимум 5 карт.");
+            Debug.LogWarning("[FastGame] РљРѕР»РѕРґР° СЃР»РёС€РєРѕРј РјР°Р»РµРЅСЊРєР°СЏ! РњРёРЅРёРјСѓРј 5 РєР°СЂС‚.");
             return;
         }
 
-        // Запускаем бой
+        // Р—Р°РїСѓСЃРєР°РµРј Р±РѕР№
         StartFastBattle();
     }
 
-    // 3. Отмена сборки колоды
+    // 3. РћС‚РјРµРЅР° СЃР±РѕСЂРєРё РєРѕР»РѕРґС‹
     public void OnCancelDeckBuilding()
     {
         TempData.IsSettingUpFastGame = false;
@@ -82,7 +82,7 @@ public class FastGameManager : MonoBehaviour
         if (settingsPanel) settingsPanel.SetActive(true);
     }
 
-    // 4. Возврат к настройкам
+    // 4. Р’РѕР·РІСЂР°С‚ Рє РЅР°СЃС‚СЂРѕР№РєР°Рј
     public void OnBackToSettings()
     {
         TempData.IsSettingUpFastGame = false;
@@ -90,13 +90,13 @@ public class FastGameManager : MonoBehaviour
         if (settingsPanel) settingsPanel.SetActive(true);
     }
 
-    // 5. Сохранение настроек из Dropdown'ов
+    // 5. РЎРѕС…СЂР°РЅРµРЅРёРµ РЅР°СЃС‚СЂРѕРµРє РёР· Dropdown'РѕРІ
     private void SaveSettingsToTempData()
     {
-        // Сложность (пока просто сохраняем индекс, можно использовать для ограничений колоды)
+        // РЎР»РѕР¶РЅРѕСЃС‚СЊ (РїРѕРєР° РїСЂРѕСЃС‚Рѕ СЃРѕС…СЂР°РЅСЏРµРј РёРЅРґРµРєСЃ, РјРѕР¶РЅРѕ РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ РґР»СЏ РѕРіСЂР°РЅРёС‡РµРЅРёР№ РєРѕР»РѕРґС‹)
         // int difficulty = difficultyDropdown.value; 
 
-        // Режим ИИ
+        // Р РµР¶РёРј РР
         switch (aiModeDropdown.value)
         {
             case 0: TempData.FastGameAiMode = AISourceData.AIMode.Balanced; break;
@@ -104,32 +104,32 @@ public class FastGameManager : MonoBehaviour
             case 2: TempData.FastGameAiMode = AISourceData.AIMode.Defend; break;
         }
 
-        // Выбор врага
+        // Р’С‹Р±РѕСЂ РІСЂР°РіР°
         int enemyIndex = enemyDropdown.value;
         if (StoryContentLoader.AllEnemies != null && enemyIndex >= 0 && enemyIndex < StoryContentLoader.AllEnemies.Count)
         {
-            // Если выбран "Случайный" (допустим, индекс 0), то выбираем рандомно позже
+            // Р•СЃР»Рё РІС‹Р±СЂР°РЅ "РЎР»СѓС‡Р°Р№РЅС‹Р№" (РґРѕРїСѓСЃС‚РёРј, РёРЅРґРµРєСЃ 0), С‚Рѕ РІС‹Р±РёСЂР°РµРј СЂР°РЅРґРѕРјРЅРѕ РїРѕР·Р¶Рµ
             if (enemyIndex == 0)
             {
-                TempData.CurrentEnemy = null; // Null означает "случайный"
+                TempData.CurrentEnemy = null; // Null РѕР·РЅР°С‡Р°РµС‚ "СЃР»СѓС‡Р°Р№РЅС‹Р№"
             }
             else
             {
-                // Иначе берем конкретного врага (минус 1, т.к. первый элемент - "Случайный")
+                // РРЅР°С‡Рµ Р±РµСЂРµРј РєРѕРЅРєСЂРµС‚РЅРѕРіРѕ РІСЂР°РіР° (РјРёРЅСѓСЃ 1, С‚.Рє. РїРµСЂРІС‹Р№ СЌР»РµРјРµРЅС‚ - "РЎР»СѓС‡Р°Р№РЅС‹Р№")
                 TempData.CurrentEnemy = StoryContentLoader.AllEnemies[enemyIndex - 1];
             }
         }
 
-        Debug.Log($"[FastGame] Настройки сохранены. Враг: {TempData.CurrentEnemy?.enemyName ?? "Случайный"}, Режим ИИ: {TempData.FastGameAiMode}");
+        Debug.Log($"[FastGame] РќР°СЃС‚СЂРѕР№РєРё СЃРѕС…СЂР°РЅРµРЅС‹. Р’СЂР°Рі: {TempData.CurrentEnemy?.enemyName ?? "РЎР»СѓС‡Р°Р№РЅС‹Р№"}, Р РµР¶РёРј РР: {TempData.FastGameAiMode}");
     }
 
-    // 6. Запуск сцены боя
+    // 6. Р—Р°РїСѓСЃРє СЃС†РµРЅС‹ Р±РѕСЏ
     private void StartFastBattle()
     {
         TempData.IsStoryMode = false;
         TempData.IsSettingUpFastGame = false;
 
-        // Если враг не выбран (случайный), выбираем его сейчас
+        // Р•СЃР»Рё РІСЂР°Рі РЅРµ РІС‹Р±СЂР°РЅ (СЃР»СѓС‡Р°Р№РЅС‹Р№), РІС‹Р±РёСЂР°РµРј РµРіРѕ СЃРµР№С‡Р°СЃ
         if (TempData.CurrentEnemy == null && StoryContentLoader.AllEnemies != null && StoryContentLoader.AllEnemies.Count > 0)
         {
             TempData.CurrentEnemy = StoryContentLoader.AllEnemies[Random.Range(0, StoryContentLoader.AllEnemies.Count)];
@@ -137,11 +137,11 @@ public class FastGameManager : MonoBehaviour
 
         if (TempData.CurrentEnemy == null)
         {
-            Debug.LogError("[FastGame] Ошибка: Не удалось выбрать врага!");
+            Debug.LogError("[FastGame] РћС€РёР±РєР°: РќРµ СѓРґР°Р»РѕСЃСЊ РІС‹Р±СЂР°С‚СЊ РІСЂР°РіР°!");
             return;
         }
 
-        Debug.Log($"[FastGame] Запуск боя против: {TempData.CurrentEnemy.enemyName}");
+        Debug.Log($"[FastGame] Р—Р°РїСѓСЃРє Р±РѕСЏ РїСЂРѕС‚РёРІ: {TempData.CurrentEnemy.enemyName}");
         SceneManager.LoadScene("CardGame");
     }
 }

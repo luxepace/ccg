@@ -4,14 +4,19 @@ using UnityEngine;
 
 public class AI : MonoBehaviour
 {
-    // Ссылка на настройки баланса
+    // Настройки баланса
     public AISourceData aiSourceData;
+
+    // Память о прошлом ходе
+    private float previousMyPower = 0f;
+    private float previousEnemyPower = 0f;
+    private int previousMyCardsCount = 0;
+    private int previousEnemyCardsCount = 0;
 
     private void Awake()
     {
         if (aiSourceData == null)
         {
-            // Пробуем найти в Resources или в сцене
             aiSourceData = Resources.Load<AISourceData>("AI/AISourceData");
             if (aiSourceData == null)
                 aiSourceData = FindObjectOfType<AISourceData>();
@@ -27,43 +32,63 @@ public class AI : MonoBehaviour
     {
         yield return new WaitForSeconds(1f);
 
-        // 1. Определяем режим игры (0 - Attack, 1 - Defend, 2 - Balanced)
+        // Выбираем режим: атака или защита
         int mode = DetermineMode();
         string modeName = mode == 0 ? "ATTACK" : (mode == 1 ? "DEFEND" : "BALANCED");
-        Debug.Log($"[AI] Режим хода: {modeName}");
 
-        // 2. Сортируем карты в руке по полезности для текущего режима
-        List<CardController> sortedHand = new List<CardController>(handCards);
-        sortedHand.Sort((a, b) => {
-            float scoreA = GetCardUtilityScore(a.Card, mode);
-            float scoreB = GetCardUtilityScore(b.Card, mode);
-            return scoreB.CompareTo(scoreA); // По убыванию (лучшие первые)
-        });
+        Debug.Log($"[AI] === НАЧАЛО ХОДА ПРОТИВНИКА ===");
+        Debug.Log($"[AI] Режим: {modeName}");
+        Debug.Log($"[AI] Мана противника: {GameManager.Instance.CurrentGame.Enemy.Mana}");
 
-        // 3. Разыгрываем карты
-        foreach (var card in sortedHand)
+        // Отбираем карты по мане
+        List<CardController> affordableCards = handCards.FindAll(c => c.Card.Manacost <= GameManager.Instance.CurrentGame.Enemy.Mana);
+
+        if (affordableCards.Count > 0)
         {
-            // Проверки безопасности
-            if (!GameManager.Instance.EnemyHandCards.Contains(card)) continue;
-            if (GameManager.Instance.EnemyFieldCards.Count >= 5) break;
-            if (GameManager.Instance.CurrentGame.Enemy.Mana < card.Card.Manacost) continue;
+            // Находим лучшую комбинацию
+            List<CardController> bestCombo = FindBestCardCombination(affordableCards, mode);
 
-            // Логика розыгрыша
-            if (card.Card.IsSpell)
-            {
-                CastSpellSmart(card, mode);
-            }
-            else
-            {
-                PlayMinion(card);
-            }
+            Debug.Log($"[AI] Найдено оптимальное сочетание из {bestCombo.Count} карт.");
 
-            yield return new WaitForSeconds(0.8f);
+            foreach (var card in bestCombo)
+            {
+                if (!GameManager.Instance.EnemyHandCards.Contains(card)) continue;
+                if (GameManager.Instance.EnemyFieldCards.Count >= 5)
+                {
+                    Debug.Log("[AI] Поле заполнено (5 карт). Прекращаю розыгрыш.");
+                    break;
+                }
+
+                if (GameManager.Instance.CurrentGame.Enemy.Mana < card.Card.Manacost)
+                {
+                    Debug.LogWarning($"[AI] Ошибка расчета маны! Пропускаю карту '{card.Card.Name}'.");
+                    continue;
+                }
+
+                if (card.Card.IsSpell)
+                {
+                    Debug.Log($"[AI] Разыгрываю заклинание: {card.Card.Name} (Мана: {card.Card.Manacost})");
+                    yield return StartCoroutine(CastSpellSmart(card, mode));
+                }
+                else
+                {
+                    Debug.Log($"[AI] Разыгрываю существо: {card.Card.Name} (Атака: {card.Card.Attack}, Защита: {card.Card.Defense}, Мана: {card.Card.Manacost})");
+                    yield return StartCoroutine(card.GetComponent<CardMovement>().MoveToFieldCoroutine(GameManager.Instance.EnemyField));
+                    card.transform.SetParent(GameManager.Instance.EnemyField);
+                    card.OnCast();
+                }
+                yield return new WaitForSeconds(0.5f);
+            }
+        }
+        else
+        {
+            Debug.Log("[AI] Нет карт, на которые хватает маны.");
         }
 
         yield return new WaitForSeconds(1f);
 
-        // 4. Фаза атаки
+        // Атака
+        Debug.Log("[AI] Начинаю фазу атаки...");
         while (GameManager.Instance.EnemyFieldCards.Exists(x => x.Card.CanAttack))
         {
             var attacker = GameManager.Instance.EnemyFieldCards.Find(x => x.Card.CanAttack);
@@ -73,53 +98,132 @@ public class AI : MonoBehaviour
 
             if (target != null)
             {
-                // Атака по карте
-                attacker.Movement.MoveToTarget(target.transform);
+                Debug.Log($"[AI] {attacker.Card.Name} атакует карту: {target.Card.Name}");
+                yield return StartCoroutine(attacker.Movement.MoveToTargetCor(target.transform));
                 yield return new WaitForSeconds(0.75f);
                 GameManager.Instance.CardsFight(attacker, target);
             }
             else
             {
-                // Атака по герою (если target == null)
-                attacker.Movement.MoveToTarget(GameManager.Instance.PlayerHero.transform);
+                Debug.Log($"[AI] {attacker.Card.Name} атакует ГЕРОЯ игрока");
+                yield return StartCoroutine(attacker.Movement.MoveToTargetCor(GameManager.Instance.PlayerHero.transform));
                 yield return new WaitForSeconds(0.75f);
                 GameManager.Instance.DamageHero(attacker, false);
             }
-
             yield return new WaitForSeconds(0.2f);
         }
+
+        Debug.Log("[AI] === КОНЕЦ ХОДА ПРОТИВНИКА ===");
+
+        // Запоминаем состояние поля
+        UpdateMemoryForNextTurn();
 
         yield return new WaitForSeconds(1f);
         GameManager.Instance.ChangeTurn();
     }
 
-    // --- ЛОГИКА ВЫБОРА РЕЖИМА ---
+    void UpdateMemoryForNextTurn()
+    {
+        previousMyPower = CalculateSidePower(GameManager.Instance.EnemyFieldCards);
+        previousEnemyPower = CalculateSidePower(GameManager.Instance.PlayerFieldCards);
+        previousMyCardsCount = GameManager.Instance.EnemyFieldCards.Count;
+        previousEnemyCardsCount = GameManager.Instance.PlayerFieldCards.Count;
+    }
 
     int DetermineMode()
     {
-        // === ИЗМЕНЕНИЕ ДЛЯ БЫСТРОЙ ИГРЫ ===
-        // Если мы не в сюжетном режиме (т.е. в быстрой игре), используем выбранный игроком режим
+        // Быстрая игра с фиксированным режимом
         if (!TempData.IsStoryMode)
         {
             switch (TempData.FastGameAiMode)
             {
                 case AISourceData.AIMode.Attack:
-                    return 0; // 0 = Attack mode logic inside ChooseTarget/GetCardUtilityScore
+                    Debug.Log("[AI] Режим установлен игроком: ATTACK");
+                    return 0;
                 case AISourceData.AIMode.Defend:
-                    return 1; // 1 = Defend mode logic
-                default:
-                    break; // Если Balanced, падаем вниз к стандартной логике
+                    Debug.Log("[AI] Режим установлен игроком: DEFEND");
+                    return 1;
+                case AISourceData.AIMode.Balanced:
+                    break;
             }
         }
 
-        // === СТАНДАРТНАЯ ЛОГИКА ДЛЯ СЮЖЕТНОГО РЕЖИМА ===
-        float myPower = CalculateSidePower(GameManager.Instance.EnemyFieldCards);
-        float enemyPower = CalculateSidePower(GameManager.Instance.PlayerFieldCards);
+        // Оцениваем поле
+        float currentMyPower = CalculateSidePower(GameManager.Instance.EnemyFieldCards);
+        float currentEnemyPower = CalculateSidePower(GameManager.Instance.PlayerFieldCards);
 
-        if (enemyPower > myPower * 1.3f) return 1;
-        if (myPower > enemyPower * 1.1f) return 0;
+        int currentMyCardsCount = GameManager.Instance.EnemyFieldCards.Count;
+        int currentEnemyCardsCount = GameManager.Instance.PlayerFieldCards.Count;
 
-        return 2; // Balanced
+        Debug.Log($"[AI] Оценка поля: Моя сила {currentMyPower:F1} vs Сила врага {currentEnemyPower:F1}");
+
+        // Первый ход без истории
+        if (previousMyPower == 0 && previousEnemyPower == 0)
+        {
+            if (currentEnemyPower > currentMyPower * 1.3f)
+            {
+                Debug.Log("[AI] Первый ход: враг сильнее, выбран режим DEFEND");
+                return 1;
+            }
+            Debug.Log("[AI] Первый ход: достаточное преимущество, выбран режим ATTACK");
+            return 0;
+        }
+
+        // Сравниваем с прошлым ходом
+        float enemyPowerRatio = currentEnemyPower / (previousEnemyPower + 0.1f);
+        float myPowerRatio = currentMyPower / (previousMyPower + 0.1f);
+
+        Debug.Log($"[AI] Динамика: враг {enemyPowerRatio:F2}x, мы {myPowerRatio:F2}x от прошлого хода");
+
+        // Когда защищаться
+        bool needDefend = false;
+        if (currentEnemyPower > currentMyPower * 1.5f)
+            needDefend = true;
+        if (enemyPowerRatio > 1.3f && previousEnemyPower > previousMyPower)
+            needDefend = true;
+        if (currentMyCardsCount < 2 && currentEnemyCardsCount >= 3)
+            needDefend = true;
+
+        // Когда атаковать
+        bool needAttack = false;
+        if (currentMyPower > currentEnemyPower * 1.2f)
+            needAttack = true;
+        int myLosses = previousMyCardsCount - currentMyCardsCount;
+        int enemyLosses = previousEnemyCardsCount - currentEnemyCardsCount;
+        if (enemyLosses > myLosses && currentMyPower >= currentEnemyPower)
+            needAttack = true;
+        if (enemyPowerRatio < 0.8f && currentMyPower >= currentEnemyPower * 0.9f)
+            needAttack = true;
+
+        // Выбор режима
+        if (needDefend && !needAttack)
+        {
+            Debug.Log($"[AI] Режим: DEFEND (враг опасен: {previousEnemyPower:F1} -> {currentEnemyPower:F1})");
+            return 1;
+        }
+        else if (needAttack && !needDefend)
+        {
+            Debug.Log("[AI] Режим: ATTACK (у нас преимущество)");
+            return 0;
+        }
+        else if (needDefend && needAttack)
+        {
+            if (currentEnemyPower > currentMyPower)
+            {
+                Debug.Log("[AI] Режим: DEFEND (конфликт сигналов, враг сильнее)");
+                return 1;
+            }
+            else
+            {
+                Debug.Log("[AI] Режим: ATTACK (конфликт сигналов, мы сильнее)");
+                return 0;
+            }
+        }
+        else
+        {
+            Debug.Log("[AI] Режим: ATTACK (нейтральная ситуация, атака по умолчанию)");
+            return 0;
+        }
     }
 
     float CalculateSidePower(List<CardController> cards)
@@ -128,141 +232,128 @@ public class AI : MonoBehaviour
         foreach (var c in cards)
         {
             if (c == null || !c.Card.IsAlive) continue;
-
-            // Используем AISourceData для точной оценки силы карты на поле
             if (aiSourceData != null)
                 total += aiSourceData.GetCardPower(c.Card);
             else
-                total += (c.Card.Attack + c.Card.Defense); // Фоллбэк
+                total += (c.Card.Attack + c.Card.Defense);
         }
         return total;
     }
 
-    // --- ЛОГИКА РОЗЫГРЫША КАРТ ---
-
-    /// <summary>
-    /// Оценивает полезность карты в руке для конкретного режима игры.
-    /// </summary>
     float GetCardUtilityScore(Card card, int mode)
     {
-        if (aiSourceData == null) return card.Manacost; // Простая сортировка по мане если нет данных
-
-        // Базовая сила карты из AISourceData (учитывает Attack, Defense и Abilities)
+        if (aiSourceData == null) return card.Manacost;
         float basePower = aiSourceData.GetCardPower(card);
 
-        // Модификаторы в зависимости от режима
         if (card.IsSpell)
         {
             SpellCard spell = (SpellCard)card;
-
-            if (mode == 1) // ЗАЩИТА: Приоритет лечению, щитам и провокации
+            if (mode == 1)
             {
                 if (spell.Spell == SpellCard.SpellType.HEAL_ALLY_FIELD_CARDS) basePower *= 1.6f;
                 if (spell.Spell == SpellCard.SpellType.HEAL_ALLY_HERO) basePower *= 1.4f;
                 if (spell.Spell == SpellCard.SpellType.SHIELD_ON_ALLY_CARD) basePower *= 1.3f;
                 if (spell.Spell == SpellCard.SpellType.PROVOCATION_ON_ALLY_CARD) basePower *= 1.5f;
-
-                // Урон в защите менее полезен, но если он массовый (AOE) - может спасти ситуацию
-                if (spell.Spell == SpellCard.SpellType.DAMAGE_ENEMY_FIELD_CARDS) basePower *= 1.2f;
             }
-            else if (mode == 0) // АТАКА: Приоритет прямому урону и баффам своих карт
+            else if (mode == 0)
             {
                 if (spell.Spell == SpellCard.SpellType.DAMAGE_ENEMY_HERO) basePower *= 1.5f;
                 if (spell.Spell == SpellCard.SpellType.DAMAGE_ENEMY_CARD) basePower *= 1.3f;
                 if (spell.Spell == SpellCard.SpellType.BUFF_CARD_DAMAGE) basePower *= 1.4f;
-                if (spell.Spell == SpellCard.SpellType.DAMAGE_ENEMY_FIELD_CARDS) basePower *= 1.3f;
             }
         }
         else
         {
-            // Для существ: оцениваем способности
-
-            // В ЗАЩИТЕ ценим выживаемость и контроль
             if (mode == 1)
             {
                 if (card.Abilities.Contains(Card.AbilityType.PROVOCATION)) basePower *= 1.4f;
                 if (card.Abilities.Contains(Card.AbilityType.SHIELD)) basePower *= 1.3f;
                 if (card.Abilities.Contains(Card.AbilityType.REGENERATION_EACH_TURN)) basePower *= 1.3f;
-                if (card.Abilities.Contains(Card.AbilityType.COUNTER_ATTACK)) basePower *= 1.2f;
             }
-
-            // В АТАКЕ ценим быстрый урон и пробивание защиты
             if (mode == 0)
             {
-                // DOUBLE_ATTACK позволяет нанести урон дважды, что очень ценно в атаке
                 if (card.Abilities.Contains(Card.AbilityType.DOUBLE_ATTACK)) basePower *= 1.35f;
-
-                // INSTANT_ACTIVE позволяет атаковать сразу, ускоряя темп
                 if (card.Abilities.Contains(Card.AbilityType.INSTANT_ACTIVE)) basePower *= 1.25f;
-
-                // Высокая атака сама по себе уже учтена в GetCardPower, но можно добавить бонус
-                if (card.Attack > 5) basePower *= 1.1f;
             }
         }
-
-        // Небольшой бонус за дешевизну (чтобы не застревать с дорогой картой в начале игры)
         basePower += (10 - card.Manacost) * 0.05f;
-
         return basePower;
     }
 
-    void PlayMinion(CardController card)
+    List<CardController> FindBestCardCombination(List<CardController> cards, int mode)
     {
-        card.GetComponent<CardMovement>().MoveToField(GameManager.Instance.EnemyField);
-        // Ждем пока анимация дойдет до поля (упрощенно)
-        card.transform.SetParent(GameManager.Instance.EnemyField);
-        card.OnCast();
+        int maxMana = GameManager.Instance.CurrentGame.Enemy.Mana;
+        int maxSlots = 5 - GameManager.Instance.EnemyFieldCards.Count;
+        if (cards.Count == 0) return new List<CardController>();
+
+        int n = cards.Count;
+        int limit = Mathf.Min(n, 20);
+        float bestScore = -1;
+        List<CardController> bestCombo = new List<CardController>();
+        int totalCombinations = 1 << limit;
+
+        for (int i = 1; i < totalCombinations; i++)
+        {
+            List<CardController> currentCombo = new List<CardController>();
+            int currentManaCost = 0;
+            float currentScore = 0;
+            int slotCount = 0;
+            bool isValid = true;
+
+            for (int j = 0; j < limit; j++)
+            {
+                if ((i & (1 << j)) != 0)
+                {
+                    CardController card = cards[j];
+                    if (!card.Card.IsSpell)
+                    {
+                        if (slotCount + 1 > maxSlots) { isValid = false; break; }
+                        slotCount++;
+                    }
+                    currentManaCost += card.Card.Manacost;
+                    currentScore += GetCardUtilityScore(card.Card, mode);
+                    currentCombo.Add(card);
+                }
+            }
+
+            if (isValid && currentManaCost <= maxMana)
+            {
+                if (currentScore > bestScore)
+                {
+                    bestScore = currentScore;
+                    bestCombo = currentCombo;
+                }
+            }
+        }
+        return bestCombo;
     }
 
-    void CastSpellSmart(CardController card, int mode)
-    {
-        // Здесь можно доработать выбор цели для целевых заклинаний
-        // Пока используем стандартную логику, но с проверкой условий
-        CastSpell(card);
-    }
-
-    // --- ЛОГИКА АТАКИ ---
-
-    /// <summary>
-    /// Выбирает цель для атаки. Возвращает null, если нужно атаковать героя.
-    /// </summary>
     CardController ChooseTarget(CardController attacker, int mode)
     {
         bool hasProvocation = GameManager.Instance.PlayerFieldCards.Exists(x => x.Card.IsProvocation);
-
-        // 1. Обязательная атака таунтера
         if (hasProvocation)
         {
             return GameManager.Instance.PlayerFieldCards.Find(x => x.Card.IsProvocation);
         }
 
-        // 2. Выбор цели в зависимости от режима
-        if (mode == 0) // АТАКА: Пытаемся пробить лицо или добить слабую карту
+        if (mode == 0)
         {
-            // Ищем карту, которую можем убить одним ударом (или почти убить)
-            // Это помогает расчистить поле для последующих атак по герою
             var killable = GameManager.Instance.PlayerFieldCards.Find(x => x.Card.Defense <= attacker.Card.Attack);
             if (killable != null) return killable;
 
-            // Если убить некого, с шансом 50% бьем в случайную карту (чтобы сбить щиты/баффы), иначе в лицо
             if (Random.Range(0, 2) == 0 && GameManager.Instance.PlayerFieldCards.Count > 0)
                 return GameManager.Instance.PlayerFieldCards[Random.Range(0, GameManager.Instance.PlayerFieldCards.Count)];
 
-            return null; // Null означает атаку героя
+            return null;
         }
-        else // ЗАЩИТА/БАЛАНС: Убираем самую опасную карту врага
+        else
         {
             CardController mostDangerous = null;
             float maxDanger = 0;
 
             foreach (var enemy in GameManager.Instance.PlayerFieldCards)
             {
-                float danger = 0;
-                if (aiSourceData != null)
-                    danger = aiSourceData.GetCardPower(enemy.Card);
-                else
-                    danger = enemy.Card.Attack + enemy.Card.Defense;
-
+                float danger = aiSourceData != null ? aiSourceData.GetCardPower(enemy.Card) : enemy.Card.Attack + enemy.Card.Defense;
                 if (danger > maxDanger)
                 {
                     maxDanger = danger;
@@ -270,15 +361,16 @@ public class AI : MonoBehaviour
                 }
             }
 
-            // Если есть опасная цель (например, карта с двойной атакой или высоким уроном), бьем её
-            if (mostDangerous != null && maxDanger > 6.0f) // Порог опасности
-                return mostDangerous;
-
-            return null; // Иначе бьем героя
+            if (mostDangerous != null && maxDanger > 6.0f) return mostDangerous;
+            return null;
         }
     }
 
-    // --- СТАНДАРТНАЯ ЛОГИКА ЗАКЛИНАНИЙ (без изменений, так как она рабочая) ---
+    IEnumerator CastSpellSmart(CardController card, int mode)
+    {
+        // Вызываем основную логику и ждем её
+        yield return StartCoroutine(CastCard(card));
+    }
 
     void CastSpell(CardController card)
     {
@@ -288,39 +380,27 @@ public class AI : MonoBehaviour
                 switch (((SpellCard)card.Card).Spell)
                 {
                     case SpellCard.SpellType.HEAL_ALLY_FIELD_CARDS:
-                        if (GameManager.Instance.EnemyFieldCards.Count > 0)
-                            StartCoroutine(CastCard(card));
+                        if (GameManager.Instance.EnemyFieldCards.Count > 0) StartCoroutine(CastCard(card));
                         break;
-
                     case SpellCard.SpellType.DAMAGE_ENEMY_FIELD_CARDS:
-                        if (GameManager.Instance.PlayerFieldCards.Count > 0)
-                            StartCoroutine(CastCard(card));
+                        if (GameManager.Instance.PlayerFieldCards.Count > 0) StartCoroutine(CastCard(card));
                         break;
-
                     case SpellCard.SpellType.HEAL_ALLY_HERO:
-                        StartCoroutine(CastCard(card));
-                        break;
-
                     case SpellCard.SpellType.DAMAGE_ENEMY_HERO:
                         StartCoroutine(CastCard(card));
                         break;
                 }
                 break;
-
             case SpellCard.TargetType.ALLY_CARD_TARGET:
                 if (GameManager.Instance.EnemyFieldCards.Count > 0)
                 {
-                    // Улучшение: лечить самого раненого, а не случайного
                     var target = GetMostWoundedAlly();
-                    if (target != null)
-                        StartCoroutine(CastCard(card, target));
+                    if (target != null) StartCoroutine(CastCard(card, target));
                 }
                 break;
-
             case SpellCard.TargetType.ENEMY_CARD_TARGET:
                 if (GameManager.Instance.PlayerFieldCards.Count > 0)
                 {
-                    // Улучшение: бить самого слабого или самого опасного (здесь случайно для простоты)
                     var target = GameManager.Instance.PlayerFieldCards[Random.Range(0, GameManager.Instance.PlayerFieldCards.Count)];
                     StartCoroutine(CastCard(card, target));
                 }
@@ -334,36 +414,75 @@ public class AI : MonoBehaviour
         float minHpPercent = 1.1f;
         foreach (var c in GameManager.Instance.EnemyFieldCards)
         {
-            // Примерная оценка здоровья (Defense как HP)
             float hpPercent = (float)c.Card.Defense / (c.Card.Defense + c.Card.Attack + 1);
-            if (hpPercent < minHpPercent)
-            {
-                minHpPercent = hpPercent;
-                wounded = c;
-            }
+            if (hpPercent < minHpPercent) { minHpPercent = hpPercent; wounded = c; }
         }
         return wounded;
     }
 
     IEnumerator CastCard(CardController spell, CardController target = null)
     {
+        // 1. ЛОГИКА ДЛЯ ЗАКЛИНАНИЙ БЕЗ ЦЕЛИ (AOE / ГЕРОЙ)
         if (((SpellCard)spell.Card).SpellTarget == SpellCard.TargetType.NO_TARGET)
         {
-            spell.GetComponent<CardMovement>().MoveToField(GameManager.Instance.EnemyField);
-            yield return new WaitForSeconds(0.5f);
+            // Сначала летим на поле
+            yield return StartCoroutine(spell.GetComponent<CardMovement>().MoveToFieldCoroutine(GameManager.Instance.EnemyField));
+
+            // === ОТКРЫВАЕМ КАРТУ ТОЛЬКО ПОСЛЕ ПРИЛЕТА ===
+            if (spell.Info != null)
+            {
+                spell.Info.ShowCardInfo();
+            }
+
+            // Пауза для чтения
+            yield return new WaitForSeconds(1.5f);
+
+            // Применяем эффект
             spell.OnCast();
         }
+        // 2. ЛОГИКА ДЛЯ ЗАКЛИНАНИЙ С ЦЕЛЬЮ
         else
         {
-            spell.Info.ShowCardInfo();
-            spell.GetComponent<CardMovement>().MoveToTarget(target.transform);
-            yield return new WaitForSeconds(0.5f);
+            // Сначала летим к цели
+            yield return StartCoroutine(spell.GetComponent<CardMovement>().MoveToTargetCor(target.transform));
 
+            // === ПРОВЕРКА: Существует ли цель и карта после полета? ===
+            // Если цель умерла пока карта летела, или карта была удалена, прерываем выполнение
+            if (target == null || spell == null || !spell.gameObject.activeInHierarchy)
+            {
+                Debug.LogWarning("[AI] Цель исчезла во время полета заклинания. Отмена.");
+                // Можно добавить логику возврата карты в руку или её уничтожения без эффекта
+                if (spell != null && spell.Info != null) spell.Info.HideCardInfo();
+                yield break;
+            }
+
+            // === ОТКРЫВАЕМ КАРТУ ТОЛЬКО КОГДА ОНА УЖЕ У ЦЕЛИ ===
+            if (spell.Info != null)
+            {
+                spell.Info.ShowCardInfo();
+            }
+
+            // Пауза для чтения (игрок видит карту прямо над целью)
+            yield return new WaitForSeconds(1.5f);
+
+            // Удаляем из руки и добавляем на поле (визуально она уже там)
             GameManager.Instance.EnemyHandCards.Remove(spell);
             GameManager.Instance.EnemyFieldCards.Add(spell);
-            GameManager.Instance.ReduceMana(false, spell.Card.Manacost);
+
+            // Списываем ману
+            int cost = spell.Card.Manacost;
+            if (GameManager.Instance.CurrentGame.Enemy.Mana < cost)
+            {
+                GameManager.Instance.CurrentGame.Enemy.Mana = 0;
+            }
+            else
+            {
+                GameManager.Instance.ReduceMana(false, cost);
+            }
 
             spell.Card.IsPlaced = true;
+
+            // Применяем эффект
             spell.UseSpell(target);
         }
 

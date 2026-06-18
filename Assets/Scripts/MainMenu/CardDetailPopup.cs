@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections.Generic;
 
 public class CardDetailPopup : MonoBehaviour
 {
@@ -73,14 +74,27 @@ public class CardDetailPopup : MonoBehaviour
                 : card.shortDescription;
         }
 
-        // Способности
+        // Способности (для существ)
         if (abilitiesText != null)
         {
-            if (card.HasAbility)
+            if (card.IsSpell)
             {
+                // Для заклинаний показываем тип заклинания
                 abilitiesText.gameObject.SetActive(true);
-                string abilities = string.Join(", ", card.Abilities);
-                abilitiesText.text = $"<color=#FFD700>Способность:</color> {abilities}";
+                string spellTypeName = GetSpellTypeNameRussian(((SpellCard)card).Spell);
+                abilitiesText.text = $"<color=#FFD700>Тип: </color>{spellTypeName}";
+            }
+            else if (card.HasAbility)
+            {
+                // Для существ показываем способности
+                abilitiesText.gameObject.SetActive(true);
+                List<string> abilityNames = new List<string>();
+                foreach (var ability in card.Abilities)
+                {
+                    abilityNames.Add(GetAbilityNameRussian(ability));
+                }
+                string abilities = string.Join(", ", abilityNames);
+                abilitiesText.text = $"<color=#FFD700>Способность: </color>{abilities}";
             }
             else
             {
@@ -91,6 +105,55 @@ public class CardDetailPopup : MonoBehaviour
         Time.timeScale = 0f; // Пауза
     }
 
+    string GetSpellTypeNameRussian(SpellCard.SpellType spellType)
+    {
+        switch (spellType)
+        {
+            case SpellCard.SpellType.HEAL_ALLY_FIELD_CARDS:
+                return "Лечение всех союзников";
+            case SpellCard.SpellType.DAMAGE_ENEMY_FIELD_CARDS:
+                return "Урон всем врагам";
+            case SpellCard.SpellType.HEAL_ALLY_HERO:
+                return "Лечение героя";
+            case SpellCard.SpellType.DAMAGE_ENEMY_HERO:
+                return "Урон герою противника";
+            case SpellCard.SpellType.HEAL_ALLY_CARD:
+                return "Лечение союзника";
+            case SpellCard.SpellType.DAMAGE_ENEMY_CARD:
+                return "Урон врагу";
+            case SpellCard.SpellType.SHIELD_ON_ALLY_CARD:
+                return "Щит союзнику";
+            case SpellCard.SpellType.PROVOCATION_ON_ALLY_CARD:
+                return "Провокация союзнику";
+            case SpellCard.SpellType.BUFF_CARD_DAMAGE:
+                return "Усиление урона союзника";
+            case SpellCard.SpellType.DEBUFF_CARD_DAMAGE:
+                return "Снижение урона врага";
+            default:
+                return spellType.ToString();
+        }
+    }
+
+    string GetAbilityNameRussian(Card.AbilityType ability)
+    {
+        switch (ability)
+        {
+            case Card.AbilityType.INSTANT_ACTIVE:
+                return "Мгновенная активация";
+            case Card.AbilityType.DOUBLE_ATTACK:
+                return "Двойная атака";
+            case Card.AbilityType.SHIELD:
+                return "Щит";
+            case Card.AbilityType.PROVOCATION:
+                return "Провокация";
+            case Card.AbilityType.REGENERATION_EACH_TURN:
+                return "Постепенная регенерация";
+            case Card.AbilityType.COUNTER_ATTACK:
+                return "Контратака";
+            default:
+                return ability.ToString();
+        }
+    }
     public void ClosePopup()
     {
         Time.timeScale = 1f;

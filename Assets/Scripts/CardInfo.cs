@@ -8,7 +8,7 @@ public class CardInfo : MonoBehaviour
 {
     public CardController CC;
 
-    public Image Logo;
+    public Image Logo, AttackBack, DefenceBack;
     public TextMeshProUGUI Name, Attack, Defense, Manacost, ShortDescriptionText, FullDescriptionText;
     public GameObject HideObj, HighlightedObj;
     public Color NormalCol, TargetCol, SpellTargetCol;
@@ -31,7 +31,9 @@ public class CardInfo : MonoBehaviour
         if (CC.Card.IsSpell)
         {
             Attack.gameObject.SetActive(false);
+            AttackBack.gameObject.SetActive(false);
             Defense.gameObject.SetActive(false);
+            DefenceBack.gameObject.SetActive(false);
         }
 
         RefreshData();
